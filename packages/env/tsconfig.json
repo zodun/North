@@ -1,0 +1,3 @@
+{
+  "extends": "@north/config/tsconfig.base.json"
+}
