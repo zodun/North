@@ -5,8 +5,9 @@ export default async function AdminOpportunities() {
 	const { data: items, error } = await supabase
 		.from("opportunities")
 		.select(
-			"id, title, org, opportunity_type, location, deadline, published_at, created_at",
+			"id, title, org, opportunity_type, location, deadline, license_status, published_at, created_at",
 		)
+		.order("license_status", { ascending: true })
 		.order("created_at", { ascending: false })
 		.limit(100);
 
@@ -14,8 +15,10 @@ export default async function AdminOpportunities() {
 		<div className="container mx-auto max-w-5xl px-4 py-8">
 			<h1 className="mb-2 font-semibold text-2xl">Opportunities</h1>
 			<p className="mb-6 text-muted-foreground text-sm">
-				Manual upload (DEC-03: opportunity upload before scraping). Add / edit /
-				publish flows will live here.
+				Manual upload (DEC-03: opportunity upload before scraping).
+				Opportunities are always link-out; every row needs attribution
+				and an external URL before <code>license_status</code> can flip
+				to <code>cleared</code>.
 			</p>
 
 			{error ? (
@@ -31,6 +34,7 @@ export default async function AdminOpportunities() {
 							<th className="py-2 text-left">Type</th>
 							<th className="py-2 text-left">Location</th>
 							<th className="py-2 text-left">Deadline</th>
+							<th className="py-2 text-left">Status</th>
 							<th className="py-2 text-left">Published</th>
 						</tr>
 					</thead>
@@ -42,10 +46,11 @@ export default async function AdminOpportunities() {
 								<td className="py-2">{it.opportunity_type ?? "—"}</td>
 								<td className="py-2">{it.location ?? "—"}</td>
 								<td className="py-2">{it.deadline ?? "—"}</td>
+								<td className="py-2">{it.license_status}</td>
 								<td className="py-2">
 									{it.published_at
 										? new Date(it.published_at).toLocaleDateString()
-										: "draft"}
+										: "—"}
 								</td>
 							</tr>
 						))}
