@@ -88,16 +88,16 @@ By the end of the MVP build (target date \[TBD\]), North is a live React Native 
 
 3.3 Success Measures / KPIs
 
-*Targets below are proposed starting points and must be confirmed by the Project Owner before they are treated as commitments.*
+*Targets confirmed 28 May 2026 (see DEC-11). The alignment-lift number is committed **with the metrics-spec demand-bias controls in force** (triangulation against behavioural data, measure-the-churned, and continued willingness to re-tune after cohort 1) — a +1.0pt move that is not corroborated by signal-score and mission-completion movement is treated as demand bias, not as a hit.*
 
 | **Metric** | **Baseline** | **Target** | **By When** | **Data Source** |
 |----|----|----|----|----|
-| Onboarding completion rate | N/A (pre-launch) | **≥85% \[TBD\]** | **\[TBD\]** | PostHog funnel |
-| Daily mission completion rate (active users) | N/A | **≥40% \[TBD\]** | **\[TBD\]** | Supabase (user_mission_tasks) |
-| 7-day streak rate | N/A | **≥25% \[TBD\]** | **\[TBD\]** | Supabase (streaks) |
-| D7 retention | N/A | **≥30% \[TBD\]** | **\[TBD\]** | PostHog cohort |
-| Self-reported alignment lift (onboarding → wk4) | N/A | **+1.0 pt on 5-pt scale \[TBD\]** | **\[TBD\]** | In-app survey |
-| Signal classification accuracy (user-rated) | N/A | **≥75% “feels accurate” \[TBD\]** | **\[TBD\]** | In-app thumbs rating |
+| Onboarding completion rate | N/A (pre-launch) | **≥85%** | end of M1 | PostHog funnel |
+| Daily mission completion rate (active users) | N/A | **≥40%** | end of M2 | Supabase (user_mission_tasks) |
+| 7-day streak rate | N/A | **≥25%** | end of M2 | Supabase (streaks) |
+| D7 retention | N/A | **≥30%** | end of M2 | PostHog cohort |
+| Self-reported alignment lift (onboarding → wk4) | N/A | **+1.0 pt on 5-pt scale** | end of M3 | In-app survey (MLQ presence-of-meaning per DEC-09) |
+| Signal classification accuracy (user-rated) | N/A | **≥75% "feels accurate"** | end of M3 | In-app thumbs rating |
 
 4\. Rationale
 
@@ -552,6 +552,7 @@ Client: React Native + Expo. Backend & data: Supabase (PostgreSQL + Supabase Aut
 | DEC-08 — Streak rules implemented per metrics spec DEC-05: AST day boundary (UTC−4, no DST) with 03:59 grace cutoff via `public.ast_day`; rest-credit model (2 per rolling 7, auto-consumed, "rhythm intact" framing — no loss-framing); `streaks` upserted by trigger on `user_mission_tasks` | 28 May 2026 | Jordayne Price | Resolves tracker DEC-05; gives Signal's K input and the 28-day consistency view a server-computed source of truth that matches the rhythm-streak surface |
 | DEC-09 — Alignment instrument scaffolded per metrics spec DEC-04: MLQ presence-of-meaning subscale (Steger 2006) chosen as the Layer-2 baseline/day-28 scale; schema (`alignment_scales`, `alignment_scale_items`, `baseline_endpoint_responses.scale_id`, `compute_alignment_composite` + trigger, `weekly_pulse_due`); items seeded as PLACEHOLDERS and RLS-gated behind `license_status = 'licensed'` until operator pastes verbatim text from source | 28 May 2026 | Jordayne Price | Resolves tracker DEC-04; thesis-claim instrument is in place. Items remain pending operator acquisition (free for non-commercial use per Steger's terms) — see runbook in metrics-spec DEC-04 appendix |
 | DEC-10 — Content licensing model is **hybrid**: every curated item declares `license_type` (link-out / cloudinary-hosted / original / unknown) and progresses through `license_status` (draft → cleared → blocked). RLS public-read policies on `content_items` and `opportunities` require `license_status = 'cleared'` + populated attribution/URL — placeholders never reach a client | 28 May 2026 | Jordayne Price | Resolves tracker DEC-06; gives the admin curation flow a structural way to enforce attribution + permission evidence before content goes live, without dictating link-out vs. host as a global default |
+| DEC-11 — KPI targets §3.3 confirmed: onboarding completion ≥85% (M1) · daily mission completion ≥40% (M2) · 7-day streak ≥25% (M2) · D7 retention ≥30% (M2) · alignment lift +1.0pt on 5-pt scale (M3) · signal classification accuracy ≥75% "feels accurate" (M3). Alignment-lift target confirmed **with demand-bias caveat in force** per metrics spec DEC-04 control #3 | 28 May 2026 | Jordayne Price | Resolves tracker DEC-07; converts the §3.3 table from "proposed starting points" to project commitments, with re-tuning permitted after cohort 1 (would require a new DEC entry) |
 
 ### DEC-06 — Conform repo to documented stack
 
@@ -620,6 +621,29 @@ The public-read RLS policies are tightened to require `license_status = 'cleared
 **Rationale.** Hybrid reflects the realistic mix of M1 curation — some essays will be Caribbean originals or commissioned (host on Cloudinary for brand consistency); others will be external pieces we link out to with attribution; the data layer should support both rather than forcing one. The `license_status` state machine moves the legal-clearance gate from "documented in a sidecar spreadsheet" to a database invariant that RLS enforces automatically.
 
 **Impact.** Resolves tracker DEC-06. Admin UI surfaces `license_type` + `license_status` in the curation tables; full add/edit/upload-to-Cloudinary flows are M1 admin work, not this PR. Existing curation rows (none yet in v0) get sensible defaults (`license_status = 'draft'`) and must be cleared before they become visible.
+
+### DEC-11 — KPI targets confirmed (§3.3)
+
+**Decision (28 May 2026, Jordayne Price).** The six KPIs in §3.3 are committed at the numbers previously listed as proposed starting points. The `[TBD]` markers are removed; `By When` is set to the milestone in which each KPI must first be measurable.
+
+| **Metric** | **Target** | **By When** |
+|---|---|---|
+| Onboarding completion rate | ≥ 85% | end of M1 |
+| Daily mission completion rate (active users) | ≥ 40% | end of M2 |
+| 7-day streak rate | ≥ 25% | end of M2 |
+| D7 retention | ≥ 30% | end of M2 |
+| Self-reported alignment lift (onboarding → wk4) | +1.0 pt on 5-pt scale | end of M3 |
+| Signal classification accuracy (user-rated) | ≥ 75% "feels accurate" | end of M3 |
+
+**Caveat on the alignment-lift number.** The metrics spec DEC-04 demand-bias section argues against pre-committing to a +1.0pt target because survey-only lift from survivors is the most demand-biased measurement available. The number is confirmed here as a working commitment, but with the three demand-bias controls held in force:
+
+1. **Triangulate.** A real hit = alignment-lift +1.0pt **and** signal score climbing **and** mission completion holding. A +1.0pt move alone is treated as demand bias, not a hit.
+2. **Measure the churned.** Lift is segmented to include users who left (via their last weekly pulse), not just week-4 survivors.
+3. **Re-tune willingly.** After cohort 1 returns data, the target may be re-set as a within-person effect size (e.g., Cohen's *d* ≈ 0.3). Re-tuning any of the six numbers requires a new DEC entry; it does not invalidate this one.
+
+**Rationale.** The numbers in §3.3 were already drafted by the Project Owner and align with consumer-app industry benchmarks (D7 retention ≥ 30%, onboarding completion ≥ 85%, mission-completion ≥ 40%). Leaving them as `[TBD]` defers a decision that any review of progress will need to make anyway. The demand-bias caveat lets the alignment-lift commitment survive contact with survey reality.
+
+**Impact.** Resolves tracker DEC-07. Removes 12 `[TBD]` markers from §3.3 (6 targets × 2 columns). The numbers become measurable as soon as the relevant milestone exits, and re-tuning is bounded by a new DEC requirement so adjustments are deliberate.
 
 18\. Supporting Documents
 
