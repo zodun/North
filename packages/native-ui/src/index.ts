@@ -1,4 +1,4 @@
-// Ergonomic single-import surface for @north/native-ui (DEC-23).
+// Ergonomic single-import surface for @north/native-ui (DEC-23 + DEC-25).
 // `import { Button, Card, BandHero, … } from "@north/native-ui"`.
 
 export {
@@ -10,7 +10,6 @@ export { Card, type CardProps } from "./components/Card";
 export { Icon, type IconName, type IconProps } from "./components/Icon";
 export { Input, type InputProps } from "./components/Input";
 export { ProgressBar, type ProgressBarProps } from "./components/ProgressBar";
-
 export {
 	BandHero,
 	type BandHeroProps,
@@ -35,3 +34,4 @@ export {
 	WeeklyPulse,
 	type WeeklyPulseProps,
 } from "./components/signal/WeeklyPulse";
+export { useReducedMotion } from "./hooks/useReducedMotion";

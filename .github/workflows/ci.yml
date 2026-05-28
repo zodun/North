@@ -55,6 +55,12 @@ jobs:
       - name: Client-bundle secrets leak check
         run: bun run check:secrets
 
+      - name: Token contrast (WCAG AA)
+        # Verifies every palette's ink-on-bg / accentInk-on-accent
+        # contrast ratios still meet WCAG AA after any token change
+        # (DEC-25). Fast; runs without any Supabase / native config.
+        run: bun run check:contrast
+
       - name: Build web
         run: bun run build --filter=web
 
