@@ -185,3 +185,46 @@ where jobname in ('signal-score-daily', 'signal-summary-weekly');
 ### Prompt versioning
 
 The system prompt is stored in `supabase/functions/signal-summary/index.ts` and tagged via the `prompt_version` column in `signal_summaries`. To roll a new prompt, bump the version string and redeploy; old summaries remain queryable by version for A/B comparison.
+
+---
+
+## Appendix · Implementation notes (DEC-04 in-repo)
+
+| Component | Path |
+|---|---|
+| Scale registry | `supabase/migrations/0008_alignment_instrument.sql` — `public.alignment_scales` + `public.alignment_scale_items` |
+| Composite computation | `supabase/migrations/0008_alignment_instrument.sql` — `public.compute_alignment_composite(items jsonb, scale_id_in text)` + `BEFORE INSERT OR UPDATE` trigger on `public.baseline_endpoint_responses` |
+| Layer-1 dispatch helper | `supabase/migrations/0008_alignment_instrument.sql` — `public.weekly_pulse_due(uid, as_of)` |
+| Tests | `supabase/tests/alignment_instrument.sql` — license gate, composite, reverse-scoring, weekly-pulse-due |
+
+### Selected scale (v0)
+**MLQ presence-of-meaning subscale** (Steger, Frazier, Oishi & Kaler, 2006 — *Journal of Counseling Psychology* 53(1), 80–93). 5 items, 1–7 scale, well-validated, short, English. Seeded as `scale_id = 'mlq-pom'` with placeholder prompts and `license_status = 'pending_acquisition'`. **Clients cannot see the placeholder text** — the RLS policy on `alignment_scale_items` requires the parent scale's `license_status = 'licensed'`.
+
+### Operator runbook — acquire and license MLQ items
+1. Visit Steger's official MLQ page (e.g., <http://www.michaelfsteger.com>) or pull items from the Steger et al. 2006 paper. Confirm the free-for-non-commercial-use terms (and clarify commercial use if North will later monetise).
+2. For each item, update the prompt verbatim from the source:
+   ```sql
+   update public.alignment_scale_items
+       set prompt = '<verbatim item text from Steger 2006>'
+       where scale_id = 'mlq-pom' and ordering = <n>;
+   ```
+   The reverse-scoring flag in the seed (`ordering = 5` is `reverse_scored = true`) is a placeholder pending the operator's confirmation against the actual scoring rules in Steger 2006 — adjust by issuing further `update`s if the real scoring differs.
+3. Flip the license:
+   ```sql
+   update public.alignment_scales
+       set license_status = 'licensed',
+           license_evidence_url = '<URL to Steger page or stored PDF>'
+       where id = 'mlq-pom';
+   ```
+4. The clients (admin + native) start receiving real items via RLS the moment step 3 commits. The Layer-2 surveys (onboarding ONB-05 + day-28) automatically pick up the new text — no app deploy required.
+
+### Wiring it into the app
+- **Onboarding (ONB-05)** — the existing onboarding flow currently asks the single-item baseline pulse (see `apps/web/src/app/north/_lib/data.ts` `ONBOARDING_QS`). For Layer 2, replace that single item with a call that fetches `alignment_scale_items where scale_id = 'mlq-pom'` and renders them as a 5-item scale; submit answers to `baseline_endpoint_responses` with `measurement = 'baseline'`. (Out of scope for this DEC's PR; lands in onboarding work.)
+- **Day-28 re-measure** — a scheduled job (future Edge Function `signal-alignment-day28`) checks each user's `profiles.onboarded_at` and prompts them when `current_date - onboarded_at = 28`; submits `measurement = 'day28'`. (Out of scope; lands when the M3 Signal tab needs the lift number.)
+- **Layer-1 weekly pulse** — the native Signal tab calls `select public.weekly_pulse_due(auth.uid())` on mount; if true, shows the single-item prompt and writes to `weekly_pulses` on tap. (Out of scope; lands in M3 native Signal-tab work.)
+
+### What this PR deliberately defers
+- Real MLQ items — operator-driven (above).
+- Native-app onboarding/Signal-tab integration — M3 product work.
+- The day-28 scheduled re-measure trigger — lands when the M3 cohort has reached day 28.
+- Demand-bias triangulation analytics — analytical, lands when there is data to triangulate.
