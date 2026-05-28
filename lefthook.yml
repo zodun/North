@@ -1,0 +1,26 @@
+# Lefthook · pre-commit hooks for North
+#
+# Installed by `bun install` (via the `postinstall` script in
+# package.json that runs `lefthook install`). Bypass in an emergency
+# with `git commit --no-verify`, but never in CI.
+
+pre-commit:
+  parallel: true
+  commands:
+    biome:
+      # Lint + format the staged files only. `--write` fixes safe issues;
+      # the `stage_fixed` line re-adds the fixed files so the commit
+      # picks them up.
+      glob: "*.{js,jsx,ts,tsx,json,jsonc,css}"
+      run: bunx biome check --write --no-errors-on-unmatched {staged_files}
+      stage_fixed: true
+
+    typecheck:
+      # Full-monorepo typecheck via turbo. Caches per-package so it's
+      # fast on re-runs. We can't easily run a per-file typecheck — TS
+      # needs the whole project graph — so we run the whole monorepo.
+      glob: "*.{ts,tsx}"
+      run: bun run check-types
+
+# pre-push hooks are registered in a later PR (SETUP-H: secrets leak
+# check). Defense-in-depth; CI runs the same checks too.

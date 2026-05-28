@@ -553,6 +553,7 @@ Client: React Native + Expo. Backend & data: Supabase (PostgreSQL + Supabase Aut
 | DEC-09 — Alignment instrument scaffolded per metrics spec DEC-04: MLQ presence-of-meaning subscale (Steger 2006) chosen as the Layer-2 baseline/day-28 scale; schema (`alignment_scales`, `alignment_scale_items`, `baseline_endpoint_responses.scale_id`, `compute_alignment_composite` + trigger, `weekly_pulse_due`); items seeded as PLACEHOLDERS and RLS-gated behind `license_status = 'licensed'` until operator pastes verbatim text from source | 28 May 2026 | Jordayne Price | Resolves tracker DEC-04; thesis-claim instrument is in place. Items remain pending operator acquisition (free for non-commercial use per Steger's terms) — see runbook in metrics-spec DEC-04 appendix |
 | DEC-10 — Content licensing model is **hybrid**: every curated item declares `license_type` (link-out / cloudinary-hosted / original / unknown) and progresses through `license_status` (draft → cleared → blocked). RLS public-read policies on `content_items` and `opportunities` require `license_status = 'cleared'` + populated attribution/URL — placeholders never reach a client | 28 May 2026 | Jordayne Price | Resolves tracker DEC-06; gives the admin curation flow a structural way to enforce attribution + permission evidence before content goes live, without dictating link-out vs. host as a global default |
 | DEC-11 — KPI targets §3.3 confirmed: onboarding completion ≥85% (M1) · daily mission completion ≥40% (M2) · 7-day streak ≥25% (M2) · D7 retention ≥30% (M2) · alignment lift +1.0pt on 5-pt scale (M3) · signal classification accuracy ≥75% "feels accurate" (M3). Alignment-lift target confirmed **with demand-bias caveat in force** per metrics spec DEC-04 control #3 | 28 May 2026 | Jordayne Price | Resolves tracker DEC-07; converts the §3.3 table from "proposed starting points" to project commitments, with re-tuning permitted after cohort 1 (would require a new DEC entry) |
+| DEC-12 — Lint/format tool is **Biome** (kept, not swapped to ESLint+Prettier). Pre-commit hooks via lefthook: `biome check --write` on staged files + workspace `tsc --noEmit`. Root scripts: `bun run check` (fix), `bun run check:ci` (check-only), `bun run check-types` (turbo) | 28 May 2026 | Jordayne Price | Resolves tracker SETUP-03; one tool, faster than ESLint+Prettier, matches the Better-T-Stack default; pre-commit hooks catch lint/format/type errors before commit |
 
 ### DEC-06 — Conform repo to documented stack
 
@@ -644,6 +645,21 @@ The public-read RLS policies are tightened to require `license_status = 'cleared
 **Rationale.** The numbers in §3.3 were already drafted by the Project Owner and align with consumer-app industry benchmarks (D7 retention ≥ 30%, onboarding completion ≥ 85%, mission-completion ≥ 40%). Leaving them as `[TBD]` defers a decision that any review of progress will need to make anyway. The demand-bias caveat lets the alignment-lift commitment survive contact with survey reality.
 
 **Impact.** Resolves tracker DEC-07. Removes 12 `[TBD]` markers from §3.3 (6 targets × 2 columns). The numbers become measurable as soon as the relevant milestone exits, and re-tuning is bounded by a new DEC requirement so adjustments are deliberate.
+
+### DEC-12 — Lint/format tool kept as Biome; pre-commit hooks via lefthook
+
+**Decision (28 May 2026, Jordayne Price).** Tracker SETUP-03 ("Configure ESLint + Prettier + typecheck; add pre-commit hooks") is resolved by keeping **Biome** (already in `biome.json`) rather than swapping to ESLint + Prettier. Pre-commit hooks are added via [lefthook](https://lefthook.dev).
+
+**What's in.**
+- `biome.json` (kept) — formatting + linting, with the existing folder-scoped a11y overrides for `apps/web/src/app/north/**` (the design prototype's decorative SVGs).
+- `lefthook.yml` — pre-commit runs `bunx biome check --write` on staged JS/TS/JSON/CSS files (auto-stages fixes) and `bun run check-types` across the workspace.
+- Root scripts: `bun run check` (apply fixes), `bun run check:ci` (check-only, fails on diff, used by CI), `bun run check-types` (turbo runs `tsc --noEmit` per package).
+- `check-types` scripts added to every workspace (`apps/web`, `apps/native`, `packages/env`, `packages/supabase`) so turbo actually exercises them. `packages/ui` already had one.
+- Hooks install via the root `postinstall` script (`lefthook install`); no manual setup required. Bypass for emergencies via `git commit --no-verify`; never in CI.
+
+**Rationale.** Biome was already configured and working. Swapping to ESLint + Prettier would add a plugin sprawl (`eslint-config-next`, `eslint-plugin-react-native`, `prettier-plugin-*`), run slower, and offer no benefit for a single-developer project. The Better-T-Stack default landed at Biome for the same reasons; we keep it.
+
+**Impact.** Resolves SETUP-03. Unblocks SETUP-05 (CI runs `bun run check:ci` + `bun run check-types`). No code paths change; this is pure tooling.
 
 18\. Supporting Documents
 

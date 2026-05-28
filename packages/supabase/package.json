@@ -12,7 +12,9 @@
 			"default": "./src/native.ts"
 		}
 	},
-	"scripts": {},
+	"scripts": {
+		"check-types": "tsc --noEmit"
+	},
 	"dependencies": {
 		"@north/env": "workspace:*",
 		"@supabase/ssr": "^0.10.3",

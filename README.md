@@ -59,5 +59,13 @@ north/
 - `bun run dev:web` / `bun run dev:native`
 - `bun run build` / `bun run check-types`
 - `bun run supabase:start` / `supabase:stop` / `supabase:reset` — local Supabase stack
-- `bun run check` — Biome format + lint
+- `bun run check` — Biome format + lint (writes fixes)
+- `bun run check:ci` — Biome check-only (fails on diff; used by CI)
 - `cd apps/web && bun run generate-pwa-assets` — PWA assets
+
+## Pre-commit hooks
+
+Hooks are managed by [lefthook](https://lefthook.dev) and installed automatically by `bun install`'s `postinstall` script. See `lefthook.yml`.
+
+- **pre-commit:** `bunx biome check --write` on staged JS/TS/JSON/CSS files (auto-staged after fixes) + `bun run check-types` across the workspace.
+- Bypass in an emergency with `git commit --no-verify`. Never bypass in CI.
