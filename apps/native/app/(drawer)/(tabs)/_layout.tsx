@@ -1,41 +1,22 @@
+// 5-tab nav with the prototype's raised centre Mission (DEC-24).
+// Routing is plain expo-router <Tabs>; the visible bar is supplied
+// via the `tabBar` prop and rendered by CustomTabBar.
+
 import { Tabs } from "expo-router";
 
-import { TabBarIcon } from "@/components/tabbar-icon";
-import { NAV_THEME } from "@/lib/constants";
-import { useColorScheme } from "@/lib/use-color-scheme";
+import { CustomTabBar } from "@/components/tab-bar";
 
 export default function TabLayout() {
-	const { isDarkColorScheme } = useColorScheme();
-	const theme = isDarkColorScheme ? NAV_THEME.dark : NAV_THEME.light;
-
 	return (
 		<Tabs
-			screenOptions={{
-				headerShown: false,
-				tabBarActiveTintColor: theme.primary,
-				tabBarInactiveTintColor: theme.text,
-				tabBarStyle: {
-					backgroundColor: theme.background,
-					borderTopColor: theme.border,
-				},
-			}}
+			screenOptions={{ headerShown: false }}
+			tabBar={(props) => <CustomTabBar {...props} />}
 		>
-			<Tabs.Screen
-				name="index"
-				options={{
-					title: "Home",
-					tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
-				}}
-			/>
-			<Tabs.Screen
-				name="two"
-				options={{
-					title: "Explore",
-					tabBarIcon: ({ color }) => (
-						<TabBarIcon name="compass" color={color} />
-					),
-				}}
-			/>
+			<Tabs.Screen name="for-you" options={{ title: "For You" }} />
+			<Tabs.Screen name="opportunities" options={{ title: "Opportunities" }} />
+			<Tabs.Screen name="mission" options={{ title: "Mission" }} />
+			<Tabs.Screen name="signal" options={{ title: "Signal" }} />
+			<Tabs.Screen name="profile" options={{ title: "You" }} />
 		</Tabs>
 	);
 }
