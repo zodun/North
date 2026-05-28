@@ -14,6 +14,8 @@ import { supabase } from "@/lib/auth-client";
 import { NAV_THEME } from "@/lib/constants";
 import { useColorScheme } from "@/lib/use-color-scheme";
 
+import { SocialSignIn } from "./social-sign-in";
+
 const signInSchema = z.object({
 	email: z
 		.string()
@@ -56,6 +58,8 @@ function SignIn() {
 			]}
 		>
 			<Text style={[styles.title, { color: theme.text }]}>Sign in</Text>
+
+			<SocialSignIn onError={setError} />
 
 			{error ? (
 				<View

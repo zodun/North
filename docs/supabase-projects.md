@@ -154,6 +154,47 @@ cp apps/web/.env.example apps/web/.env
 $EDITOR apps/web/.env   # paste in the dev (or local) values
 ```
 
+## Social-provider OAuth setup (DEC-18)
+
+The v0 stack ships **Google + Apple** as the two social-sign-in providers (per DEC-18). Skip this section if you're not yet running social sign-in.
+
+### Google (web + iOS + Android)
+
+1. Open <https://console.cloud.google.com> → *APIs & Services* → *Credentials*.
+2. Create three OAuth 2.0 Client IDs in the same Google project:
+   - **Web** — authorised redirect: `https://<dev-ref>.supabase.co/auth/v1/callback` (and the prod equivalent). Used by Supabase for the web `signInWithOAuth` flow + by expo-auth-session as the OIDC issuer on native.
+   - **iOS** — bundle ID `app.north.client`.
+   - **Android** — package name `app.north.client` + the SHA-1 of your Expo / EAS signing key (`eas credentials` to fetch).
+3. Populate env vars:
+   - Supabase (per environment, via the host's env UI + `apps/web/.env`):
+     - `GOOGLE_OAUTH_CLIENT_ID` = web client ID
+     - `GOOGLE_OAUTH_CLIENT_SECRET` = web client secret
+   - EAS / native (via `eas secret:create --scope project`):
+     - `EXPO_PUBLIC_GOOGLE_OAUTH_IOS_CLIENT_ID`
+     - `EXPO_PUBLIC_GOOGLE_OAUTH_ANDROID_CLIENT_ID`
+     - `EXPO_PUBLIC_GOOGLE_OAUTH_WEB_CLIENT_ID`
+
+### Apple (iOS + web)
+
+1. <https://developer.apple.com/account/resources/identifiers/list> → enable **Sign in with Apple** capability on the `app.north.client` App ID.
+2. Create a **Services ID** (e.g., `app.north.client.web`) for the web flow; set Return URLs to `https://<dev-ref>.supabase.co/auth/v1/callback` (and prod equivalent).
+3. Create a **Sign in with Apple key** (`.p8`) and download it. Capture the Key ID + your Team ID.
+4. Generate the client secret JWT (Supabase docs cover the script; rotate every 6 months).
+5. Populate env vars:
+   - `APPLE_OAUTH_CLIENT_ID` = the Services ID (web) for Supabase's web flow.
+   - `APPLE_OAUTH_CLIENT_SECRET` = the generated client-secret JWT.
+
+   On native, Sign in with Apple uses the device's own credentials via `expo-apple-authentication` — no env vars needed beyond `app.json`'s `usesAppleSignIn: true` (already set per DEC-18).
+
+### Apply Supabase config
+
+`supabase/config.toml` already enables `[auth.external.google]` and `[auth.external.apple]` with `env(...)` substitution (DEC-18). For the hosted projects: in the Supabase Dashboard → *Authentication* → *Providers*, paste the same client IDs + secrets. (`config.toml` only applies to local; hosted needs Dashboard config.)
+
+### Verify
+
+- Web: open `/login` → "Continue with Google" / "Continue with Apple" should appear above the magic-link field. Click through to confirm a session lands in `auth.users` with `app_metadata.provider = 'google'` (or `'apple'`).
+- Native: on an EAS dev build, the buttons render (Google when client IDs are set; Apple only on iOS 13+). Tapping should produce a session.
+
 ## Day-to-day workflow
 
 - **Default**: work against local Supabase (`supabase start`, `bun run dev:web` / `dev:native`). Fastest loop; no remote billing exposure.

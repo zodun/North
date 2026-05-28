@@ -12,7 +12,8 @@
 		},
 		"ios": {
 			"supportsTablet": true,
-			"bundleIdentifier": "app.north.client"
+			"bundleIdentifier": "app.north.client",
+			"usesAppleSignIn": true
 		},
 		"android": {
 			"adaptiveIcon": {
@@ -30,6 +31,8 @@
 		},
 		"plugins": [
 			"expo-router",
+			"expo-apple-authentication",
+			"expo-web-browser",
 			[
 				"expo-splash-screen",
 				{

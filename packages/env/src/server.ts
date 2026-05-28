@@ -14,6 +14,13 @@ export const env = createEnv({
 		SUPABASE_URL: z.url(),
 		SUPABASE_ANON_KEY: z.string().min(1),
 		SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
+		// OAuth (DEC-18) — populate per environment in Supabase secrets +
+		// Vercel/host env. Optional locally so the env validator passes
+		// when social isn't wired in for a given developer's loop.
+		GOOGLE_OAUTH_CLIENT_ID: z.string().min(1).optional(),
+		GOOGLE_OAUTH_CLIENT_SECRET: z.string().min(1).optional(),
+		APPLE_OAUTH_CLIENT_ID: z.string().min(1).optional(),
+		APPLE_OAUTH_CLIENT_SECRET: z.string().min(1).optional(),
 		OPENAI_API_KEY: z.string().min(1).optional(),
 		SUMMARY_TRIGGER_SECRET: z.string().min(16).optional(),
 		CLOUDINARY_URL: z.string().min(1).optional(),

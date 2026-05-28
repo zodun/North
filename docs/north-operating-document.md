@@ -559,6 +559,7 @@ Client: React Native + Expo. Backend & data: Supabase (PostgreSQL + Supabase Aut
 | DEC-15 — Secrets pattern is **native per platform**: Supabase secrets for Edge Functions, EAS secrets for native build-time env, host env for the web admin. `NEXT_PUBLIC_*` / `EXPO_PUBLIC_*` are the only env names allowed in client-bundled files; every other server-only key is checked at pre-push (lefthook) and in CI via `scripts/check-client-bundle-secrets.sh`. No Doppler / Vault in v0 | 28 May 2026 | Jordayne Price | Resolves tracker SETUP/secrets; honours operating doc §6.2 ("secrets shall never be embedded in the client") with a tractable, low-vendor pattern that's enforced mechanically |
 | DEC-16 — Two-environment Supabase baseline: **dev** (`north-dev`, free tier) and **prod** (`north-prod`, free → Pro). Per-developer registry in `supabase/projects.json` (gitignored; template `projects.example.json`). Helper `scripts/supabase-link.sh dev\|prod` + `bun run supabase:link:dev\|prod`. New `APP_ENV` env var (`development`\|`production`) on server. CI auto-deploys migrations + `signal-summary` to dev on push to `main`; prod stays manual. Operator runbook in `docs/supabase-projects.md` | 28 May 2026 | Jordayne Price | Resolves tracker INFRA-01; gives every deployment-runbook entry a concrete project to point at, and makes "merge to main = dev gets the new migration" the default loop |
 | DEC-17 — Tracker INFRA-02 + INFRA-05 closed as done by prior commits (DEC-06/07/16); INFRA-04 acceptance ("RLS verified by test") closed by new `supabase/tests/rls_cross_user.sql` (10 read tables + 7 write tables, two synthetic users via `set local "request.jwt.claims"`) | 28 May 2026 | Jordayne Price | Resolves INFRA-02/04/05; converts the §6.2 RLS guarantee from "policies are correct" to "policies + behaviour both verified mechanically" |
+| DEC-18 — INFRA-03 social providers wired: **Google + Apple**. Web `signInWithOAuth`; native `expo-auth-session/providers/google` + `expo-apple-authentication` → `supabase.auth.signInWithIdToken`. `supabase/config.toml` enables `[auth.external.{google,apple}]` with `env()` substitution; new server env vars `GOOGLE_OAUTH_CLIENT_*` + `APPLE_OAUTH_CLIENT_*`; new native client-bundle vars `EXPO_PUBLIC_GOOGLE_OAUTH_{IOS,ANDROID,WEB}_CLIENT_ID`. Apple-only-on-iOS gated via `AppleAuthentication.isAvailableAsync()` | 28 May 2026 | Jordayne Price | Resolves INFRA-03; iOS App Store compliance (Apple required when shipping any other social provider) + broader Google reach. Magic-link (web) + password (native) remain alongside |
 
 ### DEC-06 — Conform repo to documented stack
 
@@ -768,6 +769,23 @@ Documentation is in [`docs/secrets.md`](./secrets.md) including rotation guidanc
 **Rationale.** Until now we had "RLS enabled on every table" as a code-review fact. The acceptance criterion forced a step further: a check that the policies *actually behave* as written. The test is cheap (runs in <1s after `supabase db reset`) and catches the class of regression where a later migration accidentally weakens a policy or forgets RLS on a new table.
 
 **Impact.** Resolves INFRA-02, INFRA-04, INFRA-05. Operating doc §6.2 ("all data access shall be enforced by Supabase Row-Level Security") now has mechanical proof, not just code review.
+
+### DEC-18 — Google + Apple as the v0 social-sign-in providers
+
+**Decision (28 May 2026, Jordayne Price).** Tracker INFRA-03's "chosen social provider" lands as **both Google and Apple**, alongside the existing magic-link (web) and password (native) flows. Picking Google triggers Apple by App Store rule (any iOS app offering a social provider must also offer Sign in with Apple); the bundle is the only compliant production posture.
+
+**Implementation.**
+
+- **Supabase.** `supabase/config.toml` enables `[auth.external.google]` and `[auth.external.apple]` with `env()` substitution (`GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `APPLE_OAUTH_CLIENT_ID`, `APPLE_OAUTH_CLIENT_SECRET`). The hosted projects need the same providers + secrets configured via the Supabase Dashboard.
+- **Web** (`apps/web/src/components/sign-in-form.tsx`). Two `signInWithOAuth({ provider })` buttons above the magic-link form; both redirect through the existing `/auth/callback` exchange route.
+- **Native** (`apps/native/components/social-sign-in.tsx`, new). Google uses `expo-auth-session/providers/google` with per-platform OAuth client IDs (iOS / Android / Web — the web ID is the OIDC issuer reference). Apple uses `expo-apple-authentication` (iOS-only; gated via `AppleAuthentication.isAvailableAsync()`). Both produce ID tokens fed to `supabase.auth.signInWithIdToken({ provider, token, nonce })`.
+- **Env contract.** Server-side: `GOOGLE_OAUTH_CLIENT_ID|SECRET`, `APPLE_OAUTH_CLIENT_ID|SECRET` (all optional — env validation passes when social isn't wired). Native client-bundle: `EXPO_PUBLIC_GOOGLE_OAUTH_{IOS,ANDROID,WEB}_CLIENT_ID` (optional; missing IDs hide the Google button).
+- **app.json.** `ios.usesAppleSignIn: true` enables the entitlement; `expo-apple-authentication` + `expo-web-browser` added to the plugins list.
+- **Operator runbook.** New "Social-provider OAuth setup" section in [`docs/supabase-projects.md`](./supabase-projects.md) covers Google Cloud Console (three OAuth Client IDs) and Apple Developer Portal (App ID + Services ID + key + client-secret JWT).
+
+**Rationale.** Picking Google alone is non-compliant on iOS; picking Apple alone is unusual and harms reach. Bundling both is ~2× the wiring effort but is the only defensible production posture for a real mobile launch. Magic-link + password stay because they cover users who don't have/want either OAuth account.
+
+**Impact.** Resolves INFRA-03. Sign-in surfaces three options on web (Google / Apple / magic link) and up to three on native (Google when configured / Apple on iOS 13+ / password). Operator-driven setup is the only remaining step — OAuth client IDs + secrets must be created in Google Cloud Console + Apple Developer Portal before the buttons do anything.
 
 18\. Supporting Documents
 
