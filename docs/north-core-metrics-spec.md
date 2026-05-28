@@ -163,7 +163,7 @@ Before the weekly summary cron will succeed:
    ```sql
    alter database postgres set app.functions_url = 'https://<project-ref>.supabase.co/functions/v1';
    ```
-   For local dev: `'http://127.0.0.1:54321/functions/v1'`.
+   For local dev: `'http://127.0.0.1:54321/functions/v1'`. This is **per-environment** — run the `alter database` against the dev and prod projects separately. The setup is part of the per-project bootstrap covered in [`docs/supabase-projects.md`](./supabase-projects.md) (DEC-16).
 3. Deploy the function:
    ```bash
    supabase functions deploy signal-summary

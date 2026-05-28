@@ -557,6 +557,7 @@ Client: React Native + Expo. Backend & data: Supabase (PostgreSQL + Supabase Aut
 | DEC-13 — EAS Build profiles: **dev** (internal, simulator-only iOS + APK), **preview** (internal, real-device TestFlight + APK), **production** (store, App Store + Google Play Bundle, autoIncrement). Each profile carries an `APP_ENV` env and a matching EAS Update channel. iOS bundle id + Android package = `app.north.client` | 28 May 2026 | Jordayne Price | Resolves tracker SETUP-04; gives the native app three repeatable build pipelines + a clear path to OTA via channels |
 | DEC-14 — CI via GitHub Actions: `.github/workflows/ci.yml` runs on every PR + push to `main`: `bun install --frozen-lockfile`, `bun run check:ci` (Biome), `bun run check-types` (turbo), `bun run build --filter=web`, and an `expo config --type prebuild` dry-run for native. Turbo cache is keyed per-SHA with branch fallback | 28 May 2026 | Jordayne Price | Resolves tracker SETUP-05; every PR is gated by the same lint/type/build that runs locally pre-commit, so regressions can't sneak past review |
 | DEC-15 — Secrets pattern is **native per platform**: Supabase secrets for Edge Functions, EAS secrets for native build-time env, host env for the web admin. `NEXT_PUBLIC_*` / `EXPO_PUBLIC_*` are the only env names allowed in client-bundled files; every other server-only key is checked at pre-push (lefthook) and in CI via `scripts/check-client-bundle-secrets.sh`. No Doppler / Vault in v0 | 28 May 2026 | Jordayne Price | Resolves tracker SETUP/secrets; honours operating doc §6.2 ("secrets shall never be embedded in the client") with a tractable, low-vendor pattern that's enforced mechanically |
+| DEC-16 — Two-environment Supabase baseline: **dev** (`north-dev`, free tier) and **prod** (`north-prod`, free → Pro). Per-developer registry in `supabase/projects.json` (gitignored; template `projects.example.json`). Helper `scripts/supabase-link.sh dev\|prod` + `bun run supabase:link:dev\|prod`. New `APP_ENV` env var (`development`\|`production`) on server. CI auto-deploys migrations + `signal-summary` to dev on push to `main`; prod stays manual. Operator runbook in `docs/supabase-projects.md` | 28 May 2026 | Jordayne Price | Resolves tracker INFRA-01; gives every deployment-runbook entry a concrete project to point at, and makes "merge to main = dev gets the new migration" the default loop |
 
 ### DEC-06 — Conform repo to documented stack
 
@@ -732,6 +733,24 @@ Documentation is in [`docs/secrets.md`](./secrets.md) including rotation guidanc
 **Rationale.** The smallest blast-radius pattern: each secret lives where it's used, never copied. Doppler would add a vendor and a sync step for negligible v0 benefit. The mechanical leak check is the load-bearing piece — it makes the "no client-bundled secrets" rule a structural property of the repo rather than a careful-review discipline.
 
 **Impact.** Resolves SETUP/secrets. Closes the §6.2 commitment with mechanical enforcement. CI gains one fast script; lefthook gains a pre-push hook (defense-in-depth).
+
+### DEC-16 — Two Supabase environments (dev + prod) with CI auto-deploy to dev
+
+**Decision (28 May 2026, Jordayne Price).** Tracker INFRA-01 is resolved by provisioning two remote Supabase projects — `north-dev` (free) and `north-prod` (free, upgrade when traffic warrants) — wired through a small registry + helper-script pattern.
+
+**Registry.** Per-environment project refs live in `supabase/projects.json` (gitignored; template `supabase/projects.example.json`). Refs aren't strictly secret — they appear in client URLs — but keeping the populated file out of git lets each developer/CI use different refs without merge churn. The file's shape is `{ dev: { ref, region, url }, prod: { ref, region, url } }`.
+
+**Linking.** `scripts/supabase-link.sh dev|prod` reads the registry and calls `supabase link --project-ref <ref>` with the right value. Aliased as `bun run supabase:link:dev` and `bun run supabase:link:prod`. Requires `SUPABASE_ACCESS_TOKEN` in the shell environment (a personal access token from <https://supabase.com/dashboard/account/tokens>).
+
+**Env contract.** A new server-side `APP_ENV` env var (`development` | `production`, defaults to `development`) tracks environment identity separately from `NODE_ENV` (which only tracks build/runtime mode). Edge Functions, server actions, and analytics tagging can branch on `APP_ENV` cleanly.
+
+**CI auto-deploy.** `.github/workflows/ci.yml` gains a `deploy-migrations-dev` job gated by `if: push && ref == main`. After the existing `check` job passes, the deploy job links to dev, runs `supabase db push --linked`, and re-deploys `signal-summary`. Required GitHub Actions repository secrets: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DEV_PROJECT_REF`. **Prod deploys remain manual** — operator runs `supabase db push` against the prod-linked CLI from a developer machine.
+
+**Operator runbook.** [`docs/supabase-projects.md`](./supabase-projects.md) covers the 9-step setup: create both projects (Dashboard recommended), populate `projects.json`, link locally, apply baseline migrations, set per-environment Supabase secrets + `app.functions_url`, wire host env (web), wire EAS secrets (native, per DEC-13 profile), set the two GitHub Actions secrets, and clean up the legacy local `apps/web/.env` if it still has Better-Auth/Polar leftovers.
+
+**Rationale.** Two environments — not three — keeps the v0 deployment surface minimal while still giving the team a "merge to main → dev gets the new migration" loop. The registry-and-script pattern avoids hardcoding refs in CI workflows and lets the same scripts work across developer machines without per-user branches. `APP_ENV` is the single source of truth for environment identity; it costs almost nothing to add now and avoids the messy `NODE_ENV=production && URL.includes("dev")` checks later.
+
+**Impact.** Resolves INFRA-01. Every operating-doc deployment-runbook entry that references `<project-ref>` now has a concrete home. Migrations and the AI summary function deploy to dev automatically; prod stays a deliberate human decision.
 
 18\. Supporting Documents
 

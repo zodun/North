@@ -2,6 +2,12 @@
 .branches
 .temp
 
+# Per-developer + per-CI project registry (created by copying
+# projects.example.json). Refs aren't strictly secret — they surface in
+# client URLs — but keeping the populated file out of git lets each
+# environment use different refs without merge churn.
+projects.json
+
 # dotenvx
 .env.keys
 .env.local

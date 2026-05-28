@@ -2,6 +2,8 @@
 
 Per operating-doc DEC-15. The rule for every secret: **never store it in the repo, never bundle it to a client, never share it across environments by accident.**
 
+For per-environment Supabase project provisioning (dev + prod), CI auto-deploy setup, and the full per-environment setup runbook, see **[`docs/supabase-projects.md`](./supabase-projects.md)** (DEC-16). This document is the secret-handling philosophy + the leak-check mechanism; that document is the operator's checklist.
+
 ## The pattern: native per platform
 
 There is no central secret store (no Doppler, no Vault). Each platform that needs a secret manages its own:

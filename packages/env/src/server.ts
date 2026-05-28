@@ -4,6 +4,13 @@ import { z } from "zod";
 
 export const env = createEnv({
 	server: {
+		// APP_ENV is the environment-identity flag — which Supabase
+		// project we're talking to, which content set is canonical.
+		// NODE_ENV is the runtime-mode flag (which webpack build, which
+		// logging level). Both matter and they aren't the same: a
+		// production Next.js build that talks to the dev Supabase has
+		// NODE_ENV=production and APP_ENV=development.
+		APP_ENV: z.enum(["development", "production"]).default("development"),
 		SUPABASE_URL: z.url(),
 		SUPABASE_ANON_KEY: z.string().min(1),
 		SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),

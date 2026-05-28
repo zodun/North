@@ -29,6 +29,8 @@
 		"supabase:stop": "supabase stop",
 		"supabase:reset": "supabase db reset",
 		"supabase:studio": "supabase status",
+		"supabase:link:dev": "scripts/supabase-link.sh dev",
+		"supabase:link:prod": "scripts/supabase-link.sh prod",
 		"check": "biome check --write .",
 		"check:ci": "biome check .",
 		"check:secrets": "scripts/check-client-bundle-secrets.sh",

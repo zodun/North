@@ -1,0 +1,169 @@
+# Supabase projects (dev + prod)
+
+Per operating-doc DEC-16. North runs against two remote Supabase projects — `north-dev` and `north-prod` — plus the operator's local Supabase Docker stack for day-to-day development.
+
+| Environment | Project | URL | Used by |
+| --- | --- | --- | --- |
+| **local** | `supabase/config.toml` (Docker) | `http://127.0.0.1:54321` | `bun run dev:*`, hooks, ad-hoc psql |
+| **dev** | `north-dev` (free tier) | `https://<dev-ref>.supabase.co` | CI auto-deploy of migrations, preview/internal builds, demo data |
+| **prod** | `north-prod` (free until traffic warrants Pro) | `https://<prod-ref>.supabase.co` | Production native + admin |
+
+Local stays the fast loop; dev is the always-running shared remote that always reflects `main`; prod is hand-applied.
+
+## One-time operator setup
+
+Do all of this once per operator (or once per Supabase org).
+
+### 1 · Create the two projects
+
+Easiest: **Dashboard**. Sign in at <https://supabase.com/dashboard>, click *New project*, twice:
+
+- Name `north-dev` · Region `East US (N. Virginia)` · DB password: generate + store (1Password / Bitwarden) · Tier: Free
+- Name `north-prod` · Region `East US (N. Virginia)` · DB password: generate + store · Tier: Free (upgrade to Pro when warranted)
+
+(Region rationale: closest to the Caribbean target audience among free-tier regions.)
+
+CLI alternative (requires a paid org for project-create via API):
+
+```bash
+export SUPABASE_ACCESS_TOKEN=sbp_...
+supabase projects create north-dev  --org-id <org> --region us-east-1 --db-password "$(openssl rand -hex 16)"
+supabase projects create north-prod --org-id <org> --region us-east-1 --db-password "$(openssl rand -hex 16)"
+```
+
+### 2 · Populate `supabase/projects.json`
+
+```bash
+cp supabase/projects.example.json supabase/projects.json
+```
+
+Edit, pasting each project's ref (the slug in the dashboard URL — `xxxxxxxxxxxxxxxxxxxx`):
+
+```json
+{
+  "dev":  { "ref": "abcdef1234567890",   "region": "us-east-1", "url": "https://abcdef1234567890.supabase.co" },
+  "prod": { "ref": "ghijkl1234567890",   "region": "us-east-1", "url": "https://ghijkl1234567890.supabase.co" }
+}
+```
+
+`projects.json` is gitignored — every developer/CI keeps their own copy.
+
+### 3 · Get a personal access token
+
+Create one at <https://supabase.com/dashboard/account/tokens>. Export it:
+
+```bash
+export SUPABASE_ACCESS_TOKEN=sbp_...
+```
+
+Add the same value to your shell profile so it's always set.
+
+### 4 · Link locally + apply baseline migrations
+
+```bash
+# Dev
+bun run supabase:link:dev
+supabase db push              # applies migrations 0001–0009 to north-dev
+supabase functions deploy signal-summary
+
+# Prod (only when you're ready — no auto-deploy)
+bun run supabase:link:prod
+supabase db push
+supabase functions deploy signal-summary
+```
+
+After each `supabase db push`, set the per-environment `pg_cron` settings:
+
+```bash
+# Replace <env-ref> with the dev or prod ref.
+supabase db remote exec "
+  alter database postgres set app.functions_url = 'https://<env-ref>.supabase.co/functions/v1';
+  alter database postgres set app.summary_trigger_secret = '<same value as SUMMARY_TRIGGER_SECRET>';
+"
+```
+
+(See `docs/north-core-metrics-spec.md` DEC-07 appendix for what these settings do.)
+
+### 5 · Per-environment Supabase secrets
+
+For each project, set the Edge Function env. Re-link first, then run:
+
+```bash
+supabase secrets set OPENAI_API_KEY=sk-...
+supabase secrets set SUMMARY_TRIGGER_SECRET=$(openssl rand -hex 32)
+```
+
+You can use the same OpenAI key across environments if cost-tracking via the dashboard is sufficient; use distinct keys if you want per-environment cost reports.
+
+### 6 · Web admin host env
+
+In the host's env-var UI (Vercel / Cloudflare Pages / Fly), set:
+
+```
+APP_ENV=production
+NEXT_PUBLIC_SUPABASE_URL=https://<prod-ref>.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<prod anon key from Settings → API>
+SUPABASE_URL=https://<prod-ref>.supabase.co
+SUPABASE_ANON_KEY=<same anon key>
+SUPABASE_SERVICE_ROLE_KEY=<prod service-role key>
+CORS_ORIGIN=https://<admin domain>
+OPENAI_API_KEY=<if admin server actions call OpenAI>
+SUMMARY_TRIGGER_SECRET=<same as Supabase secret>
+```
+
+For dev preview deployments (if you spin one up), use the dev project's keys and `APP_ENV=development`.
+
+### 7 · EAS secrets for native
+
+The DEC-13 EAS profiles map to environments like this:
+
+| EAS profile | Supabase project | EAS secret values |
+| --- | --- | --- |
+| `dev` | north-dev | dev URL + dev anon |
+| `preview` | north-prod | prod URL + prod anon |
+| `production` | north-prod | prod URL + prod anon |
+
+```bash
+cd apps/native
+eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_URL --value https://<dev-ref>.supabase.co --environment dev
+eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <dev anon> --environment dev
+eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_URL --value https://<prod-ref>.supabase.co --environment preview
+eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <prod anon> --environment preview
+eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_URL --value https://<prod-ref>.supabase.co --environment production
+eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <prod anon> --environment production
+```
+
+### 8 · CI auto-deploy
+
+CI auto-deploys migrations + the `signal-summary` Edge Function to **dev** on every merge to `main` (see `.github/workflows/ci.yml` job `deploy-migrations-dev`). Set two repository secrets at <https://github.com/Pricetagjmd/north/settings/secrets/actions>:
+
+| Secret | Value |
+| --- | --- |
+| `SUPABASE_ACCESS_TOKEN` | Your personal access token (same one you exported locally) |
+| `SUPABASE_DEV_PROJECT_REF` | The dev project's ref (e.g., `abcdef1234567890`) |
+
+The job is gated by `if: github.event_name == 'push' && github.ref == 'refs/heads/main'` so PRs don't accidentally apply migrations.
+
+### 9 · Clean up the legacy local `.env`
+
+If `apps/web/.env` still references `BETTER_AUTH_*`, `POLAR_*`, or `DATABASE_URL`, it's left over from the pre-DEC-06 scaffold and will fail `@t3-oss/env` validation. Replace it from the updated `.env.example`:
+
+```bash
+mv apps/web/.env apps/web/.env.bak
+cp apps/web/.env.example apps/web/.env
+$EDITOR apps/web/.env   # paste in the dev (or local) values
+```
+
+## Day-to-day workflow
+
+- **Default**: work against local Supabase (`supabase start`, `bun run dev:web` / `dev:native`). Fastest loop; no remote billing exposure.
+- **Need to test a migration against real-shape data**: link to dev (`bun run supabase:link:dev`), `supabase db push`, run the app pointing at the dev URL.
+- **Touching prod**: link to prod explicitly, `supabase db push`, verify, then unlink (`supabase unlink`) so subsequent commands fall back to local.
+
+Switching between dev and prod link state is cheap — just re-run the link script — but accidentally running `supabase db reset` against a linked prod is not. The CLI prints the linked project ref on every command; double-check it.
+
+## Future work
+
+- **Supabase branching** for per-PR preview DBs. Requires Pro tier on the prod project; not in v0. When wired in, every PR gets an ephemeral DB seeded from a snapshot — useful when migration review needs side-by-side comparison.
+- **Tag-triggered prod deploys**. `supabase db push` on git tag `v*` would automate prod releases; out of v0 scope.
+- **Disaster-recovery runbook**. Supabase handles backups on Pro+; documenting RPO/RTO + restore steps is its own DEC when prod is on Pro.

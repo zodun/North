@@ -26,6 +26,8 @@ bun run dev             # all apps
 Web admin: <http://localhost:3001>. Native: Expo Go via `bun run dev:native`.
 Design prototype lives at <http://localhost:3001/north> (publicly viewable, no auth).
 
+For dev/prod remote Supabase setup, CI auto-deploy, EAS secrets, and the full operator runbook, see **[`docs/supabase-projects.md`](./docs/supabase-projects.md)** (DEC-16).
+
 ## UI
 
 Shared shadcn/ui primitives live in `packages/ui`. Tokens and global styles are in `packages/ui/src/styles/globals.css`. Add more primitives with:
@@ -59,6 +61,7 @@ north/
 - `bun run dev:web` / `bun run dev:native`
 - `bun run build` / `bun run check-types`
 - `bun run supabase:start` / `supabase:stop` / `supabase:reset` — local Supabase stack
+- `bun run supabase:link:dev` / `supabase:link:prod` — link local CLI to a remote project (see `docs/supabase-projects.md`)
 - `bun run check` — Biome format + lint (writes fixes)
 - `bun run check:ci` — Biome check-only (fails on diff; used by CI)
 - `cd apps/web && bun run generate-pwa-assets` — PWA assets

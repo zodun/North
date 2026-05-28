@@ -1,0 +1,13 @@
+{
+	"$schema": "see docs/supabase-projects.md for the contract.",
+	"dev": {
+		"ref": "REPLACE_ME_DEV_REF",
+		"region": "us-east-1",
+		"url": "https://REPLACE_ME_DEV_REF.supabase.co"
+	},
+	"prod": {
+		"ref": "REPLACE_ME_PROD_REF",
+		"region": "us-east-1",
+		"url": "https://REPLACE_ME_PROD_REF.supabase.co"
+	}
+}
