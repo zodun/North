@@ -13,7 +13,11 @@
 		"ios": {
 			"supportsTablet": true,
 			"bundleIdentifier": "app.north.client",
-			"usesAppleSignIn": true
+			"usesAppleSignIn": true,
+			"googleServicesFile": "./google-services/GoogleService-Info.plist",
+			"infoPlist": {
+				"UIBackgroundModes": ["remote-notification"]
+			}
 		},
 		"android": {
 			"adaptiveIcon": {
@@ -23,7 +27,8 @@
 				"monochromeImage": "./assets/images/android-icon-monochrome.png"
 			},
 			"predictiveBackGestureEnabled": false,
-			"package": "app.north.client"
+			"package": "app.north.client",
+			"googleServicesFile": "./google-services/google-services.json"
 		},
 		"web": {
 			"output": "static",
@@ -33,6 +38,12 @@
 			"expo-router",
 			"expo-apple-authentication",
 			"expo-web-browser",
+			[
+				"expo-notifications",
+				{
+					"color": "#ffffff"
+				}
+			],
 			[
 				"expo-splash-screen",
 				{

@@ -6,12 +6,17 @@ import { SignIn } from "@/components/sign-in";
 import { SignUp } from "@/components/sign-up";
 import { supabase, useSession } from "@/lib/auth-client";
 import { NAV_THEME } from "@/lib/constants";
+import { useRegisterPushToken } from "@/lib/notifications";
 import { useColorScheme } from "@/lib/use-color-scheme";
 
 export default function Home() {
 	const { colorScheme } = useColorScheme();
 	const theme = colorScheme === "dark" ? NAV_THEME.dark : NAV_THEME.light;
 	const { data: session } = useSession();
+	// Register the device's FCM/APNs push token once per signed-in
+	// session (DEC-21). No-op when there's no session, on simulators,
+	// or when the user denies the permission prompt.
+	useRegisterPushToken();
 	const displayName =
 		(session?.user.user_metadata?.display_name as string | undefined) ?? null;
 

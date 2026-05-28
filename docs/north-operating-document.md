@@ -562,6 +562,7 @@ Client: React Native + Expo. Backend & data: Supabase (PostgreSQL + Supabase Aut
 | DEC-18 — INFRA-03 social providers wired: **Google + Apple**. Web `signInWithOAuth`; native `expo-auth-session/providers/google` + `expo-apple-authentication` → `supabase.auth.signInWithIdToken`. `supabase/config.toml` enables `[auth.external.{google,apple}]` with `env()` substitution; new server env vars `GOOGLE_OAUTH_CLIENT_*` + `APPLE_OAUTH_CLIENT_*`; new native client-bundle vars `EXPO_PUBLIC_GOOGLE_OAUTH_{IOS,ANDROID,WEB}_CLIENT_ID`. Apple-only-on-iOS gated via `AppleAuthentication.isAvailableAsync()` | 28 May 2026 | Jordayne Price | Resolves INFRA-03; iOS App Store compliance (Apple required when shipping any other social provider) + broader Google reach. Magic-link (web) + password (native) remain alongside |
 | DEC-19 — INFRA-06 PostHog wired: `posthog-js` on web (auto-no-op without key; pageview capture; autocapture + session replay off), `posthog-react-native` on native (`PostHogProvider` + `app_open` event), Edge Function server events via direct `fetch` to `/i/v0/e/` in `supabase/functions/_shared/posthog.ts` (no SDK; Deno-native; best-effort, swallows errors). `signal-summary` fires `signal_summary_generated` event after each upsert | 28 May 2026 | Jordayne Price | Resolves INFRA-06; v0 event taxonomy = `app_open` + `signal_summary_generated`; M1/M2/M3 will add per-flow events as they ship |
 | DEC-20 — INFRA-07 Cloudinary signed-upload pipeline + full admin UI. Server-side `/api/cloudinary/sign` route signs Upload Widget params (admin-gated via `is_admin()`); `next-cloudinary` `CldUploadWidget` on `/admin/content` calls it; `upsertContent` server action UPSERTs `content_items` with `cloudinary_public_id` + `license_type='cloudinary-hosted'` + `license_status='draft'`. Admin table renders 64×64 thumbnails via the public delivery URL. New env vars `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` (server-only) + `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` (public). Leak-check protects the API secrets | 28 May 2026 | Jordayne Price | Resolves INFRA-07; closes the loop on DEC-10's `cloudinary-hosted` license path — admin can now actually upload content, not just describe it |
+| DEC-21 — INFRA-08 FCM credentials wired via bare-token path (operating doc §8.1). `expo-notifications` + `expo-device` installed; `app.json` references `google-services/GoogleService-Info.plist` (iOS) and `google-services/google-services.json` (Android), gitignored; `useRegisterPushToken()` UPSERTs into new `public.push_tokens (user_id pk, token, platform, updated_at)` with own-rows RLS. Server-side push send is M2/M3 (FR-NOT-*); this PR closes the credentials half | 28 May 2026 | Jordayne Price | Resolves INFRA-08; sign-in now registers an FCM/APNs token per device per session. Operator must create per-env Firebase projects + drop config files in apps/native/google-services/ before EAS builds emit a working token |
 
 ### DEC-06 — Conform repo to documented stack
 
@@ -825,6 +826,25 @@ Documentation is in [`docs/secrets.md`](./secrets.md) including rotation guidanc
 **Rationale.** Cloudinary's official Upload Widget handles file picking, multipart upload, progressive UX, and image transformations — building this from scratch would be ~3× the code with worse UX. Signed uploads keep the API secret server-side; the gating-via-`is_admin` mirrors the DEC-10 admin-write policy on `content_items`. Drafts by default give the operator a review beat before publishing — matches the DEC-10 `cleared` state machine.
 
 **Impact.** Resolves INFRA-07. Closes the loop on DEC-10's hybrid licensing — admin can now actually upload Cloudinary-hosted content, not just describe it in schema columns. Linked content (DEC-10's `link-out` path) continues to need a manual `INSERT` until M1 admin CRUD lands.
+
+### DEC-21 — FCM credentials via the bare-token path
+
+**Decision (28 May 2026, Jordayne Price).** Tracker INFRA-08 lands push credentials per operating doc §8.1. The native app uses **bare FCM/APNs tokens** (`Notifications.getDevicePushTokenAsync()`), not the Expo Push Service proxy — operator-owned, direct delivery, no third-party hop.
+
+**Implementation.**
+
+- **SDKs.** `expo-notifications` + `expo-device` added to `apps/native`.
+- **`app.json`.** `ios.googleServicesFile` and `android.googleServicesFile` reference `./google-services/GoogleService-Info.plist` and `./google-services/google-services.json`; `ios.infoPlist.UIBackgroundModes: ["remote-notification"]`; `expo-notifications` added to the plugins list.
+- **`apps/native/.gitignore`.** New `google-services/` entry — Firebase config files stay per-developer locally and are pushed to EAS via `eas secret:create --type file --environment {dev,preview,production}`.
+- **`apps/native/lib/notifications.ts`.** `registerForPushNotificationsAsync()` requests permission, configures the Android default channel, calls `getDevicePushTokenAsync()`. `useRegisterPushToken()` is a hook the drawer's signed-in branch calls; it UPSERTs the token + platform into `public.push_tokens` (per-session, idempotent via the `(user_id)` PK).
+- **Migration `0010_push_tokens.sql`.** `push_tokens(user_id uuid PK fk auth.users, token text NN, platform text in ('ios','android') NN, updated_at)`. RLS own-rows read + write; server-side push send under service role bypasses.
+- **Operator runbook.** New "Firebase Cloud Messaging setup" section in [`docs/supabase-projects.md`](./supabase-projects.md): per-env Firebase projects, APNs key upload, config-file download + placement + EAS secret upload.
+
+**Why bare tokens (not Expo Push Service).** The operating doc names FCM specifically. Going through Expo's proxy is the easier path but introduces a hop we'd later have to unwind for direct delivery, custom payload control, and avoiding rate-limit shared-tenant surprises. Bare tokens cost a one-time configuration step (Firebase setup) and pay back in directness.
+
+**Out of scope (deliberate).** Server-side push send is FR-NOT-* work (M2/M3). No "send a test push" Edge Function lands in this PR — credential collection only.
+
+**Impact.** Resolves INFRA-08. Every signed-in device on a real (non-simulator) EAS build registers its FCM/APNs token in `public.push_tokens`. Once the M2/M3 push-send Edge Function lands, it has a real target list to read from.
 
 18\. Supporting Documents
 

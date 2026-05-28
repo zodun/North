@@ -207,6 +207,37 @@ The admin app uploads media to Cloudinary via a server-side signed-upload flow (
 4. Optional: create a Cloudinary upload preset named `north-content` (Settings → Upload → Add upload preset) if you want server-side transformations on every upload. The Widget defaults work without one.
 5. Verify: visit `/admin/content` as an allow-listed admin → "Upload to Cloudinary" button is visible → upload a test image → row appears in `content_items` with `cloudinary_public_id` populated, `license_type = 'cloudinary-hosted'`, `license_status = 'draft'`. Flipping `license_status` to `cleared` (and filling `attribution_text`) makes the image readable by anon clients via the existing RLS predicate.
 
+## Firebase Cloud Messaging setup (DEC-21)
+
+Operating doc §8.1 commits to FCM as the push platform. The native app uses bare FCM/APNs tokens (`Notifications.getDevicePushTokenAsync()`), not the Expo Push Service proxy — operator-owned, direct delivery.
+
+1. **Create one Firebase project per Supabase environment.** Suggested names: `north-fcm-dev`, `north-fcm-prod`. (Mirroring the Supabase split keeps dev pushes from accidentally hitting prod devices.)
+2. **Register the apps** in each Firebase project:
+   - iOS app — bundle ID `app.north.client`. Upload an APNs Authentication Key (`.p8`) under *Project Settings → Cloud Messaging → Apple app config*. Capture the Key ID + your Apple Team ID.
+   - Android app — package name `app.north.client`. Add the SHA-1 of your EAS signing key (`eas credentials` from `apps/native/` fetches it).
+3. **Download the per-platform config files**:
+   - `GoogleService-Info.plist` (iOS) — *Project Settings → General → Your apps → iOS → GoogleService-Info.plist*.
+   - `google-services.json` (Android) — same place under the Android app.
+4. **Place them locally** for `expo start` and `eas build --local`:
+   ```
+   apps/native/google-services/GoogleService-Info.plist
+   apps/native/google-services/google-services.json
+   ```
+   The `apps/native/.gitignore` blocks `google-services/` so these files stay per-developer.
+5. **EAS secrets per profile** so cloud builds receive the right config:
+   ```bash
+   cd apps/native
+   eas secret:create --type file --scope project --name GoogleService-Info.plist \
+       --value ./google-services/GoogleService-Info.plist --environment dev
+   eas secret:create --type file --scope project --name google-services.json \
+       --value ./google-services/google-services.json --environment dev
+   # Repeat with --environment preview / production using the prod project's files.
+   ```
+6. **Verify** on a real device (push doesn't work in simulators):
+   - `bun run build:dev:ios` (or `:android`), install on device.
+   - Sign in; check `public.push_tokens` — a row appears with `platform = 'ios'|'android'` and the FCM/APNs token.
+   - Server-side push *send* lands later (FR-NOT-* in M2/M3); this PR only wires the credential collection side.
+
 ## Day-to-day workflow
 
 - **Default**: work against local Supabase (`supabase start`, `bun run dev:web` / `dev:native`). Fastest loop; no remote billing exposure.
