@@ -22,5 +22,10 @@ pre-commit:
       glob: "*.{ts,tsx}"
       run: bun run check-types
 
-# pre-push hooks are registered in a later PR (SETUP-H: secrets leak
-# check). Defense-in-depth; CI runs the same checks too.
+pre-push:
+  commands:
+    secrets-leak-check:
+      # Block pushes if a server-only env var name appears in a path
+      # that gets bundled to the client. See docs/secrets.md (DEC-15).
+      # CI runs the same check.
+      run: scripts/check-client-bundle-secrets.sh

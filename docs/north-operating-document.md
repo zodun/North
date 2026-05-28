@@ -556,6 +556,7 @@ Client: React Native + Expo. Backend & data: Supabase (PostgreSQL + Supabase Aut
 | DEC-12 — Lint/format tool is **Biome** (kept, not swapped to ESLint+Prettier). Pre-commit hooks via lefthook: `biome check --write` on staged files + workspace `tsc --noEmit`. Root scripts: `bun run check` (fix), `bun run check:ci` (check-only), `bun run check-types` (turbo) | 28 May 2026 | Jordayne Price | Resolves tracker SETUP-03; one tool, faster than ESLint+Prettier, matches the Better-T-Stack default; pre-commit hooks catch lint/format/type errors before commit |
 | DEC-13 — EAS Build profiles: **dev** (internal, simulator-only iOS + APK), **preview** (internal, real-device TestFlight + APK), **production** (store, App Store + Google Play Bundle, autoIncrement). Each profile carries an `APP_ENV` env and a matching EAS Update channel. iOS bundle id + Android package = `app.north.client` | 28 May 2026 | Jordayne Price | Resolves tracker SETUP-04; gives the native app three repeatable build pipelines + a clear path to OTA via channels |
 | DEC-14 — CI via GitHub Actions: `.github/workflows/ci.yml` runs on every PR + push to `main`: `bun install --frozen-lockfile`, `bun run check:ci` (Biome), `bun run check-types` (turbo), `bun run build --filter=web`, and an `expo config --type prebuild` dry-run for native. Turbo cache is keyed per-SHA with branch fallback | 28 May 2026 | Jordayne Price | Resolves tracker SETUP-05; every PR is gated by the same lint/type/build that runs locally pre-commit, so regressions can't sneak past review |
+| DEC-15 — Secrets pattern is **native per platform**: Supabase secrets for Edge Functions, EAS secrets for native build-time env, host env for the web admin. `NEXT_PUBLIC_*` / `EXPO_PUBLIC_*` are the only env names allowed in client-bundled files; every other server-only key is checked at pre-push (lefthook) and in CI via `scripts/check-client-bundle-secrets.sh`. No Doppler / Vault in v0 | 28 May 2026 | Jordayne Price | Resolves tracker SETUP/secrets; honours operating doc §6.2 ("secrets shall never be embedded in the client") with a tractable, low-vendor pattern that's enforced mechanically |
 
 ### DEC-06 — Conform repo to documented stack
 
@@ -703,6 +704,34 @@ CI exports stub Supabase env vars so `@t3-oss/env`'s build-time validation passe
 **Rationale.** The same set of checks runs in pre-commit (lefthook) and in CI — pre-commit is defense-in-depth + fast feedback for the developer; CI is the gate that catches anything bypassed locally. Building web in CI catches Next.js typed-route regressions that pure `tsc` misses. The native prebuild dry-run is cheap and catches `app.json` / plugin breakage without paying the EAS minutes.
 
 **Impact.** Resolves SETUP-05. Every PR gets the same checks; broken main-branch builds get a red status check within ~2 minutes.
+
+### DEC-15 — Secrets pattern (native per platform; mechanical leak check)
+
+**Decision (28 May 2026, Jordayne Price).** Tracker SETUP/secrets is resolved with a **native-per-platform** pattern — no Doppler, no Vault, no central sync — and a `scripts/check-client-bundle-secrets.sh` that runs pre-push and in CI to enforce *operating doc §6.2: "Secrets (OpenAI, Cloudinary, FCM) shall never be embedded in the client."*
+
+**Where each secret lives.**
+
+| Platform | Secrets | Tool |
+| --- | --- | --- |
+| Supabase Edge Functions | `OPENAI_API_KEY`, `SUMMARY_TRIGGER_SECRET`, future Cloudinary signing key | `supabase secrets set` |
+| Supabase Postgres (for `pg_cron`'s `net.http_post` call) | `app.functions_url`, `app.summary_trigger_secret` | `alter database postgres set …` |
+| Web admin host (Vercel/CF/Fly) | `SUPABASE_SERVICE_ROLE_KEY`, `CORS_ORIGIN`, any server-only key | Host's env-var UI |
+| EAS (native build-time env) | `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, future `EXPO_PUBLIC_POSTHOG_*` | `eas secret:create` |
+| Local dev | All of the above as `.env` files (gitignored) | Copy from `.env.example` |
+
+**The naming rule.** Only `NEXT_PUBLIC_*` (web) and `EXPO_PUBLIC_*` (native) env names are allowed inside client-bundled files. Every other server-only name (`OPENAI_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `CLOUDINARY_URL`, `SUMMARY_TRIGGER_SECRET`, `POSTHOG_API_KEY`) is checked against a whitelist of *client-bundlable paths* by `scripts/check-client-bundle-secrets.sh`. The check runs:
+
+1. **Pre-push** (lefthook): blocks `git push` if a violation exists locally.
+2. **CI** (`.github/workflows/ci.yml`): same script; gates the PR.
+3. **Manual** (`bun run check:secrets`): for ad-hoc audits.
+
+Documentation is in [`docs/secrets.md`](./secrets.md) including rotation guidance and per-environment setup commands.
+
+**What's deliberately deferred.** No Doppler / Vault / 1Password Connect in v0; revisit if the project scales past one developer or rotation becomes a recurring chore. No encrypted env files in git. No auto-injection of real secrets into CI — CI uses stubs.
+
+**Rationale.** The smallest blast-radius pattern: each secret lives where it's used, never copied. Doppler would add a vendor and a sync step for negligible v0 benefit. The mechanical leak check is the load-bearing piece — it makes the "no client-bundled secrets" rule a structural property of the repo rather than a careful-review discipline.
+
+**Impact.** Resolves SETUP/secrets. Closes the §6.2 commitment with mechanical enforcement. CI gains one fast script; lefthook gains a pre-push hook (defense-in-depth).
 
 18\. Supporting Documents
 

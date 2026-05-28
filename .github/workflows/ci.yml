@@ -52,6 +52,9 @@ jobs:
       - name: Type check (turbo)
         run: bun run check-types
 
+      - name: Client-bundle secrets leak check
+        run: bun run check:secrets
+
       - name: Build web
         run: bun run build --filter=web
 
