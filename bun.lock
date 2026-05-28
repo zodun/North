@@ -71,6 +71,7 @@
       "dependencies": {
         "@north/env": "workspace:*",
         "@north/supabase": "workspace:*",
+        "@north/tokens": "workspace:*",
         "@north/ui": "workspace:*",
         "@supabase/ssr": "^0.10.3",
         "@supabase/supabase-js": "^2.106.2",
@@ -135,6 +136,14 @@
       "optionalPeers": [
         "@react-native-async-storage/async-storage",
       ],
+    },
+    "packages/tokens": {
+      "name": "@north/tokens",
+      "version": "0.0.0",
+      "devDependencies": {
+        "@north/config": "workspace:*",
+        "typescript": "catalog:",
+      },
     },
     "packages/ui": {
       "name": "@north/ui",
@@ -572,6 +581,8 @@
     "@north/env": ["@north/env@workspace:packages/env"],
 
     "@north/supabase": ["@north/supabase@workspace:packages/supabase"],
+
+    "@north/tokens": ["@north/tokens@workspace:packages/tokens"],
 
     "@north/ui": ["@north/ui@workspace:packages/ui"],
 
