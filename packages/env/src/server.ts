@@ -23,6 +23,12 @@ export const env = createEnv({
 		APPLE_OAUTH_CLIENT_SECRET: z.string().min(1).optional(),
 		OPENAI_API_KEY: z.string().min(1).optional(),
 		SUMMARY_TRIGGER_SECRET: z.string().min(16).optional(),
+		// Cloudinary (DEC-20). All optional locally — the sign API route
+		// returns 503 if any of these aren't set, so dev without
+		// Cloudinary still boots.
+		CLOUDINARY_CLOUD_NAME: z.string().min(1).optional(),
+		CLOUDINARY_API_KEY: z.string().min(1).optional(),
+		CLOUDINARY_API_SECRET: z.string().min(1).optional(),
 		CLOUDINARY_URL: z.string().min(1).optional(),
 		POSTHOG_API_KEY: z.string().min(1).optional(),
 		CORS_ORIGIN: z.url(),

@@ -10,7 +10,8 @@ There is no central secret store (no Doppler, no Vault). Each platform that need
 
 | Where | What | How |
 |---|---|---|
-| **Supabase Edge Functions** | `OPENAI_API_KEY`, `SUMMARY_TRIGGER_SECRET`, future Cloudinary signing key | `supabase secrets set NAME=value` |
+| **Supabase Edge Functions** | `OPENAI_API_KEY`, `SUMMARY_TRIGGER_SECRET`, `POSTHOG_API_KEY` (for server events) | `supabase secrets set NAME=value` |
+| **Cloudinary** | `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` (server-only); `CLOUDINARY_CLOUD_NAME` + `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` (cloud name is public) | Host env (Vercel/CF/Fly); local `apps/web/.env` |
 | **Supabase Postgres** (for `pg_cron` calls) | `app.functions_url`, `app.summary_trigger_secret` | `alter database postgres set app.<name> = '<value>'` |
 | **Next.js admin (`apps/web`)** | `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY` (if used), `CORS_ORIGIN` | Host's env (Vercel/Cloudflare/local `.env`) |
 | **Expo native (`apps/native`)** build-time env | `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, future `EXPO_PUBLIC_POSTHOG_*` | `eas secret:create --scope project --name NAME --value value` |

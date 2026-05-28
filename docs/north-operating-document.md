@@ -561,6 +561,7 @@ Client: React Native + Expo. Backend & data: Supabase (PostgreSQL + Supabase Aut
 | DEC-17 — Tracker INFRA-02 + INFRA-05 closed as done by prior commits (DEC-06/07/16); INFRA-04 acceptance ("RLS verified by test") closed by new `supabase/tests/rls_cross_user.sql` (10 read tables + 7 write tables, two synthetic users via `set local "request.jwt.claims"`) | 28 May 2026 | Jordayne Price | Resolves INFRA-02/04/05; converts the §6.2 RLS guarantee from "policies are correct" to "policies + behaviour both verified mechanically" |
 | DEC-18 — INFRA-03 social providers wired: **Google + Apple**. Web `signInWithOAuth`; native `expo-auth-session/providers/google` + `expo-apple-authentication` → `supabase.auth.signInWithIdToken`. `supabase/config.toml` enables `[auth.external.{google,apple}]` with `env()` substitution; new server env vars `GOOGLE_OAUTH_CLIENT_*` + `APPLE_OAUTH_CLIENT_*`; new native client-bundle vars `EXPO_PUBLIC_GOOGLE_OAUTH_{IOS,ANDROID,WEB}_CLIENT_ID`. Apple-only-on-iOS gated via `AppleAuthentication.isAvailableAsync()` | 28 May 2026 | Jordayne Price | Resolves INFRA-03; iOS App Store compliance (Apple required when shipping any other social provider) + broader Google reach. Magic-link (web) + password (native) remain alongside |
 | DEC-19 — INFRA-06 PostHog wired: `posthog-js` on web (auto-no-op without key; pageview capture; autocapture + session replay off), `posthog-react-native` on native (`PostHogProvider` + `app_open` event), Edge Function server events via direct `fetch` to `/i/v0/e/` in `supabase/functions/_shared/posthog.ts` (no SDK; Deno-native; best-effort, swallows errors). `signal-summary` fires `signal_summary_generated` event after each upsert | 28 May 2026 | Jordayne Price | Resolves INFRA-06; v0 event taxonomy = `app_open` + `signal_summary_generated`; M1/M2/M3 will add per-flow events as they ship |
+| DEC-20 — INFRA-07 Cloudinary signed-upload pipeline + full admin UI. Server-side `/api/cloudinary/sign` route signs Upload Widget params (admin-gated via `is_admin()`); `next-cloudinary` `CldUploadWidget` on `/admin/content` calls it; `upsertContent` server action UPSERTs `content_items` with `cloudinary_public_id` + `license_type='cloudinary-hosted'` + `license_status='draft'`. Admin table renders 64×64 thumbnails via the public delivery URL. New env vars `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` (server-only) + `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` (public). Leak-check protects the API secrets | 28 May 2026 | Jordayne Price | Resolves INFRA-07; closes the loop on DEC-10's `cloudinary-hosted` license path — admin can now actually upload content, not just describe it |
 
 ### DEC-06 — Conform repo to documented stack
 
@@ -807,6 +808,23 @@ Documentation is in [`docs/secrets.md`](./secrets.md) including rotation guidanc
 **Rationale.** Direct `fetch` from Edge Functions skips the SDK incompatibility between `posthog-node` (Node-targeted) and Deno; the call surface is trivial enough that the SDK would be ceremony, not value. Disabling autocapture + session replay by default lets analytics ship without re-litigating privacy on every event.
 
 **Impact.** Resolves INFRA-06. Three surfaces (web / native / Edge Function) all capture into the same PostHog project once `POSTHOG_API_KEY` is set as a Supabase secret + the `NEXT_PUBLIC_POSTHOG_KEY` / `EXPO_PUBLIC_POSTHOG_KEY` are set in host env / EAS secrets respectively.
+
+### DEC-20 — Cloudinary signed uploads + admin Upload Widget
+
+**Decision (28 May 2026, Jordayne Price).** Tracker INFRA-07 lands the full pipeline for the `cloudinary-hosted` license path of DEC-10. Admin can now upload media end-to-end; the API secret never leaves the server.
+
+**Implementation.**
+
+- **Signing endpoint** (`apps/web/src/app/api/cloudinary/sign/route.ts`): POST handler that accepts `{ paramsToSign }`, signs with `cloudinary.utils.api_sign_request(paramsToSign, env.CLOUDINARY_API_SECRET)`, returns `{ signature, apiKey, cloudName }`. **Gated** — calls `getServerSupabase()`, requires a session, then checks `supabase.rpc('is_admin')`. Returns **503** when Cloudinary env isn't configured so local dev still boots; **401/403** for unauthenticated/non-admin callers.
+- **Upload Widget** (`apps/web/src/app/admin/content/_components/upload-widget.tsx`): `next-cloudinary`'s `CldUploadWidget` configured with `signatureEndpoint = '/api/cloudinary/sign'`, single-file uploads, 25 MB cap, `north/content/` folder. On success, calls the `upsertContent` server action.
+- **Server action** (`apps/web/src/app/admin/content/_actions/upsert-content.ts`): inserts a `content_items` row with `cloudinary_public_id`, `license_type = 'cloudinary-hosted'`, `license_status = 'draft'`. Server-side admin check; revalidates `/admin/content`.
+- **Admin table** (`apps/web/src/app/admin/content/page.tsx`): renders 64×64 thumbnails via the Cloudinary delivery URL when `cloudinary_public_id` + `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` are both set. New "Upload to Cloudinary" button when cloud name is configured; informational note when it isn't.
+- **Env contract.** Server-side: `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` (all optional). Public: `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` (optional). The leak-check (DEC-15) protects `CLOUDINARY_API_KEY` + `CLOUDINARY_API_SECRET` from any client-bundlable path.
+- **Operator runbook.** New "Cloudinary setup" section in [`docs/supabase-projects.md`](./supabase-projects.md): create account, paste credentials into host env, verify via the admin Upload Widget.
+
+**Rationale.** Cloudinary's official Upload Widget handles file picking, multipart upload, progressive UX, and image transformations — building this from scratch would be ~3× the code with worse UX. Signed uploads keep the API secret server-side; the gating-via-`is_admin` mirrors the DEC-10 admin-write policy on `content_items`. Drafts by default give the operator a review beat before publishing — matches the DEC-10 `cleared` state machine.
+
+**Impact.** Resolves INFRA-07. Closes the loop on DEC-10's hybrid licensing — admin can now actually upload Cloudinary-hosted content, not just describe it in schema columns. Linked content (DEC-10's `link-out` path) continues to need a manual `INSERT` until M1 admin CRUD lands.
 
 18\. Supporting Documents
 

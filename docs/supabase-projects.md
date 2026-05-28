@@ -195,6 +195,18 @@ The v0 stack ships **Google + Apple** as the two social-sign-in providers (per D
 - Web: open `/login` → "Continue with Google" / "Continue with Apple" should appear above the magic-link field. Click through to confirm a session lands in `auth.users` with `app_metadata.provider = 'google'` (or `'apple'`).
 - Native: on an EAS dev build, the buttons render (Google when client IDs are set; Apple only on iOS 13+). Tapping should produce a session.
 
+## Cloudinary setup (DEC-20)
+
+The admin app uploads media to Cloudinary via a server-side signed-upload flow (DEC-20). Skip this section if you're not yet hosting any content via Cloudinary (the link-out path of DEC-10 doesn't require it).
+
+1. Create an account at <https://cloudinary.com>. Free tier covers v0 traffic.
+2. From the Cloudinary console, grab the cloud name + API key + API secret. *Treat the API secret as sensitive — it never reaches the client.*
+3. Populate env vars per environment:
+   - Web admin host (Vercel / CF / Fly): `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`, `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` (same value as `CLOUDINARY_CLOUD_NAME` — the `NEXT_PUBLIC_` copy is what the browser bundle reads).
+   - Local dev: same four in `apps/web/.env`.
+4. Optional: create a Cloudinary upload preset named `north-content` (Settings → Upload → Add upload preset) if you want server-side transformations on every upload. The Widget defaults work without one.
+5. Verify: visit `/admin/content` as an allow-listed admin → "Upload to Cloudinary" button is visible → upload a test image → row appears in `content_items` with `cloudinary_public_id` populated, `license_type = 'cloudinary-hosted'`, `license_status = 'draft'`. Flipping `license_status` to `cleared` (and filling `attribution_text`) makes the image readable by anon clients via the existing RLS predicate.
+
 ## Day-to-day workflow
 
 - **Default**: work against local Supabase (`supabase start`, `bun run dev:web` / `dev:native`). Fastest loop; no remote billing exposure.
