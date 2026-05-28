@@ -558,6 +558,7 @@ Client: React Native + Expo. Backend & data: Supabase (PostgreSQL + Supabase Aut
 | DEC-14 — CI via GitHub Actions: `.github/workflows/ci.yml` runs on every PR + push to `main`: `bun install --frozen-lockfile`, `bun run check:ci` (Biome), `bun run check-types` (turbo), `bun run build --filter=web`, and an `expo config --type prebuild` dry-run for native. Turbo cache is keyed per-SHA with branch fallback | 28 May 2026 | Jordayne Price | Resolves tracker SETUP-05; every PR is gated by the same lint/type/build that runs locally pre-commit, so regressions can't sneak past review |
 | DEC-15 — Secrets pattern is **native per platform**: Supabase secrets for Edge Functions, EAS secrets for native build-time env, host env for the web admin. `NEXT_PUBLIC_*` / `EXPO_PUBLIC_*` are the only env names allowed in client-bundled files; every other server-only key is checked at pre-push (lefthook) and in CI via `scripts/check-client-bundle-secrets.sh`. No Doppler / Vault in v0 | 28 May 2026 | Jordayne Price | Resolves tracker SETUP/secrets; honours operating doc §6.2 ("secrets shall never be embedded in the client") with a tractable, low-vendor pattern that's enforced mechanically |
 | DEC-16 — Two-environment Supabase baseline: **dev** (`north-dev`, free tier) and **prod** (`north-prod`, free → Pro). Per-developer registry in `supabase/projects.json` (gitignored; template `projects.example.json`). Helper `scripts/supabase-link.sh dev\|prod` + `bun run supabase:link:dev\|prod`. New `APP_ENV` env var (`development`\|`production`) on server. CI auto-deploys migrations + `signal-summary` to dev on push to `main`; prod stays manual. Operator runbook in `docs/supabase-projects.md` | 28 May 2026 | Jordayne Price | Resolves tracker INFRA-01; gives every deployment-runbook entry a concrete project to point at, and makes "merge to main = dev gets the new migration" the default loop |
+| DEC-17 — Tracker INFRA-02 + INFRA-05 closed as done by prior commits (DEC-06/07/16); INFRA-04 acceptance ("RLS verified by test") closed by new `supabase/tests/rls_cross_user.sql` (10 read tables + 7 write tables, two synthetic users via `set local "request.jwt.claims"`) | 28 May 2026 | Jordayne Price | Resolves INFRA-02/04/05; converts the §6.2 RLS guarantee from "policies are correct" to "policies + behaviour both verified mechanically" |
 
 ### DEC-06 — Conform repo to documented stack
 
@@ -751,6 +752,22 @@ Documentation is in [`docs/secrets.md`](./secrets.md) including rotation guidanc
 **Rationale.** Two environments — not three — keeps the v0 deployment surface minimal while still giving the team a "merge to main → dev gets the new migration" loop. The registry-and-script pattern avoids hardcoding refs in CI workflows and lets the same scripts work across developer machines without per-user branches. `APP_ENV` is the single source of truth for environment identity; it costs almost nothing to add now and avoids the messy `NODE_ENV=production && URL.includes("dev")` checks later.
 
 **Impact.** Resolves INFRA-01. Every operating-doc deployment-runbook entry that references `<project-ref>` now has a concrete home. Migrations and the AI summary function deploy to dev automatically; prod stays a deliberate human decision.
+
+### DEC-17 — INFRA-02 / 04 / 05 closed by prior work + RLS cross-user test
+
+**Decision (28 May 2026, Jordayne Price).** Three tracker items resolved together:
+
+- **INFRA-02** (Supabase CLI + version-controlled SQL) — done by DEC-06 (Option A stack) + DEC-16 (CI auto-deploys migrations on merge to main). Nine migrations live in `supabase/migrations/`; `package.json` exposes `supabase:start` / `:stop` / `:reset` / `:link:dev` / `:link:prod`; `.github/workflows/ci.yml`'s `deploy-migrations-dev` job runs `supabase db push --linked` on every push to `main`.
+- **INFRA-05** (server-side OpenAI; no client-side AI) — done by DEC-07. `supabase/functions/signal-summary/` invokes OpenAI from Deno. The leak-check script (`scripts/check-client-bundle-secrets.sh`, DEC-15) blocks `OPENAI_API_KEY` from any client-bundlable path.
+- **INFRA-04** (RLS baseline + "verified by test") — RLS policies on every protected table shipped across DEC-06/07/09, but the acceptance criterion *"a user can never read or write another user's behavioural, mission, or profile rows (verified by test)"* required a behavioural test that didn't exist. This PR adds **`supabase/tests/rls_cross_user.sql`**:
+  - Seeds two synthetic users (`u_alpha`, `u_beta`) with one row in every behavioural / mission / profile table for `u_beta`.
+  - Simulates `u_alpha`'s session via `set local role authenticated; set local "request.jwt.claims" '{"sub": "<u_alpha>", "role":"authenticated"}'`.
+  - **Read assertions**: `select count(*) where user_id = '<u_beta>'` = 0 for `profiles`, `user_focus_areas`, `missions`, `user_mission_tasks`, `content_interactions`, `streaks`, `weekly_pulses`, `baseline_endpoint_responses`, `signal_scores`, `signal_summaries`.
+  - **Write assertions**: every client-writable insert on `u_beta`'s behalf must either raise a policy violation or be silently filtered. Verified for 7 tables.
+
+**Rationale.** Until now we had "RLS enabled on every table" as a code-review fact. The acceptance criterion forced a step further: a check that the policies *actually behave* as written. The test is cheap (runs in <1s after `supabase db reset`) and catches the class of regression where a later migration accidentally weakens a policy or forgets RLS on a new table.
+
+**Impact.** Resolves INFRA-02, INFRA-04, INFRA-05. Operating doc §6.2 ("all data access shall be enforced by Supabase Row-Level Security") now has mechanical proof, not just code review.
 
 18\. Supporting Documents
 
