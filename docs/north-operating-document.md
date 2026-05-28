@@ -560,6 +560,7 @@ Client: React Native + Expo. Backend & data: Supabase (PostgreSQL + Supabase Aut
 | DEC-16 — Two-environment Supabase baseline: **dev** (`north-dev`, free tier) and **prod** (`north-prod`, free → Pro). Per-developer registry in `supabase/projects.json` (gitignored; template `projects.example.json`). Helper `scripts/supabase-link.sh dev\|prod` + `bun run supabase:link:dev\|prod`. New `APP_ENV` env var (`development`\|`production`) on server. CI auto-deploys migrations + `signal-summary` to dev on push to `main`; prod stays manual. Operator runbook in `docs/supabase-projects.md` | 28 May 2026 | Jordayne Price | Resolves tracker INFRA-01; gives every deployment-runbook entry a concrete project to point at, and makes "merge to main = dev gets the new migration" the default loop |
 | DEC-17 — Tracker INFRA-02 + INFRA-05 closed as done by prior commits (DEC-06/07/16); INFRA-04 acceptance ("RLS verified by test") closed by new `supabase/tests/rls_cross_user.sql` (10 read tables + 7 write tables, two synthetic users via `set local "request.jwt.claims"`) | 28 May 2026 | Jordayne Price | Resolves INFRA-02/04/05; converts the §6.2 RLS guarantee from "policies are correct" to "policies + behaviour both verified mechanically" |
 | DEC-18 — INFRA-03 social providers wired: **Google + Apple**. Web `signInWithOAuth`; native `expo-auth-session/providers/google` + `expo-apple-authentication` → `supabase.auth.signInWithIdToken`. `supabase/config.toml` enables `[auth.external.{google,apple}]` with `env()` substitution; new server env vars `GOOGLE_OAUTH_CLIENT_*` + `APPLE_OAUTH_CLIENT_*`; new native client-bundle vars `EXPO_PUBLIC_GOOGLE_OAUTH_{IOS,ANDROID,WEB}_CLIENT_ID`. Apple-only-on-iOS gated via `AppleAuthentication.isAvailableAsync()` | 28 May 2026 | Jordayne Price | Resolves INFRA-03; iOS App Store compliance (Apple required when shipping any other social provider) + broader Google reach. Magic-link (web) + password (native) remain alongside |
+| DEC-19 — INFRA-06 PostHog wired: `posthog-js` on web (auto-no-op without key; pageview capture; autocapture + session replay off), `posthog-react-native` on native (`PostHogProvider` + `app_open` event), Edge Function server events via direct `fetch` to `/i/v0/e/` in `supabase/functions/_shared/posthog.ts` (no SDK; Deno-native; best-effort, swallows errors). `signal-summary` fires `signal_summary_generated` event after each upsert | 28 May 2026 | Jordayne Price | Resolves INFRA-06; v0 event taxonomy = `app_open` + `signal_summary_generated`; M1/M2/M3 will add per-flow events as they ship |
 
 ### DEC-06 — Conform repo to documented stack
 
@@ -786,6 +787,26 @@ Documentation is in [`docs/secrets.md`](./secrets.md) including rotation guidanc
 **Rationale.** Picking Google alone is non-compliant on iOS; picking Apple alone is unusual and harms reach. Bundling both is ~2× the wiring effort but is the only defensible production posture for a real mobile launch. Magic-link + password stay because they cover users who don't have/want either OAuth account.
 
 **Impact.** Resolves INFRA-03. Sign-in surfaces three options on web (Google / Apple / magic link) and up to three on native (Google when configured / Apple on iOS 13+ / password). Operator-driven setup is the only remaining step — OAuth client IDs + secrets must be created in Google Cloud Console + Apple Developer Portal before the buttons do anything.
+
+### DEC-19 — PostHog observability (client SDKs + Edge Function server events)
+
+**Decision (28 May 2026, Jordayne Price).** Tracker INFRA-06 lands PostHog across all three surfaces with a v0 event taxonomy of two events.
+
+**Implementation.**
+
+- **Web** (`apps/web/src/components/providers.tsx`): `posthog-js` initialised in a `useEffect` gated on `NEXT_PUBLIC_POSTHOG_KEY` so dev without analytics doesn't ship a dead client. `PostHogProvider` from `posthog-js/react` wraps the app. Pageview capture on history change; **autocapture off**; **session replay off** (sensitive behavioural app — replay needs a separate decision).
+- **Native** (`apps/native/app/_layout.tsx`): `PostHogProvider` from `posthog-react-native` with `disabled: !key` so the provider is a no-op when the key is missing. Fires `app_open` once per app launch via a small `AppOpenCapture` component that watches `usePostHog()` and uses a `useRef` guard for idempotency.
+- **Edge Functions** (`supabase/functions/_shared/posthog.ts`, new): a `captureServer(event, distinctId, properties, deps?)` helper that POSTs to PostHog's `/i/v0/e/` endpoint. No SDK in the Deno runtime — fetch is two lines and gives full control. Errors are swallowed (best-effort) and a missing `POSTHOG_API_KEY` short-circuits to a no-op. Companion `posthog.test.ts` covers no-op, success, and network-error paths.
+- **First server event:** `signal-summary` (DEC-07) fires `signal_summary_generated` after every successful UPSERT, with properties `{ week_ending, model, prompt_version, summary_length, callouts_count }`.
+
+**Out of scope (deliberate).**
+- Cohort-driven event taxonomy beyond `app_open` + `signal_summary_generated` — added per-flow as M1/M2/M3 ships those flows.
+- Session replay — disabled by default; revisit after the privacy posture lands.
+- PostHog Feature Flags — added later if A/B testing demand emerges.
+
+**Rationale.** Direct `fetch` from Edge Functions skips the SDK incompatibility between `posthog-node` (Node-targeted) and Deno; the call surface is trivial enough that the SDK would be ceremony, not value. Disabling autocapture + session replay by default lets analytics ship without re-litigating privacy on every event.
+
+**Impact.** Resolves INFRA-06. Three surfaces (web / native / Edge Function) all capture into the same PostHog project once `POSTHOG_API_KEY` is set as a Supabase secret + the `NEXT_PUBLIC_POSTHOG_KEY` / `EXPO_PUBLIC_POSTHOG_KEY` are set in host env / EAS secrets respectively.
 
 18\. Supporting Documents
 

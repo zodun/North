@@ -10,6 +10,7 @@
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
+import { captureServer } from "../_shared/posthog.ts";
 import {
 	buildUserPrompt,
 	PROMPT_VERSION,
@@ -122,6 +123,14 @@ export async function runSummaryJob(deps: RunDeps): Promise<RunResult> {
 				);
 			if (upErr) throw new Error(`upsert: ${upErr.message}`);
 			result.written += 1;
+			// Fire analytics. Best-effort; never raise to the caller (DEC-19).
+			await captureServer("signal_summary_generated", score.user_id, {
+				week_ending: weekEndingStr,
+				model: MODEL_NAME,
+				prompt_version: PROMPT_VERSION,
+				summary_length: summary.summary.length,
+				callouts_count: summary.callouts.length,
+			});
 		} catch (err) {
 			const message = err instanceof Error ? err.message : String(err);
 			result.errors.push({ user_id: score.user_id, message });
