@@ -555,6 +555,7 @@ Client: React Native + Expo. Backend & data: Supabase (PostgreSQL + Supabase Aut
 | DEC-11 — KPI targets §3.3 confirmed: onboarding completion ≥85% (M1) · daily mission completion ≥40% (M2) · 7-day streak ≥25% (M2) · D7 retention ≥30% (M2) · alignment lift +1.0pt on 5-pt scale (M3) · signal classification accuracy ≥75% "feels accurate" (M3). Alignment-lift target confirmed **with demand-bias caveat in force** per metrics spec DEC-04 control #3 | 28 May 2026 | Jordayne Price | Resolves tracker DEC-07; converts the §3.3 table from "proposed starting points" to project commitments, with re-tuning permitted after cohort 1 (would require a new DEC entry) |
 | DEC-12 — Lint/format tool is **Biome** (kept, not swapped to ESLint+Prettier). Pre-commit hooks via lefthook: `biome check --write` on staged files + workspace `tsc --noEmit`. Root scripts: `bun run check` (fix), `bun run check:ci` (check-only), `bun run check-types` (turbo) | 28 May 2026 | Jordayne Price | Resolves tracker SETUP-03; one tool, faster than ESLint+Prettier, matches the Better-T-Stack default; pre-commit hooks catch lint/format/type errors before commit |
 | DEC-13 — EAS Build profiles: **dev** (internal, simulator-only iOS + APK), **preview** (internal, real-device TestFlight + APK), **production** (store, App Store + Google Play Bundle, autoIncrement). Each profile carries an `APP_ENV` env and a matching EAS Update channel. iOS bundle id + Android package = `app.north.client` | 28 May 2026 | Jordayne Price | Resolves tracker SETUP-04; gives the native app three repeatable build pipelines + a clear path to OTA via channels |
+| DEC-14 — CI via GitHub Actions: `.github/workflows/ci.yml` runs on every PR + push to `main`: `bun install --frozen-lockfile`, `bun run check:ci` (Biome), `bun run check-types` (turbo), `bun run build --filter=web`, and an `expo config --type prebuild` dry-run for native. Turbo cache is keyed per-SHA with branch fallback | 28 May 2026 | Jordayne Price | Resolves tracker SETUP-05; every PR is gated by the same lint/type/build that runs locally pre-commit, so regressions can't sneak past review |
 
 ### DEC-06 — Conform repo to documented stack
 
@@ -681,6 +682,27 @@ Each profile carries an `APP_ENV` env so runtime can branch on environment. The 
 **Rationale.** Three profiles is the canonical EAS pattern; deviation costs more than it buys. APK for internal Android distribution avoids the Play upload step for QA builds; AAB for production is store-required. `autoIncrement: true` on production prevents build-number collisions during release.
 
 **Impact.** Resolves SETUP-04. Gives the native app a repeatable pipeline from local-dev → internal QA → store release without ad-hoc Xcode/Android Studio configuration per build.
+
+### DEC-14 — CI on GitHub Actions
+
+**Decision (28 May 2026, Jordayne Price).** Tracker SETUP-05 is resolved by `.github/workflows/ci.yml`. The `check` job runs on every pull request to `main` and every push to `main`:
+
+1. Checkout · `actions/checkout@v4`
+2. Bun setup · `oven-sh/setup-bun@v2` pinned to `1.3.1`
+3. Turbo cache restore (`.turbo/`, SHA-keyed with branch fallback)
+4. `bun install --frozen-lockfile`
+5. `bun run check:ci` — Biome check-only (fails on diff)
+6. `bun run check-types` — turbo runs `tsc --noEmit` per workspace
+7. `bun run build --filter=web` — Next.js production build
+8. `bunx expo config --type prebuild` (dry-run) for the native app — validates the Expo config without invoking EAS
+
+CI exports stub Supabase env vars so `@t3-oss/env`'s build-time validation passes. **Real secrets never enter CI** — they live in Supabase secrets / EAS secrets / the host's environment (per DEC-15).
+
+`concurrency` cancels in-progress runs on PR pushes to keep the queue short; main-branch runs are not cancelled.
+
+**Rationale.** The same set of checks runs in pre-commit (lefthook) and in CI — pre-commit is defense-in-depth + fast feedback for the developer; CI is the gate that catches anything bypassed locally. Building web in CI catches Next.js typed-route regressions that pure `tsc` misses. The native prebuild dry-run is cheap and catches `app.json` / plugin breakage without paying the EAS minutes.
+
+**Impact.** Resolves SETUP-05. Every PR gets the same checks; broken main-branch builds get a red status check within ~2 minutes.
 
 18\. Supporting Documents
 

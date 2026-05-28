@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    name: Lint · Typecheck · Build
+    runs-on: ubuntu-latest
+    env:
+      # Stub Supabase env so apps/web's build can resolve @t3-oss/env at
+      # build-time. Real secrets only ever exist in Supabase / EAS /
+      # the host's environment — never in CI.
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-stub-anon-key
+      SUPABASE_URL: http://127.0.0.1:54321
+      SUPABASE_ANON_KEY: ci-stub-anon-key
+      SUPABASE_SERVICE_ROLE_KEY: ci-stub-service-role-key
+      CORS_ORIGIN: http://localhost:3001
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.1
+
+      - name: Cache turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: |
+            turbo-${{ runner.os }}-
+
+      - name: Install
+        # CI=true makes biome non-interactive; lefthook install is fine
+        # to run in CI but the hooks themselves aren't exercised here.
+        run: bun install --frozen-lockfile
+
+      - name: Biome (check-only)
+        run: bun run check:ci
+
+      - name: Type check (turbo)
+        run: bun run check-types
+
+      - name: Build web
+        run: bun run build --filter=web
+
+      - name: Native prebuild dry-run
+        # Confirms the native app's config is valid for an EAS build
+        # without actually invoking EAS. Real builds happen out of CI
+        # via `eas build` from a developer machine or EAS Cloud.
+        working-directory: apps/native
+        run: bunx expo config --type prebuild >/dev/null
