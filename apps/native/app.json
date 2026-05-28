@@ -7,8 +7,12 @@
 		"icon": "./assets/images/icon.png",
 		"scheme": "north",
 		"userInterfaceStyle": "automatic",
+		"runtimeVersion": {
+			"policy": "appVersion"
+		},
 		"ios": {
-			"supportsTablet": true
+			"supportsTablet": true,
+			"bundleIdentifier": "app.north.client"
 		},
 		"android": {
 			"adaptiveIcon": {
@@ -18,7 +22,7 @@
 				"monochromeImage": "./assets/images/android-icon-monochrome.png"
 			},
 			"predictiveBackGestureEnabled": false,
-			"package": "com.anonymous.mybettertapp"
+			"package": "app.north.client"
 		},
 		"web": {
 			"output": "static",

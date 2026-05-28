@@ -9,7 +9,12 @@
 		"ios": "expo run:ios",
 		"prebuild": "expo prebuild",
 		"web": "expo start --web",
-		"check-types": "tsc --noEmit"
+		"check-types": "tsc --noEmit",
+		"build:dev:ios": "eas build --profile dev --platform ios",
+		"build:dev:android": "eas build --profile dev --platform android",
+		"build:preview:ios": "eas build --profile preview --platform ios",
+		"build:preview:android": "eas build --profile preview --platform android",
+		"build:production": "eas build --profile production --platform all"
 	},
 	"dependencies": {
 		"@expo/ui": "~56.0.12",

@@ -1,0 +1,66 @@
+{
+	"cli": {
+		"version": ">= 13.0.0",
+		"appVersionSource": "remote"
+	},
+	"build": {
+		"dev": {
+			"developmentClient": true,
+			"distribution": "internal",
+			"channel": "dev",
+			"env": {
+				"APP_ENV": "dev"
+			},
+			"ios": {
+				"resourceClass": "m-medium",
+				"simulator": true
+			},
+			"android": {
+				"buildType": "apk",
+				"resourceClass": "medium"
+			}
+		},
+		"preview": {
+			"distribution": "internal",
+			"channel": "preview",
+			"env": {
+				"APP_ENV": "preview"
+			},
+			"ios": {
+				"resourceClass": "m-medium",
+				"simulator": false
+			},
+			"android": {
+				"buildType": "apk",
+				"resourceClass": "medium"
+			}
+		},
+		"production": {
+			"channel": "production",
+			"autoIncrement": true,
+			"env": {
+				"APP_ENV": "production"
+			},
+			"ios": {
+				"resourceClass": "m-medium"
+			},
+			"android": {
+				"buildType": "app-bundle",
+				"resourceClass": "medium"
+			}
+		}
+	},
+	"submit": {
+		"production": {
+			"ios": {
+				"appleId": "REPLACE_WITH_APPLE_ID",
+				"ascAppId": "REPLACE_WITH_ASC_APP_ID",
+				"appleTeamId": "REPLACE_WITH_APPLE_TEAM_ID"
+			},
+			"android": {
+				"serviceAccountKeyPath": "./google-play-service-account.json",
+				"track": "internal"
+			}
+		}
+	}
+}

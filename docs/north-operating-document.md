@@ -554,6 +554,7 @@ Client: React Native + Expo. Backend & data: Supabase (PostgreSQL + Supabase Aut
 | DEC-10 — Content licensing model is **hybrid**: every curated item declares `license_type` (link-out / cloudinary-hosted / original / unknown) and progresses through `license_status` (draft → cleared → blocked). RLS public-read policies on `content_items` and `opportunities` require `license_status = 'cleared'` + populated attribution/URL — placeholders never reach a client | 28 May 2026 | Jordayne Price | Resolves tracker DEC-06; gives the admin curation flow a structural way to enforce attribution + permission evidence before content goes live, without dictating link-out vs. host as a global default |
 | DEC-11 — KPI targets §3.3 confirmed: onboarding completion ≥85% (M1) · daily mission completion ≥40% (M2) · 7-day streak ≥25% (M2) · D7 retention ≥30% (M2) · alignment lift +1.0pt on 5-pt scale (M3) · signal classification accuracy ≥75% "feels accurate" (M3). Alignment-lift target confirmed **with demand-bias caveat in force** per metrics spec DEC-04 control #3 | 28 May 2026 | Jordayne Price | Resolves tracker DEC-07; converts the §3.3 table from "proposed starting points" to project commitments, with re-tuning permitted after cohort 1 (would require a new DEC entry) |
 | DEC-12 — Lint/format tool is **Biome** (kept, not swapped to ESLint+Prettier). Pre-commit hooks via lefthook: `biome check --write` on staged files + workspace `tsc --noEmit`. Root scripts: `bun run check` (fix), `bun run check:ci` (check-only), `bun run check-types` (turbo) | 28 May 2026 | Jordayne Price | Resolves tracker SETUP-03; one tool, faster than ESLint+Prettier, matches the Better-T-Stack default; pre-commit hooks catch lint/format/type errors before commit |
+| DEC-13 — EAS Build profiles: **dev** (internal, simulator-only iOS + APK), **preview** (internal, real-device TestFlight + APK), **production** (store, App Store + Google Play Bundle, autoIncrement). Each profile carries an `APP_ENV` env and a matching EAS Update channel. iOS bundle id + Android package = `app.north.client` | 28 May 2026 | Jordayne Price | Resolves tracker SETUP-04; gives the native app three repeatable build pipelines + a clear path to OTA via channels |
 
 ### DEC-06 — Conform repo to documented stack
 
@@ -660,6 +661,26 @@ The public-read RLS policies are tightened to require `license_status = 'cleared
 **Rationale.** Biome was already configured and working. Swapping to ESLint + Prettier would add a plugin sprawl (`eslint-config-next`, `eslint-plugin-react-native`, `prettier-plugin-*`), run slower, and offer no benefit for a single-developer project. The Better-T-Stack default landed at Biome for the same reasons; we keep it.
 
 **Impact.** Resolves SETUP-03. Unblocks SETUP-05 (CI runs `bun run check:ci` + `bun run check-types`). No code paths change; this is pure tooling.
+
+### DEC-13 — EAS Build profiles (dev / preview / production)
+
+**Decision (28 May 2026, Jordayne Price).** Tracker SETUP-04 is resolved by `apps/native/eas.json` defining three build profiles:
+
+| Profile      | Distribution | Channel     | iOS                          | Android        |
+| ------------ | ------------ | ----------- | ---------------------------- | -------------- |
+| `dev`        | internal     | `dev`       | simulator + dev client       | APK            |
+| `preview`    | internal     | `preview`   | real device (TestFlight)     | APK            |
+| `production` | store        | `production`| App Store                    | AAB, autoIncrement |
+
+Each profile carries an `APP_ENV` env so runtime can branch on environment. The `channel` field aligns with EAS Update channels when OTA lands (M2/M3). iOS bundle identifier + Android package are both `app.north.client`. `runtimeVersion.policy = "appVersion"` keeps OTA-compatible bundles tied to the marketing version.
+
+**Operator setup.** After this PR merges: `cd apps/native && eas login && eas init` to link the project to the operator's Expo account; commit the resulting `expo.extra.eas.projectId`. Native build-time env (`EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY`, future `EXPO_PUBLIC_POSTHOG_*`) lives in EAS secrets, not in `apps/native/.env` — see [`docs/secrets.md`](./secrets.md) (DEC-15).
+
+**Submit credentials.** `eas.json` `submit.production` ships with placeholder Apple/Google values that must be replaced once the App Store + Play Console accounts exist.
+
+**Rationale.** Three profiles is the canonical EAS pattern; deviation costs more than it buys. APK for internal Android distribution avoids the Play upload step for QA builds; AAB for production is store-required. `autoIncrement: true` on production prevents build-number collisions during release.
+
+**Impact.** Resolves SETUP-04. Gives the native app a repeatable pipeline from local-dev → internal QA → store release without ad-hoc Xcode/Android Studio configuration per build.
 
 18\. Supporting Documents
 
