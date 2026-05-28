@@ -1,0 +1,9 @@
+{
+	"extends": "@north/config/tsconfig.base.json",
+	"compilerOptions": {
+		"jsx": "react-native",
+		"lib": ["ESNext", "DOM"],
+		"types": ["react", "react-native"]
+	},
+	"include": ["src/**/*"]
+}

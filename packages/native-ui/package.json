@@ -1,0 +1,39 @@
+{
+	"name": "@north/native-ui",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": {
+			"default": "./src/index.ts"
+		},
+		"./components/*": {
+			"default": "./src/components/*.tsx"
+		},
+		"./hooks/*": {
+			"default": "./src/hooks/*.ts"
+		},
+		"./signal/*": {
+			"default": "./src/components/signal/*.tsx"
+		}
+	},
+	"scripts": {
+		"check-types": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@north/tokens": "workspace:*"
+	},
+	"peerDependencies": {
+		"react": "*",
+		"react-native": "*",
+		"react-native-svg": "*"
+	},
+	"devDependencies": {
+		"@north/config": "workspace:*",
+		"@types/react": "~19.2.14",
+		"react": "19.2.3",
+		"react-native": "0.85.3",
+		"react-native-svg": "^15.15.5",
+		"typescript": "catalog:"
+	}
+}
