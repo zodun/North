@@ -1,131 +1,103 @@
+"use client";
+
 import { Button } from "@north/ui/components/button";
 import { Input } from "@north/ui/components/input";
 import { Label } from "@north/ui/components/label";
 import { useForm } from "@tanstack/react-form";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
 import z from "zod";
 
-import { authClient } from "@/lib/auth-client";
+import { supabase } from "@/lib/auth-client";
 
-import Loader from "./loader";
+export default function SignInForm() {
+	const [sent, setSent] = useState(false);
 
-export default function SignInForm({ onSwitchToSignUp }: { onSwitchToSignUp: () => void }) {
-  const router = useRouter();
-  const { isPending } = authClient.useSession();
+	const form = useForm({
+		defaultValues: { email: "" },
+		onSubmit: async ({ value }) => {
+			const redirectTo =
+				typeof window !== "undefined"
+					? `${window.location.origin}/auth/callback`
+					: undefined;
+			const { error } = await supabase.auth.signInWithOtp({
+				email: value.email,
+				options: { emailRedirectTo: redirectTo },
+			});
+			if (error) {
+				toast.error(error.message);
+				return;
+			}
+			setSent(true);
+			toast.success("Magic link sent. Check your email.");
+		},
+		validators: {
+			onSubmit: z.object({ email: z.email("Invalid email address") }),
+		},
+	});
 
-  const form = useForm({
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-    onSubmit: async ({ value }) => {
-      await authClient.signIn.email(
-        {
-          email: value.email,
-          password: value.password,
-        },
-        {
-          onSuccess: () => {
-            router.push("/dashboard");
-            toast.success("Sign in successful");
-          },
-          onError: (error) => {
-            toast.error(error.error.message || error.error.statusText);
-          },
-        },
-      );
-    },
-    validators: {
-      onSubmit: z.object({
-        email: z.email("Invalid email address"),
-        password: z.string().min(8, "Password must be at least 8 characters"),
-      }),
-    },
-  });
+	if (sent) {
+		return (
+			<div className="mx-auto mt-10 w-full max-w-md p-6 text-center">
+				<h1 className="mb-2 font-semibold text-2xl">Check your email</h1>
+				<p className="text-muted-foreground text-sm">
+					We sent a magic sign-in link. Open it on this device to continue.
+				</p>
+			</div>
+		);
+	}
 
-  if (isPending) {
-    return <Loader />;
-  }
-
-  return (
-    <div className="mx-auto w-full mt-10 max-w-md p-6">
-      <h1 className="mb-6 text-center text-3xl font-bold">Welcome Back</h1>
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          form.handleSubmit();
-        }}
-        className="space-y-4"
-      >
-        <div>
-          <form.Field name="email">
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>Email</Label>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type="email"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-                {field.state.meta.errors.map((error) => (
-                  <p key={error?.message} className="text-red-500">
-                    {error?.message}
-                  </p>
-                ))}
-              </div>
-            )}
-          </form.Field>
-        </div>
-
-        <div>
-          <form.Field name="password">
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>Password</Label>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type="password"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-                {field.state.meta.errors.map((error) => (
-                  <p key={error?.message} className="text-red-500">
-                    {error?.message}
-                  </p>
-                ))}
-              </div>
-            )}
-          </form.Field>
-        </div>
-
-        <form.Subscribe
-          selector={(state) => ({ canSubmit: state.canSubmit, isSubmitting: state.isSubmitting })}
-        >
-          {({ canSubmit, isSubmitting }) => (
-            <Button type="submit" className="w-full" disabled={!canSubmit || isSubmitting}>
-              {isSubmitting ? "Submitting..." : "Sign In"}
-            </Button>
-          )}
-        </form.Subscribe>
-      </form>
-
-      <div className="mt-4 text-center">
-        <Button
-          variant="link"
-          onClick={onSwitchToSignUp}
-          className="text-indigo-600 hover:text-indigo-800"
-        >
-          Need an account? Sign Up
-        </Button>
-      </div>
-    </div>
-  );
+	return (
+		<div className="mx-auto mt-10 w-full max-w-md p-6">
+			<h1 className="mb-2 text-center font-semibold text-3xl">North admin</h1>
+			<p className="mb-6 text-center text-muted-foreground text-sm">
+				Magic-link sign-in. Admin access is granted by allow-list.
+			</p>
+			<form
+				onSubmit={(e) => {
+					e.preventDefault();
+					e.stopPropagation();
+					form.handleSubmit();
+				}}
+				className="space-y-4"
+			>
+				<form.Field name="email">
+					{(field) => (
+						<div className="space-y-2">
+							<Label htmlFor={field.name}>Email</Label>
+							<Input
+								id={field.name}
+								name={field.name}
+								type="email"
+								value={field.state.value}
+								onBlur={field.handleBlur}
+								onChange={(e) => field.handleChange(e.target.value)}
+							/>
+							{field.state.meta.errors.map((error) => (
+								<p key={error?.message} className="text-red-500">
+									{error?.message}
+								</p>
+							))}
+						</div>
+					)}
+				</form.Field>
+				<form.Subscribe
+					selector={(state) => ({
+						canSubmit: state.canSubmit,
+						isSubmitting: state.isSubmitting,
+					})}
+				>
+					{({ canSubmit, isSubmitting }) => (
+						<Button
+							type="submit"
+							className="w-full"
+							disabled={!canSubmit || isSubmitting}
+						>
+							{isSubmitting ? "Sending..." : "Send magic link"}
+						</Button>
+					)}
+				</form.Subscribe>
+			</form>
+		</div>
+	);
 }

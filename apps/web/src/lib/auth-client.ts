@@ -1,6 +1,5 @@
-import { polarClient } from "@polar-sh/better-auth/client";
-import { createAuthClient } from "better-auth/react";
+"use client";
 
-export const authClient = createAuthClient({
-  plugins: [polarClient()],
-});
+import { createSupabaseBrowserClient } from "@north/supabase/browser";
+
+export const supabase = createSupabaseBrowserClient();

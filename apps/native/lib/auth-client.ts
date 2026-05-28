@@ -1,41 +1,29 @@
-import { expoClient } from "@better-auth/expo/client";
-import { env } from "@north/env/native";
-import { createAuthClient } from "better-auth/react";
-import Constants from "expo-constants";
-import * as SecureStore from "expo-secure-store";
+import { createSupabaseNativeClient } from "@north/supabase/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import type { Session } from "@supabase/supabase-js";
+import { useEffect, useState } from "react";
 
-export const authClient = createAuthClient({
-  baseURL: env.EXPO_PUBLIC_SERVER_URL,
-  plugins: [
-    expoClient({
-      scheme: Constants.expoConfig?.scheme as string,
-      storagePrefix: Constants.expoConfig?.scheme as string,
-      storage: SecureStore,
-    }),
-  ],
-});
+export const supabase = createSupabaseNativeClient(AsyncStorage);
 
-type PolarLinkResponse = {
-  url: string;
-  redirect: boolean;
-};
+export function useSession() {
+	const [session, setSession] = useState<Session | null>(null);
+	const [isPending, setIsPending] = useState(true);
 
-type PolarClientResponse<T> = Promise<{
-  data: T | null;
-  error: { message?: string } | null;
-}>;
+	useEffect(() => {
+		let cancelled = false;
+		supabase.auth.getSession().then(({ data }) => {
+			if (cancelled) return;
+			setSession(data.session);
+			setIsPending(false);
+		});
+		const { data } = supabase.auth.onAuthStateChange((_event, next) => {
+			setSession(next);
+		});
+		return () => {
+			cancelled = true;
+			data.subscription.unsubscribe();
+		};
+	}, []);
 
-type PolarNativeClient = typeof authClient & {
-  checkout: (data: {
-    slug?: string;
-    products?: string[] | string;
-    redirect?: boolean;
-    successUrl?: string;
-    returnUrl?: string;
-  }) => PolarClientResponse<PolarLinkResponse>;
-  customer: {
-    portal: (data?: { redirect?: boolean }) => PolarClientResponse<PolarLinkResponse>;
-  };
-};
-
-export const polarNativeClient = authClient as PolarNativeClient;
+	return { data: session, isPending };
+}

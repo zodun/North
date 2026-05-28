@@ -1,0 +1,34 @@
+{
+	"name": "@north/supabase",
+	"type": "module",
+	"exports": {
+		"./server": {
+			"default": "./src/server.ts"
+		},
+		"./browser": {
+			"default": "./src/browser.ts"
+		},
+		"./native": {
+			"default": "./src/native.ts"
+		}
+	},
+	"scripts": {},
+	"dependencies": {
+		"@north/env": "workspace:*",
+		"@supabase/ssr": "^0.10.3",
+		"@supabase/supabase-js": "^2.106.2",
+		"zod": "catalog:"
+	},
+	"peerDependencies": {
+		"@react-native-async-storage/async-storage": "*"
+	},
+	"peerDependenciesMeta": {
+		"@react-native-async-storage/async-storage": {
+			"optional": true
+		}
+	},
+	"devDependencies": {
+		"@north/config": "workspace:*",
+		"typescript": "catalog:"
+	}
+}

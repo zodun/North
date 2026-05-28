@@ -1,105 +1,63 @@
 # north
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines Next.js, Self, and more.
+The stack is fixed by DEC-06 in [`docs/north-operating-document.md`](./docs/north-operating-document.md):
 
-## Features
+- **Product surface:** Expo + React Native (`apps/native`)
+- **Admin surface:** Next.js (`apps/web`) — content curation (FR-FEED-04) and opportunity upload (DEC-03)
+- **Backend & data:** Supabase (PostgreSQL + Auth + Row-Level Security + Edge Functions)
+- **Client SDK:** `supabase-js` only (no ORM in the client)
+- **AI:** OpenAI, called only from Edge Functions
+- **Media:** Cloudinary · **Analytics:** PostHog · **Push:** FCM · Payments deferred
+- **Tooling:** TypeScript, TailwindCSS, shadcn/ui (`packages/ui`), Biome, Turborepo
 
-- **TypeScript** - For type safety and improved developer experience
-- **Next.js** - Full-stack React framework
-- **React Native** - Build mobile apps using React
-- **Expo** - Tools for React Native development
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **Shared UI package** - shadcn/ui primitives live in `packages/ui`
-- **Drizzle** - TypeScript-first ORM
-- **PostgreSQL** - Database engine
-- **Authentication** - Better-Auth
-- **Biome** - Linting and formatting
-- **PWA** - Progressive Web App support
-- **Turborepo** - Optimized monorepo build system
-
-## Getting Started
-
-First, install the dependencies:
+## Getting started
 
 ```bash
 bun install
+supabase start          # local Postgres + Studio; requires Docker
+supabase db reset       # apply migrations in supabase/migrations
+cp apps/web/.env.example apps/web/.env
+cp apps/native/.env.example apps/native/.env
+# Fill in NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY,
+# SUPABASE_SERVICE_ROLE_KEY (from `supabase status`), and the EXPO_PUBLIC_* equivalents.
+bun run dev             # all apps
 ```
 
-## Database Setup
+Web admin: <http://localhost:3001>. Native: Expo Go via `bun run dev:native`.
+Design prototype lives at <http://localhost:3001/north> (publicly viewable, no auth).
 
-This project uses PostgreSQL with Drizzle ORM.
+## UI
 
-1. Make sure you have a PostgreSQL database set up.
-2. Update your `apps/web/.env` file with your PostgreSQL connection details.
-
-3. Apply the schema to your database:
-
-```bash
-bun run db:push
-```
-
-Then, run the development server:
-
-```bash
-bun run dev
-```
-
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the fullstack application.
-Use the Expo Go app to run the mobile application.
-
-## UI Customization
-
-React web apps in this stack share shadcn/ui primitives through `packages/ui`.
-
-- Change design tokens and global styles in `packages/ui/src/styles/globals.css`
-- Update shared primitives in `packages/ui/src/components/*`
-- Adjust shadcn aliases or style config in `packages/ui/components.json` and `apps/web/components.json`
-
-### Add more shared components
-
-Run this from the project root to add more primitives to the shared UI package:
+Shared shadcn/ui primitives live in `packages/ui`. Tokens and global styles are in `packages/ui/src/styles/globals.css`. Add more primitives with:
 
 ```bash
 npx shadcn@latest add accordion dialog popover sheet table -c packages/ui
 ```
 
-Import shared components like this:
-
-```tsx
-import { Button } from "@north/ui/components/button";
-```
-
-### Add app-specific blocks
-
-If you want to add app-specific blocks instead of shared primitives, run the shadcn CLI from `apps/web`.
-
-## Git Hooks and Formatting
-
-- Format and lint fix: `bun run check`
-
-## Project Structure
+## Layout
 
 ```
 north/
 ├── apps/
-│   └── web/         # Fullstack application (Next.js)
-│   ├── native/      # Mobile application (React Native, Expo)
+│   ├── web/         # Admin app (Next.js) + design prototype at /north
+│   └── native/      # Product surface (Expo + React Native)
 ├── packages/
-│   ├── ui/          # Shared shadcn/ui components and styles
-│   ├── auth/        # Authentication configuration & logic
-│   └── db/          # Database schema & queries
+│   ├── ui/          # Shared shadcn/ui components
+│   ├── supabase/    # Thin supabase-js client factories (server / browser / native)
+│   ├── env/         # Zod-validated env schemas (server / web / native)
+│   └── config/      # Shared tsconfig
+├── supabase/
+│   ├── config.toml
+│   └── migrations/  # 0001_init.sql · 0002_rls.sql
+└── docs/
+    └── north-operating-document.md  # Source of truth; Section 17 is the Decision Log
 ```
 
-## Available Scripts
+## Available scripts
 
-- `bun run dev`: Start all applications in development mode
-- `bun run build`: Build all applications
-- `bun run dev:web`: Start only the web application
-- `bun run check-types`: Check TypeScript types across all apps
-- `bun run dev:native`: Start the React Native/Expo development server
-- `bun run db:push`: Push schema changes to database
-- `bun run db:generate`: Generate database client/types
-- `bun run db:migrate`: Run database migrations
-- `bun run db:studio`: Open database studio UI
-- `bun run check`: Run Biome formatting and linting
-- `cd apps/web && bun run generate-pwa-assets`: Generate PWA assets
+- `bun run dev` — start all apps
+- `bun run dev:web` / `bun run dev:native`
+- `bun run build` / `bun run check-types`
+- `bun run supabase:start` / `supabase:stop` / `supabase:reset` — local Supabase stack
+- `bun run check` — Biome format + lint
+- `cd apps/web && bun run generate-pwa-assets` — PWA assets

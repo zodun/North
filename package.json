@@ -13,12 +13,9 @@
       "lucide-react": "^0.546.0",
       "next-themes": "^0.4.6",
       "sonner": "^2.0.5",
-      "better-auth": "1.6.11",
       "@tanstack/react-form": "^1.28.0",
-      "@polar-sh/better-auth": "^1.8.4",
       "@types/react-dom": "^19.2.3",
-      "tailwindcss": "^4.1.18",
-      "@better-auth/expo": "1.6.11"
+      "tailwindcss": "^4.1.18"
     }
   },
   "type": "module",
@@ -28,10 +25,10 @@
     "check-types": "turbo check-types",
     "dev:native": "turbo -F native dev",
     "dev:web": "turbo -F web dev",
-    "db:push": "turbo -F @north/db db:push",
-    "db:studio": "turbo -F @north/db db:studio",
-    "db:generate": "turbo -F @north/db db:generate",
-    "db:migrate": "turbo -F @north/db db:migrate",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "supabase:reset": "supabase db reset",
+    "supabase:studio": "supabase status",
     "check": "biome check --write ."
   },
   "dependencies": {
