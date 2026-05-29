@@ -11,6 +11,10 @@ export { Icon, type IconName, type IconProps } from "./components/Icon";
 export { Input, type InputProps } from "./components/Input";
 export { ProgressBar, type ProgressBarProps } from "./components/ProgressBar";
 export {
+	ScaleSelector,
+	type ScaleSelectorProps,
+} from "./components/ScaleSelector";
+export {
 	BandHero,
 	type BandHeroProps,
 	type BandLabel,

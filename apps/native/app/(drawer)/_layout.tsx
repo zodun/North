@@ -1,14 +1,23 @@
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import { Link } from "expo-router";
+import { Link, Redirect } from "expo-router";
 import { Drawer } from "expo-router/drawer";
 
 import { HeaderButton } from "@/components/header-button";
 import { NAV_THEME } from "@/lib/constants";
+import { useOnboardingStatus } from "@/lib/onboarding/use-onboarding-status";
 import { useColorScheme } from "@/lib/use-color-scheme";
 
 const DrawerLayout = () => {
 	const { colorScheme } = useColorScheme();
 	const theme = colorScheme === "dark" ? NAV_THEME.dark : NAV_THEME.light;
+	const status = useOnboardingStatus();
+
+	// If signed in but onboarding isn't complete, bounce to the flow.
+	// 'unauthenticated' falls through so the existing index.tsx
+	// welcome / sign-in surface still renders.
+	if (status === "onboarding") {
+		return <Redirect href="/onboarding/1-name" />;
+	}
 
 	return (
 		<Drawer

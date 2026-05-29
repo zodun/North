@@ -66,6 +66,10 @@ export default function RootLayout() {
 					<Stack>
 						<Stack.Screen name="(drawer)" options={{ headerShown: false }} />
 						<Stack.Screen
+							name="onboarding"
+							options={{ headerShown: false, gestureEnabled: false }}
+						/>
+						<Stack.Screen
 							name="modal"
 							options={{ title: "Modal", presentation: "modal" }}
 						/>
