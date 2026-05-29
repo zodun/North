@@ -1,39 +1,35 @@
-// Social sign-in buttons (DEC-18). Renders Google + Apple only when the
-// respective OAuth credentials / device capabilities are present.
+// Apple + Google buttons (DEC-18) for the (auth) flow. Same OAuth
+// flow as the legacy components/social-sign-in.tsx, but rendered
+// through @north/native-ui Button with its built-in `loading` state.
 //
 // Google: expo-auth-session's Google provider opens the OAuth flow,
-// returns an ID token, and we hand it to Supabase via signInWithIdToken
-// — that bypasses the redirect dance Supabase's signInWithOAuth would
-// require on native.
+// returns an ID token, and we hand it to Supabase via
+// signInWithIdToken — that bypasses the redirect dance Supabase's
+// signInWithOAuth would require on native.
 //
-// Apple: expo-apple-authentication uses Sign in with Apple directly on
-// iOS. Returns an identity token straight to us; same Supabase handoff.
-// Android is skipped (Apple SDK isn't available; iOS-only).
+// Apple: expo-apple-authentication on iOS only. Returns an identity
+// token straight to us; same Supabase handoff. Android is skipped.
 
 import { env } from "@north/env/native";
+import { Button } from "@north/native-ui";
+import { getTokens } from "@north/tokens";
 import * as AppleAuthentication from "expo-apple-authentication";
 import * as Google from "expo-auth-session/providers/google";
 import * as Crypto from "expo-crypto";
 import * as WebBrowser from "expo-web-browser";
 import { useEffect, useState } from "react";
-import {
-	ActivityIndicator,
-	Platform,
-	StyleSheet,
-	Text,
-	TouchableOpacity,
-	View,
-} from "react-native";
+import { Platform, StyleSheet, View } from "react-native";
 
 import { supabase } from "@/lib/auth-client";
-import { NAV_THEME } from "@/lib/constants";
-import { useColorScheme } from "@/lib/use-color-scheme";
 
 WebBrowser.maybeCompleteAuthSession();
 
-export function SocialSignIn({ onError }: { onError: (msg: string) => void }) {
-	const { colorScheme } = useColorScheme();
-	const theme = colorScheme === "dark" ? NAV_THEME.dark : NAV_THEME.light;
+export type SocialButtonsProps = {
+	onError: (msg: string) => void;
+};
+
+export function SocialButtons({ onError }: SocialButtonsProps) {
+	const { p, t, d } = getTokens("warm", "humanist", "calm");
 
 	const [appleAvailable, setAppleAvailable] = useState(false);
 	const [googlePending, setGooglePending] = useState(false);
@@ -51,17 +47,25 @@ export function SocialSignIn({ onError }: { onError: (msg: string) => void }) {
 	});
 
 	useEffect(() => {
-		if (response?.type !== "success") return;
-		const idToken = response.params.id_token;
-		if (!idToken) return;
-		(async () => {
-			const { error } = await supabase.auth.signInWithIdToken({
-				provider: "google",
-				token: idToken,
-			});
-			if (error) onError(error.message);
+		if (!response) return;
+		if (response.type === "success") {
+			const idToken = response.params.id_token;
+			if (!idToken) {
+				setGooglePending(false);
+				return;
+			}
+			(async () => {
+				const { error } = await supabase.auth.signInWithIdToken({
+					provider: "google",
+					token: idToken,
+				});
+				if (error) onError(error.message);
+				setGooglePending(false);
+			})();
+		} else {
+			// user dismissed or error — clear pending, no banner
 			setGooglePending(false);
-		})();
+		}
 	}, [response, onError]);
 
 	const onGoogle = async () => {
@@ -110,55 +114,33 @@ export function SocialSignIn({ onError }: { onError: (msg: string) => void }) {
 	if (!googleConfigured && !appleAvailable) return null;
 
 	return (
-		<View style={styles.wrap}>
-			{googleConfigured ? (
-				<TouchableOpacity
-					onPress={onGoogle}
-					disabled={googlePending}
-					style={[
-						styles.button,
-						{ borderColor: theme.border, backgroundColor: theme.background },
-					]}
-				>
-					{googlePending ? (
-						<ActivityIndicator size="small" color={theme.text} />
-					) : (
-						<Text style={[styles.label, { color: theme.text }]}>
-							Continue with Google
-						</Text>
-					)}
-				</TouchableOpacity>
-			) : null}
-
+		<View style={[styles.wrap, { gap: d.gap }]}>
 			{appleAvailable ? (
-				<TouchableOpacity
+				<Button
+					p={p}
+					t={t}
+					variant="primary"
+					loading={applePending}
 					onPress={onApple}
-					disabled={applePending}
-					style={[
-						styles.button,
-						{ borderColor: theme.border, backgroundColor: theme.background },
-					]}
 				>
-					{applePending ? (
-						<ActivityIndicator size="small" color={theme.text} />
-					) : (
-						<Text style={[styles.label, { color: theme.text }]}>
-							Continue with Apple
-						</Text>
-					)}
-				</TouchableOpacity>
+					Continue with Apple
+				</Button>
+			) : null}
+			{googleConfigured ? (
+				<Button
+					p={p}
+					t={t}
+					variant="outline"
+					loading={googlePending}
+					onPress={onGoogle}
+				>
+					Continue with Google
+				</Button>
 			) : null}
 		</View>
 	);
 }
 
 const styles = StyleSheet.create({
-	wrap: { gap: 8, marginBottom: 12 },
-	button: {
-		padding: 12,
-		borderWidth: 1,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	label: { fontSize: 15, fontWeight: "500" },
+	wrap: {},
 });

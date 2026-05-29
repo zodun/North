@@ -12,9 +12,12 @@ const DrawerLayout = () => {
 	const theme = colorScheme === "dark" ? NAV_THEME.dark : NAV_THEME.light;
 	const status = useOnboardingStatus();
 
-	// If signed in but onboarding isn't complete, bounce to the flow.
-	// 'unauthenticated' falls through so the existing index.tsx
-	// welcome / sign-in surface still renders.
+	// Routing gates. The (auth) group owns the unauthenticated surface
+	// and onboarding owns its in-progress state — bounce out for either.
+	if (status === "loading") return null;
+	if (status === "unauthenticated") {
+		return <Redirect href="/(auth)/welcome" />;
+	}
 	if (status === "onboarding") {
 		return <Redirect href="/onboarding/1-name" />;
 	}

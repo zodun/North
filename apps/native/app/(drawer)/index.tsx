@@ -1,94 +1,102 @@
-import { Button, Column, Text as ExpoUIText, Host } from "@expo/ui";
-import { ScrollView, StyleSheet, View } from "react-native";
+// Authenticated home. The (auth) flow owns sign-in/sign-up — this
+// surface only renders for fully-onboarded users now.
 
-import { Container } from "@/components/container";
-import { SignIn } from "@/components/sign-in";
-import { SignUp } from "@/components/sign-up";
+import { Button, Card } from "@north/native-ui";
+import { getTokens } from "@north/tokens";
+import {
+	Alert,
+	SafeAreaView,
+	ScrollView,
+	StyleSheet,
+	Text,
+	View,
+} from "react-native";
+
+import { BrandMark } from "@/components/auth/BrandMark";
 import { supabase, useSession } from "@/lib/auth-client";
-import { NAV_THEME } from "@/lib/constants";
 import { useRegisterPushToken } from "@/lib/notifications";
-import { useColorScheme } from "@/lib/use-color-scheme";
 
 export default function Home() {
-	const { colorScheme } = useColorScheme();
-	const theme = colorScheme === "dark" ? NAV_THEME.dark : NAV_THEME.light;
+	const { p, t, d } = getTokens("warm", "humanist", "calm");
 	const { data: session } = useSession();
 	// Register the device's FCM/APNs push token once per signed-in
 	// session (DEC-21). No-op when there's no session, on simulators,
 	// or when the user denies the permission prompt.
 	useRegisterPushToken();
+
 	const displayName =
 		(session?.user.user_metadata?.display_name as string | undefined) ?? null;
+	const email = session?.user.email ?? "";
+
+	const confirmSignOut = () => {
+		Alert.alert(
+			"Sign out?",
+			"You can sign back in any time.",
+			[
+				{ text: "Cancel", style: "cancel" },
+				{
+					text: "Sign out",
+					style: "destructive",
+					onPress: () => {
+						void supabase.auth.signOut();
+					},
+				},
+			],
+			{ cancelable: true },
+		);
+	};
 
 	return (
-		<Container>
+		<SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]}>
 			<ScrollView
-				style={styles.scrollView}
-				contentInsetAdjustmentBehavior="never"
+				style={styles.flex}
+				contentContainerStyle={[
+					styles.content,
+					{ paddingHorizontal: d.scrnPad, gap: d.gapLg },
+				]}
 			>
-				<View style={styles.content}>
-					<Host style={styles.titleHost}>
-						<ExpoUIText
-							textStyle={{
-								color: theme.text,
-								fontSize: 24,
-								fontWeight: "bold",
-								textAlign: "center",
-							}}
-						>
-							North
-						</ExpoUIText>
-					</Host>
+				<View style={{ alignItems: "center", paddingTop: 8 }}>
+					<BrandMark size="sm" />
+				</View>
 
-					{session?.user ? (
-						<View
+				<Card p={p} padding={d.pad}>
+					<View style={{ gap: 4 }}>
+						<Text
 							style={[
-								styles.userCard,
-								{ backgroundColor: theme.card, borderColor: theme.border },
+								styles.greeting,
+								{
+									color: p.ink,
+									fontFamily: t.display,
+									fontWeight: String(t.displayWeight) as "400",
+								},
 							]}
 						>
-							<Host
-								style={styles.userHeader}
-								matchContents={{ vertical: true }}
+							{`Welcome${displayName ? `, ${displayName}` : ""}.`}
+						</Text>
+						{email ? (
+							<Text
+								style={[styles.email, { color: p.inkDim, fontFamily: t.ui }]}
 							>
-								<Column spacing={8}>
-									<ExpoUIText textStyle={{ color: theme.text, fontSize: 16 }}>
-										{`Welcome${displayName ? `, ${displayName}` : ""}`}
-									</ExpoUIText>
-									<ExpoUIText
-										textStyle={{ color: theme.text, fontSize: 14 }}
-										style={{ opacity: 0.7 }}
-									>
-										{session.user.email ?? ""}
-									</ExpoUIText>
-								</Column>
-							</Host>
-							<Host matchContents={{ vertical: true }}>
-								<Button
-									label="Sign out"
-									variant="outlined"
-									onPress={() => {
-										void supabase.auth.signOut();
-									}}
-								/>
-							</Host>
-						</View>
-					) : (
-						<>
-							<SignIn />
-							<SignUp />
-						</>
-					)}
+								{email}
+							</Text>
+						) : null}
+					</View>
+				</Card>
+
+				<View style={{ gap: d.gap }}>
+					<Button p={p} t={t} variant="outline" onPress={confirmSignOut}>
+						Sign out
+					</Button>
 				</View>
 			</ScrollView>
-		</Container>
+		</SafeAreaView>
 	);
 }
 
 const styles = StyleSheet.create({
-	scrollView: { flex: 1 },
-	content: { paddingHorizontal: 20, paddingTop: 28, paddingBottom: 32 },
-	titleHost: { alignSelf: "stretch", height: 34, marginBottom: 24 },
-	userCard: { marginBottom: 16, padding: 16, borderWidth: 1, borderRadius: 16 },
-	userHeader: { marginBottom: 8 },
+	safe: { flex: 1 },
+	flex: { flex: 1 },
+	content: { paddingTop: 28, paddingBottom: 32 },
+	greeting: { fontSize: 24, lineHeight: 30, letterSpacing: -0.3 },
+	email: { fontSize: 14 },
 });
