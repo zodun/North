@@ -8,6 +8,7 @@
 import { Icon } from "@north/native-ui";
 import { getTokens } from "@north/tokens";
 import * as Linking from "expo-linking";
+import { memo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import type { FeedItem } from "@/lib/feed/types";
@@ -50,7 +51,9 @@ type Props = {
 	onShare: () => void;
 };
 
-export function ContentCard({
+// memo: re-renders only when its own props change, not when a sibling card's
+// interaction state changes (critical with renderItem useCallback in for-you.tsx).
+export const ContentCard = memo(function ContentCard({
 	item,
 	height,
 	isSaved,
@@ -168,7 +171,7 @@ export function ContentCard({
 			/>
 		</View>
 	);
-}
+});
 
 const styles = StyleSheet.create({
 	card: {

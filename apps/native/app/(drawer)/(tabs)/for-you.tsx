@@ -15,6 +15,7 @@ import { useCallback, useRef, useState } from "react";
 import {
 	ActivityIndicator,
 	FlatList,
+	Platform,
 	StyleSheet,
 	Text,
 	View,
@@ -45,6 +46,23 @@ export default function ForYou() {
 	const viewabilityConfig = useRef({
 		itemVisiblePercentThreshold: 60,
 	});
+
+	// M1-PERF: memoised renderItem so FlatList doesn't re-render every mounted
+	// card on unrelated state changes. Deps: listHeight, isSaved, isMatters, record.
+	const renderItem = useCallback(
+		({ item }: { item: FeedItem }) => (
+			<ContentCard
+				item={item}
+				height={listHeight}
+				isSaved={isSaved(item.id)}
+				isMatters={isMatters(item.id)}
+				onSave={() => record(item.id, "save")}
+				onMatters={() => record(item.id, "matters")}
+				onShare={() => record(item.id, "share")}
+			/>
+		),
+		[listHeight, isSaved, isMatters, record],
+	);
 
 	const onViewableItemsChanged = useCallback(
 		({ changed }: { viewableItems: ViewToken[]; changed: ViewToken[] }) => {
@@ -130,19 +148,18 @@ export default function ForYou() {
 							offset: listHeight * index,
 							index,
 						})}
+						// M1-PERF: keep only 3 viewport-heights of items mounted (1 above,
+						// current, 1 below). Default of 21 renders far too many for a pager.
+						windowSize={3}
+						// Render at most 2 items per JS batch to avoid jank during fast swipes.
+						maxToRenderPerBatch={2}
+						// Cold-start renders only the first card; the user hasn't scrolled yet.
+						initialNumToRender={1}
+						// Free native view memory for clipped items on Android.
+						removeClippedSubviews={Platform.OS === "android"}
 						onViewableItemsChanged={onViewableItemsChanged}
 						viewabilityConfig={viewabilityConfig.current}
-						renderItem={({ item }) => (
-							<ContentCard
-								item={item}
-								height={listHeight}
-								isSaved={isSaved(item.id)}
-								isMatters={isMatters(item.id)}
-								onSave={() => record(item.id, "save")}
-								onMatters={() => record(item.id, "matters")}
-								onShare={() => record(item.id, "share")}
-							/>
-						)}
+						renderItem={renderItem}
 					/>
 				)}
 			</View>
