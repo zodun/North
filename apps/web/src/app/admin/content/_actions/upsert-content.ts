@@ -14,6 +14,8 @@ export type UpsertContentInput = {
 	title: string;
 	body?: string;
 	focusAreaId?: string;
+	contentCategoryId?: string;
+	sortOrder?: number;
 	cloudinaryPublicId?: string;
 	externalUrl?: string;
 	attributionText?: string;
@@ -42,6 +44,8 @@ export async function upsertContent(input: UpsertContentInput) {
 			title: input.title,
 			body: input.body ?? null,
 			focus_area_id: input.focusAreaId ?? null,
+			content_category_id: input.contentCategoryId ?? null,
+			sort_order: input.sortOrder ?? 0,
 			cloudinary_public_id: input.cloudinaryPublicId ?? null,
 			external_url: input.externalUrl ?? null,
 			attribution_text: input.attributionText ?? null,
