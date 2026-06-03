@@ -46,10 +46,16 @@ If the check finds a violation, the fix is one of:
 # Edge Function secrets
 supabase secrets set OPENAI_API_KEY=sk-...
 supabase secrets set SUMMARY_TRIGGER_SECRET=$(openssl rand -hex 32)
+supabase secrets set MISSION_TRIGGER_SECRET=$(openssl rand -hex 32)
 
-# Postgres-side settings for pg_cron → Edge Function (signal-summary)
+# Postgres-side settings for pg_cron → Edge Functions
 supabase db remote exec "alter database postgres set app.functions_url = 'https://<project-ref>.supabase.co/functions/v1'"
 supabase db remote exec "alter database postgres set app.summary_trigger_secret = '<same value as SUMMARY_TRIGGER_SECRET>'"
+supabase db remote exec "alter database postgres set app.mission_trigger_secret = '<same value as MISSION_TRIGGER_SECRET>'"
+
+# Deploy Edge Functions
+supabase functions deploy signal-summary
+supabase functions deploy daily-mission
 ```
 
 ### Web admin (`apps/web`)
