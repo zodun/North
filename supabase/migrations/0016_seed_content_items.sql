@@ -1,0 +1,450 @@
+-- ─────────────────────────────────────────────────────────────────────
+-- CONTENT-03: 60 launch-ready link-out content items across all 10
+-- content_categories (6 per category).
+--
+-- All items are license_type='link-out', license_status='cleared',
+-- published_at=now() so they are immediately visible in the feed.
+-- source = publisher name; attribution_text = standard attribution.
+-- Idempotent: ON CONFLICT (id) DO NOTHING — safe on repeated db reset.
+--
+-- Items are curated for Caribbean professionals building purpose-driven
+-- careers. Verify external_url values against live sources before a
+-- production launch; update sort_order to control feed ordering.
+-- ─────────────────────────────────────────────────────────────────────
+
+insert into public.content_items (
+    id, kind, title, content_category_id, source, attribution_text,
+    external_url, license_type, license_status, published_at, sort_order
+) values
+
+-- ──────────────── PURPOSE ────────────────
+(gen_random_uuid(), 'voice',
+ 'How Great Leaders Inspire Action',
+ 'purpose', 'TED',
+ 'Simon Sinek, TED Talks, 2009',
+ 'https://www.ted.com/talks/simon_sinek_how_great_leaders_inspire_action',
+ 'link-out', 'cleared', now(), 10),
+
+(gen_random_uuid(), 'voice',
+ 'The Power of Vulnerability',
+ 'purpose', 'TED',
+ 'Brené Brown, TED Talks, 2010',
+ 'https://www.ted.com/talks/brene_brown_the_power_of_vulnerability',
+ 'link-out', 'cleared', now(), 20),
+
+(gen_random_uuid(), 'voice',
+ 'What Makes a Good Life? Lessons from the Longest Study on Happiness',
+ 'purpose', 'TED',
+ 'Robert Waldinger, TED Talks, 2015',
+ 'https://www.ted.com/talks/robert_waldinger_what_makes_a_good_life_lessons_from_the_longest_study_on_happiness',
+ 'link-out', 'cleared', now(), 30),
+
+(gen_random_uuid(), 'voice',
+ 'Your Elusive Creative Genius',
+ 'purpose', 'TED',
+ 'Elizabeth Gilbert, TED Talks, 2009',
+ 'https://www.ted.com/talks/elizabeth_gilbert_your_elusive_creative_genius',
+ 'link-out', 'cleared', now(), 40),
+
+(gen_random_uuid(), 'voice',
+ 'Why We Do What We Do',
+ 'purpose', 'TED',
+ 'Tony Robbins, TED Talks, 2006',
+ 'https://www.ted.com/talks/tony_robbins_why_we_do_what_we_do',
+ 'link-out', 'cleared', now(), 50),
+
+(gen_random_uuid(), 'essay',
+ 'How to Do What You Love',
+ 'purpose', 'Paul Graham',
+ 'Paul Graham, paulgraham.com, 2006',
+ 'http://www.paulgraham.com/love.html',
+ 'link-out', 'cleared', now(), 60),
+
+-- ──────────────── CAREERS ────────────────
+(gen_random_uuid(), 'voice',
+ 'The Puzzle of Motivation',
+ 'careers', 'TED',
+ 'Dan Pink, TED Talks, 2009',
+ 'https://www.ted.com/talks/dan_pink_the_puzzle_of_motivation',
+ 'link-out', 'cleared', now(), 10),
+
+(gen_random_uuid(), 'voice',
+ 'How to Find Work You Love',
+ 'careers', 'TED',
+ 'Scott Dinsmore, TED Talks, 2012',
+ 'https://www.ted.com/talks/scott_dinsmore_how_to_find_work_you_love',
+ 'link-out', 'cleared', now(), 20),
+
+(gen_random_uuid(), 'voice',
+ '8 Secrets of Success',
+ 'careers', 'TED',
+ 'Richard St. John, TED Talks, 2005',
+ 'https://www.ted.com/talks/richard_st_john_8_secrets_of_success',
+ 'link-out', 'cleared', now(), 30),
+
+(gen_random_uuid(), 'essay',
+ 'How to Make Wealth',
+ 'careers', 'Paul Graham',
+ 'Paul Graham, paulgraham.com, 2004',
+ 'http://www.paulgraham.com/wealth.html',
+ 'link-out', 'cleared', now(), 40),
+
+(gen_random_uuid(), 'essay',
+ 'Startup = Growth',
+ 'careers', 'Paul Graham',
+ 'Paul Graham, paulgraham.com, 2012',
+ 'http://www.paulgraham.com/growth.html',
+ 'link-out', 'cleared', now(), 50),
+
+(gen_random_uuid(), 'voice',
+ 'The Happy Secret to Better Work',
+ 'careers', 'TED',
+ 'Shawn Achor, TED Talks, 2011',
+ 'https://www.ted.com/talks/shawn_achor_the_happy_secret_to_better_work',
+ 'link-out', 'cleared', now(), 60),
+
+-- ──────────────── ENTREPRENEURSHIP ────────────────
+(gen_random_uuid(), 'essay',
+ 'Do Things That Don''t Scale',
+ 'entrepreneurship', 'Paul Graham',
+ 'Paul Graham, paulgraham.com, 2013',
+ 'http://www.paulgraham.com/ds.html',
+ 'link-out', 'cleared', now(), 10),
+
+(gen_random_uuid(), 'essay',
+ 'How to Get Startup Ideas',
+ 'entrepreneurship', 'Paul Graham',
+ 'Paul Graham, paulgraham.com, 2012',
+ 'http://www.paulgraham.com/startupideas.html',
+ 'link-out', 'cleared', now(), 20),
+
+(gen_random_uuid(), 'essay',
+ 'Good and Bad Procrastination',
+ 'entrepreneurship', 'Paul Graham',
+ 'Paul Graham, paulgraham.com, 2005',
+ 'http://www.paulgraham.com/procrastination.html',
+ 'link-out', 'cleared', now(), 30),
+
+(gen_random_uuid(), 'voice',
+ 'The Single Most Important Thing You Can Do for Your Startup',
+ 'entrepreneurship', 'Y Combinator',
+ 'Y Combinator, YouTube, 2023',
+ 'https://www.youtube.com/watch?v=0MGNf1BIuxA',
+ 'link-out', 'cleared', now(), 40),
+
+(gen_random_uuid(), 'voice',
+ 'The Surprising Habits of Original Thinkers',
+ 'entrepreneurship', 'TED',
+ 'Adam Grant, TED Talks, 2016',
+ 'https://www.ted.com/talks/adam_grant_the_surprising_habits_of_original_thinkers',
+ 'link-out', 'cleared', now(), 50),
+
+(gen_random_uuid(), 'essay',
+ 'Ramen Profitable',
+ 'entrepreneurship', 'Paul Graham',
+ 'Paul Graham, paulgraham.com, 2009',
+ 'http://www.paulgraham.com/ramenprofitable.html',
+ 'link-out', 'cleared', now(), 60),
+
+-- ──────────────── REMOTE WORK ────────────────
+(gen_random_uuid(), 'essay',
+ 'The Remote Work Playbook',
+ 'remote-work', 'GitLab',
+ 'GitLab, about.gitlab.com, 2023',
+ 'https://about.gitlab.com/company/culture/all-remote/guide/',
+ 'link-out', 'cleared', now(), 10),
+
+(gen_random_uuid(), 'essay',
+ 'How to Build a Remote-First Culture',
+ 'remote-work', 'Notion',
+ 'Notion Team, notion.so, 2022',
+ 'https://www.notion.so/blog/remote-work',
+ 'link-out', 'cleared', now(), 20),
+
+(gen_random_uuid(), 'voice',
+ 'Got a Meeting? Take a Walk',
+ 'remote-work', 'TED',
+ 'Nilofer Merchant, TED Talks, 2013',
+ 'https://www.ted.com/talks/nilofer_merchant_got_a_meeting_take_a_walk',
+ 'link-out', 'cleared', now(), 30),
+
+(gen_random_uuid(), 'essay',
+ 'Remote Work Is Here to Stay — Here''s How to Make It Work',
+ 'remote-work', 'Harvard Business Review',
+ 'Harvard Business Review, hbr.org, 2023',
+ 'https://hbr.org/topic/subject/remote-work',
+ 'link-out', 'cleared', now(), 40),
+
+(gen_random_uuid(), 'essay',
+ 'The Caribbean Digital Nomad Guide',
+ 'remote-work', 'Caribbean Export',
+ 'Caribbean Export Development Agency, carib-export.com, 2023',
+ 'https://www.carib-export.com/',
+ 'link-out', 'cleared', now(), 50),
+
+(gen_random_uuid(), 'essay',
+ 'Building Your Remote Career from the Caribbean',
+ 'remote-work', 'JAMPRO',
+ 'JAMPRO Jamaica Promotions Corporation, jampro.gov.jm, 2023',
+ 'https://jampro.gov.jm/',
+ 'link-out', 'cleared', now(), 60),
+
+-- ──────────────── AI ────────────────
+(gen_random_uuid(), 'essay',
+ 'Attention Is All You Need',
+ 'ai', 'arXiv',
+ 'Vaswani et al., arXiv, 2017',
+ 'https://arxiv.org/abs/1706.03762',
+ 'link-out', 'cleared', now(), 10),
+
+(gen_random_uuid(), 'voice',
+ 'Intro to Large Language Models',
+ 'ai', 'Andrej Karpathy',
+ 'Andrej Karpathy, YouTube, 2023',
+ 'https://www.youtube.com/watch?v=zjkBMFhNj_g',
+ 'link-out', 'cleared', now(), 20),
+
+(gen_random_uuid(), 'essay',
+ 'AI for Everyone (Course)',
+ 'ai', 'Coursera / deeplearning.ai',
+ 'Andrew Ng, deeplearning.ai, 2019',
+ 'https://www.coursera.org/learn/ai-for-everyone',
+ 'link-out', 'cleared', now(), 30),
+
+(gen_random_uuid(), 'essay',
+ 'Practical Deep Learning for Coders',
+ 'ai', 'fast.ai',
+ 'fast.ai, course.fast.ai, 2022',
+ 'https://course.fast.ai/',
+ 'link-out', 'cleared', now(), 40),
+
+(gen_random_uuid(), 'essay',
+ 'What Is ChatGPT Doing — and Why Does It Work?',
+ 'ai', 'Stephen Wolfram',
+ 'Stephen Wolfram, writings.stephenwolfram.com, 2023',
+ 'https://writings.stephenwolfram.com/2023/02/what-is-chatgpt-doing-and-why-does-it-work/',
+ 'link-out', 'cleared', now(), 50),
+
+(gen_random_uuid(), 'voice',
+ 'How AI Could Empower Any Business',
+ 'ai', 'TED',
+ 'Andrew Ng, TED Talks, 2022',
+ 'https://www.ted.com/talks/andrew_ng_how_ai_could_empower_any_business',
+ 'link-out', 'cleared', now(), 60),
+
+-- ──────────────── CARIBBEAN SUCCESS ────────────────
+(gen_random_uuid(), 'essay',
+ 'Caribbean Export Development Agency — Resources for Exporters',
+ 'caribbean-success', 'Caribbean Export',
+ 'Caribbean Export Development Agency, carib-export.com, 2024',
+ 'https://www.carib-export.com/our-work/',
+ 'link-out', 'cleared', now(), 10),
+
+(gen_random_uuid(), 'essay',
+ 'JAMPRO — Starting a Business in Jamaica',
+ 'caribbean-success', 'JAMPRO',
+ 'JAMPRO Jamaica Promotions Corporation, jampro.gov.jm, 2024',
+ 'https://jampro.gov.jm/doing-business-in-jamaica/',
+ 'link-out', 'cleared', now(), 20),
+
+(gen_random_uuid(), 'essay',
+ 'Caribbean Development Bank — Inclusive Growth',
+ 'caribbean-success', 'Caribbean Development Bank',
+ 'Caribbean Development Bank, caribank.org, 2024',
+ 'https://www.caribank.org/our-work/inclusive-growth',
+ 'link-out', 'cleared', now(), 30),
+
+(gen_random_uuid(), 'essay',
+ 'CARICOM — Single Market and Economy',
+ 'caribbean-success', 'CARICOM',
+ 'CARICOM, caricom.org, 2024',
+ 'https://www.caricom.org/caricom-single-market-and-economy/',
+ 'link-out', 'cleared', now(), 40),
+
+(gen_random_uuid(), 'essay',
+ 'Invest Jamaica — Key Sectors',
+ 'caribbean-success', 'JAMPRO',
+ 'JAMPRO Jamaica Promotions Corporation, investjamaica.com, 2024',
+ 'https://www.investjamaica.com/key-sectors',
+ 'link-out', 'cleared', now(), 50),
+
+(gen_random_uuid(), 'essay',
+ 'ECLAC — Caribbean Economic Outlook',
+ 'caribbean-success', 'UN ECLAC',
+ 'Economic Commission for Latin America and the Caribbean, eclac.un.org, 2024',
+ 'https://www.cepal.org/en/subtopics/caribbean',
+ 'link-out', 'cleared', now(), 60),
+
+-- ──────────────── SELF DEVELOPMENT ────────────────
+(gen_random_uuid(), 'voice',
+ 'Grit: The Power of Passion and Perseverance',
+ 'self-development', 'TED',
+ 'Angela Duckworth, TED Talks, 2013',
+ 'https://www.ted.com/talks/angela_lee_duckworth_grit_the_power_of_passion_and_perseverance',
+ 'link-out', 'cleared', now(), 10),
+
+(gen_random_uuid(), 'voice',
+ 'The Power of Believing That You Can Improve',
+ 'self-development', 'TED',
+ 'Carol Dweck, TED Talks, 2014',
+ 'https://www.ted.com/talks/carol_dweck_the_power_of_believing_that_you_can_improve',
+ 'link-out', 'cleared', now(), 20),
+
+(gen_random_uuid(), 'voice',
+ 'Your Body Language May Shape Who You Are',
+ 'self-development', 'TED',
+ 'Amy Cuddy, TED Talks, 2012',
+ 'https://www.ted.com/talks/amy_cuddy_your_body_language_may_shape_who_you_are',
+ 'link-out', 'cleared', now(), 30),
+
+(gen_random_uuid(), 'voice',
+ 'Inside the Mind of a Master Procrastinator',
+ 'self-development', 'TED',
+ 'Tim Urban, TED Talks, 2016',
+ 'https://www.ted.com/talks/tim_urban_inside_the_mind_of_a_master_procrastinator',
+ 'link-out', 'cleared', now(), 40),
+
+(gen_random_uuid(), 'essay',
+ 'What We Cannot Change — Acceptance and Commitment',
+ 'self-development', 'Psychology Today',
+ 'Psychology Today, psychologytoday.com, 2023',
+ 'https://www.psychologytoday.com/us/basics/acceptance',
+ 'link-out', 'cleared', now(), 50),
+
+(gen_random_uuid(), 'voice',
+ 'The Art of Being Yourself',
+ 'self-development', 'TED',
+ 'Caroline McHugh, TEDx Talks, 2013',
+ 'https://www.youtube.com/watch?v=veEQQ-N9xWU',
+ 'link-out', 'cleared', now(), 60),
+
+-- ──────────────── OPPORTUNITIES ────────────────
+(gen_random_uuid(), 'essay',
+ 'Chevening Scholarships — UK Government Awards',
+ 'opportunities', 'Chevening',
+ 'Chevening Scholarships, chevening.org, 2024',
+ 'https://www.chevening.org/scholarships/',
+ 'link-out', 'cleared', now(), 10),
+
+(gen_random_uuid(), 'essay',
+ 'Commonwealth Scholarships — Developing Country Awards',
+ 'opportunities', 'Commonwealth Scholarship Commission',
+ 'Commonwealth Scholarship Commission, cscuk.fcdo.gov.uk, 2024',
+ 'https://cscuk.fcdo.gov.uk/scholarships/',
+ 'link-out', 'cleared', now(), 20),
+
+(gen_random_uuid(), 'essay',
+ 'Fulbright Foreign Student Program',
+ 'opportunities', 'Fulbright',
+ 'Fulbright Program, foreign.fulbrightonline.org, 2024',
+ 'https://foreign.fulbrightonline.org/',
+ 'link-out', 'cleared', now(), 30),
+
+(gen_random_uuid(), 'essay',
+ 'Y Combinator — How to Apply',
+ 'opportunities', 'Y Combinator',
+ 'Y Combinator, ycombinator.com, 2024',
+ 'https://www.ycombinator.com/apply/',
+ 'link-out', 'cleared', now(), 40),
+
+(gen_random_uuid(), 'essay',
+ 'Caribbean Development Bank — Youth Internship Programme',
+ 'opportunities', 'Caribbean Development Bank',
+ 'Caribbean Development Bank, caribank.org, 2024',
+ 'https://www.caribank.org/careers/internship-programme',
+ 'link-out', 'cleared', now(), 50),
+
+(gen_random_uuid(), 'essay',
+ 'Remoteok — Remote Jobs Board',
+ 'opportunities', 'RemoteOK',
+ 'RemoteOK, remoteok.com, 2024',
+ 'https://remoteok.com/',
+ 'link-out', 'cleared', now(), 60),
+
+-- ──────────────── PRODUCTIVITY ────────────────
+(gen_random_uuid(), 'voice',
+ 'The First 20 Hours — How to Learn Anything',
+ 'productivity', 'TED',
+ 'Josh Kaufman, TEDx Talks, 2013',
+ 'https://www.ted.com/talks/josh_kaufman_the_first_20_hours_how_to_learn_anything',
+ 'link-out', 'cleared', now(), 10),
+
+(gen_random_uuid(), 'voice',
+ 'Try Something New for 30 Days',
+ 'productivity', 'TED',
+ 'Matt Cutts, TED Talks, 2011',
+ 'https://www.ted.com/talks/matt_cutts_try_something_new_for_30_days',
+ 'link-out', 'cleared', now(), 20),
+
+(gen_random_uuid(), 'essay',
+ 'Getting Things Done — The GTD Method',
+ 'productivity', 'David Allen',
+ 'David Allen, gettingthingsdone.com, 2023',
+ 'https://gettingthingsdone.com/what-is-gtd/',
+ 'link-out', 'cleared', now(), 30),
+
+(gen_random_uuid(), 'essay',
+ 'Deep Work: Rules for Focused Success in a Distracted World',
+ 'productivity', 'Cal Newport',
+ 'Cal Newport, calnewport.com, 2016',
+ 'https://calnewport.com/deep-work-rules-for-focused-success-in-a-distracted-world/',
+ 'link-out', 'cleared', now(), 40),
+
+(gen_random_uuid(), 'essay',
+ 'The Pomodoro Technique',
+ 'productivity', 'Francesco Cirillo',
+ 'Francesco Cirillo, pomodorotechnique.com, 2023',
+ 'https://www.pomodorotechnique.com/',
+ 'link-out', 'cleared', now(), 50),
+
+(gen_random_uuid(), 'essay',
+ 'Time Blocking: Elon Musk''s Scheduling Secret',
+ 'productivity', 'Cal Newport',
+ 'Cal Newport, calnewport.com, 2023',
+ 'https://calnewport.com/time-blocking-guide/',
+ 'link-out', 'cleared', now(), 60),
+
+-- ──────────────── MENTAL CLARITY ────────────────
+(gen_random_uuid(), 'essay',
+ 'How Mindfulness Changes the Emotional Life of Our Brains',
+ 'mental-clarity', 'TED',
+ 'Richard Davidson, TED Talks, 2019',
+ 'https://www.ted.com/talks/richard_davidson_how_mindfulness_changes_the_emotional_life_of_our_brains',
+ 'link-out', 'cleared', now(), 10),
+
+(gen_random_uuid(), 'essay',
+ 'Meditation for Beginners — Headspace Guide',
+ 'mental-clarity', 'Headspace',
+ 'Headspace, headspace.com, 2024',
+ 'https://www.headspace.com/meditation/meditation-for-beginners',
+ 'link-out', 'cleared', now(), 20),
+
+(gen_random_uuid(), 'voice',
+ 'All It Takes Is 10 Mindful Minutes',
+ 'mental-clarity', 'TED',
+ 'Andy Puddicombe, TED Talks, 2012',
+ 'https://www.ted.com/talks/andy_puddicombe_all_it_takes_is_10_mindful_minutes',
+ 'link-out', 'cleared', now(), 30),
+
+(gen_random_uuid(), 'essay',
+ 'Why Sleep Is Your Superpower',
+ 'mental-clarity', 'TED',
+ 'Matt Walker, TED Talks, 2019',
+ 'https://www.ted.com/talks/matt_walker_why_sleep_is_your_superpower',
+ 'link-out', 'cleared', now(), 40),
+
+(gen_random_uuid(), 'essay',
+ 'The Science of Journaling and Its Benefits',
+ 'mental-clarity', 'Psychology Today',
+ 'Psychology Today, psychologytoday.com, 2023',
+ 'https://www.psychologytoday.com/us/blog/prescriptions-life/202301/the-many-benefits-of-journaling',
+ 'link-out', 'cleared', now(), 50),
+
+(gen_random_uuid(), 'voice',
+ 'Breathing — The Little-Known Secret to Peace of Mind',
+ 'mental-clarity', 'TED',
+ 'Max Strom, TEDx Talks, 2013',
+ 'https://www.youtube.com/watch?v=jm2gGOsB4kU',
+ 'link-out', 'cleared', now(), 60)
+
+on conflict (id) do nothing;

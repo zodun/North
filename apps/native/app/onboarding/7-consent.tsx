@@ -13,6 +13,7 @@ import { QuestionShell } from "@/components/onboarding/QuestionShell";
 import { completeOnboarding } from "@/lib/onboarding/complete-onboarding";
 import {
 	CONSENT_BULLETS,
+	CONSENT_DISCLOSURE,
 	ONBOARDING_QUESTIONS,
 } from "@/lib/onboarding/questions";
 import { useOnboardingState } from "@/lib/onboarding/use-onboarding-state";
@@ -74,15 +75,22 @@ export default function OnboardingConsentScreen() {
 				</View>
 			}
 		>
-			<View style={{ gap: d.gap }}>
-				{CONSENT_BULLETS.map((bullet) => (
-					<View key={bullet} style={styles.bulletRow}>
-						<Icon name="check" size={20} color={p.accent} />
-						<Text style={[styles.bullet, { color: p.ink, fontFamily: t.ui }]}>
-							{bullet}
-						</Text>
-					</View>
-				))}
+			<View style={{ gap: d.gapLg }}>
+				<View style={{ gap: d.gap }}>
+					{CONSENT_BULLETS.map((bullet) => (
+						<View key={bullet} style={styles.bulletRow}>
+							<Icon name="check" size={20} color={p.accent} />
+							<Text style={[styles.bullet, { color: p.ink, fontFamily: t.ui }]}>
+								{bullet}
+							</Text>
+						</View>
+					))}
+				</View>
+				<Text
+					style={[styles.disclosure, { color: p.inkDim, fontFamily: t.ui }]}
+				>
+					{CONSENT_DISCLOSURE}
+				</Text>
 			</View>
 		</QuestionShell>
 	);
@@ -91,5 +99,6 @@ export default function OnboardingConsentScreen() {
 const styles = StyleSheet.create({
 	bulletRow: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
 	bullet: { flex: 1, fontSize: 15, lineHeight: 22 },
+	disclosure: { fontSize: 12, lineHeight: 18 },
 	error: { fontSize: 13 },
 });
