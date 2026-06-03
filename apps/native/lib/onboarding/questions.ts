@@ -98,11 +98,23 @@ export const BASELINE_SCALE_LABELS = [
 	"Fully",
 ];
 
-// Consent bullets shown on the final screen (verbatim from the web prototype).
+// PRIV-01: Consent bullets — what's captured and why (plain language, FR-PRIV-01).
+// Updated to match the SIGCAP event schema (view, dwell, save, matters, pass,
+// share, long_dwell) so the disclosure is complete and specific.
 export const CONSENT_BULLETS = [
-	"We store what you read, save, finish, and skip.",
-	"We never sell it. We never use it for ads.",
-	"You can wipe everything in two taps.",
+	"We record what you view and how long you dwell — this is the raw material for your Signal score.",
+	"Saves, likes, shares, and skips are captured too. They shape your feed and daily missions.",
+	"This data is used only to personalise North for you. It is never sold or used for advertising.",
+	"You can export or delete your full behavioural log from your Profile at any time.",
 ];
+
+// PRIV-02: Small-print disclosure required by the Jamaica Data Protection Act 2020.
+// Covers: data controller identity, third-party processor, retention period,
+// withdrawal mechanism, and governing legislation.
+export const CONSENT_DISCLOSURE =
+	"Data controller: North. Analytics processed by PostHog under a data-processing agreement. " +
+	"Retained for up to 12 months or until you delete your account. " +
+	"To withdraw consent, delete your account — this erases all behavioural data. " +
+	"Governed by the Jamaica Data Protection Act 2020.";
 
 export const TOTAL_QUESTIONS = ONBOARDING_QUESTIONS.length;
