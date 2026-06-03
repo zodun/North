@@ -21,7 +21,14 @@ export type IconName =
 	| "arrowRight"
 	| "flat"
 	| "check"
-	| "circleDot";
+	| "circleDot"
+	// feed interaction glyphs
+	| "heart"
+	| "heartFilled"
+	| "bookmark"
+	| "bookmarkFilled"
+	| "share"
+	| "externalLink";
 
 export type IconProps = {
 	name: IconName;
@@ -122,6 +129,52 @@ export function Icon({
 				<Svg {...common}>
 					<Circle cx="12" cy="12" r="9" />
 					<Circle cx="12" cy="12" r="3" fill={color} stroke="none" />
+				</Svg>
+			);
+		case "heart":
+			return (
+				<Svg {...common}>
+					<Path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+				</Svg>
+			);
+		case "heartFilled":
+			return (
+				<Svg {...common} stroke="none">
+					<Path
+						d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+						fill={color}
+					/>
+				</Svg>
+			);
+		case "bookmark":
+			return (
+				<Svg {...common}>
+					<Path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+				</Svg>
+			);
+		case "bookmarkFilled":
+			return (
+				<Svg {...common} stroke="none">
+					<Path
+						d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"
+						fill={color}
+					/>
+				</Svg>
+			);
+		case "share":
+			return (
+				<Svg {...common}>
+					<Path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+					<Path d="M16 6l-4-4-4 4" />
+					<Path d="M12 2v13" />
+				</Svg>
+			);
+		case "externalLink":
+			return (
+				<Svg {...common}>
+					<Path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+					<Path d="M15 3h6v6" />
+					<Path d="M10 14L21 3" />
 				</Svg>
 			);
 	}
