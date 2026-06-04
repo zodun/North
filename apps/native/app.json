@@ -14,9 +14,15 @@
 			"supportsTablet": true,
 			"bundleIdentifier": "app.north.client",
 			"usesAppleSignIn": true,
-			"googleServicesFile": "./google-services/GoogleService-Info.plist",
 			"infoPlist": {
-				"UIBackgroundModes": ["remote-notification"]
+				"UIBackgroundModes": ["remote-notification"],
+				"CFBundleURLTypes": [
+					{
+						"CFBundleURLSchemes": [
+							"com.googleusercontent.apps.671690703209-6jd6qasv4dl8tn5jbe8ugeoviu1ljrp4"
+						]
+					}
+				]
 			}
 		},
 		"android": {
@@ -27,11 +33,10 @@
 				"monochromeImage": "./assets/images/android-icon-monochrome.png"
 			},
 			"predictiveBackGestureEnabled": false,
-			"package": "app.north.client",
-			"googleServicesFile": "./google-services/google-services.json"
+			"package": "app.north.client"
 		},
 		"web": {
-			"output": "static",
+			"output": "single-page",
 			"favicon": "./assets/images/favicon.png"
 		},
 		"plugins": [

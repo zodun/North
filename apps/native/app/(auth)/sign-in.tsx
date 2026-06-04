@@ -34,7 +34,7 @@ function friendlyAuthError(raw: string): string {
 		return "We couldn't sign you in. Check your email and password.";
 	}
 	if (/email not confirmed/i.test(raw)) {
-		return "Confirm your email first — check your inbox for the link.";
+		return "Confirm your email first. Check your inbox for the link.";
 	}
 	if (/rate limit/i.test(raw)) {
 		return "Too many attempts. Give it a moment, then try again.";

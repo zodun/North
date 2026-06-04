@@ -27,7 +27,10 @@ export default function OnboardingBaselineScreen() {
 			nextDisabled={answers.baseline == null}
 			onNext={() => {
 				if (answers.baseline == null) return;
-				router.push("/onboarding/7-consent");
+				router.push({
+					pathname: "/onboarding/7-consent",
+					params: { baseline: answers.baseline },
+				});
 			}}
 		>
 			<ScaleSelector

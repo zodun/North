@@ -78,7 +78,7 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
 		id: "baseline",
 		prompt:
 			"In a typical week, how much of your time goes toward what matters to you?",
-		sub: "Baseline — we’ll ask again in four weeks.",
+		sub: "Baseline. We’ll ask again in four weeks.",
 	},
 	{
 		id: "consent",
@@ -102,7 +102,7 @@ export const BASELINE_SCALE_LABELS = [
 // Updated to match the SIGCAP event schema (view, dwell, save, matters, pass,
 // share, long_dwell) so the disclosure is complete and specific.
 export const CONSENT_BULLETS = [
-	"We record what you view and how long you dwell — this is the raw material for your Signal score.",
+	"We record what you view and how long you dwell. This is the raw material for your Signal score.",
 	"Saves, likes, shares, and skips are captured too. They shape your feed and daily missions.",
 	"This data is used only to personalise North for you. It is never sold or used for advertising.",
 	"You can export or delete your full behavioural log from your Profile at any time.",
@@ -114,7 +114,7 @@ export const CONSENT_BULLETS = [
 export const CONSENT_DISCLOSURE =
 	"Data controller: North. Analytics processed by PostHog under a data-processing agreement. " +
 	"Retained for up to 12 months or until you delete your account. " +
-	"To withdraw consent, delete your account — this erases all behavioural data. " +
+	"To withdraw consent, delete your account. This erases all behavioural data. " +
 	"Governed by the Jamaica Data Protection Act 2020.";
 
 export const TOTAL_QUESTIONS = ONBOARDING_QUESTIONS.length;

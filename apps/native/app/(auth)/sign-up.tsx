@@ -58,6 +58,7 @@ export default function SignUpScreen() {
 			const { data, error } = await supabase.auth.signUp({
 				email,
 				password: value.password,
+				options: { emailRedirectTo: "north://auth/verify" },
 			});
 			if (error) {
 				setAuthError(friendlyAuthError(error.message || "Failed to sign up"));

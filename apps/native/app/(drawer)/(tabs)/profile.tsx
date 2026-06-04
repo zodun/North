@@ -2,7 +2,7 @@
 //
 // PRO-01: name, focus areas, rhythm streak, mission completion stats,
 //         signal score + saved opportunities as M3 placeholders.
-// PRO-02: ConsistencyGrid — 28-day heatmap as the identity-evolution
+// PRO-02: ConsistencyGrid - 28-day heatmap as the identity-evolution
 //         visual. Understated; emphasises change over time, never a
 //         streak counter or loss-framing.
 
@@ -107,7 +107,7 @@ export default function Profile() {
 					/>
 				</View>
 
-				{/* ── Consistency grid (28-day) — PRO-02 ─────────────── */}
+				{/* ── Consistency grid (28-day) - PRO-02 ─────────────── */}
 				<View style={{ marginBottom: d.gap }}>
 					<ConsistencyGrid
 						p={p}
@@ -178,7 +178,7 @@ export default function Profile() {
 								{ color: p.inkDim, fontFamily: t.mono },
 							]}
 						>
-							—
+							-
 						</Text>
 						<Text
 							style={[styles.cardFooter, { color: p.inkDim, fontFamily: t.ui }]}
@@ -201,7 +201,7 @@ export default function Profile() {
 							{ color: p.inkDim, fontFamily: t.mono },
 						]}
 					>
-						—
+						-
 					</Text>
 					<Text
 						style={[styles.cardFooter, { color: p.inkDim, fontFamily: t.ui }]}

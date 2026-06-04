@@ -5,7 +5,7 @@
 
 import { Button, Icon } from "@north/native-ui";
 import { getTokens } from "@north/tokens";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
@@ -24,11 +24,22 @@ export default function OnboardingConsentScreen() {
 	const router = useRouter();
 	const { p, t, d } = getTokens("warm", "humanist", "calm");
 	const { answers } = useOnboardingState();
+	const params = useLocalSearchParams<{ baseline?: string }>();
+	const baseline =
+		params.baseline != null ? Number(params.baseline) : answers.baseline;
 	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	const canSubmit =
-		answers.focus.length > 0 && answers.baseline != null && !submitting;
+	const canSubmit = answers.focus.length > 0 && baseline != null && !submitting;
+
+	console.log(
+		"[7-consent] focus:",
+		answers.focus,
+		"baseline:",
+		baseline,
+		"canSubmit:",
+		canSubmit,
+	);
 
 	return (
 		<QuestionShell
@@ -43,6 +54,18 @@ export default function OnboardingConsentScreen() {
 							{error}
 						</Text>
 					) : null}
+					{!canSubmit && !submitting ? (
+						<Text
+							style={{
+								color: p.inkDim,
+								fontFamily: t.ui,
+								fontSize: 11,
+								textAlign: "center",
+							}}
+						>
+							{`focus:${answers.focus.length} baseline:${baseline ?? "null"}`}
+						</Text>
+					) : null}
 					<Button
 						p={p}
 						t={t}
@@ -50,27 +73,30 @@ export default function OnboardingConsentScreen() {
 						disabled={!canSubmit}
 						loading={submitting}
 						onPress={async () => {
-							if (!canSubmit || answers.baseline == null) return;
+							if (!canSubmit || baseline == null) return;
 							setSubmitting(true);
 							setError(null);
 							try {
+								console.log("[7-consent] calling completeOnboarding...");
 								await completeOnboarding({
 									focusAreaIds: answers.focus,
-									pulseScore: answers.baseline,
+									pulseScore: baseline,
 								});
-								router.replace("/(drawer)");
+								console.log("[7-consent] RPC success, navigating...");
+								router.replace("/(drawer)/(tabs)/for-you");
 							} catch (e) {
-								setError(
+								const msg =
 									e instanceof Error
 										? e.message
-										: "Something went wrong. Please try again.",
-								);
+										: "Something went wrong. Please try again.";
+								console.error("[7-consent] error:", msg);
+								setError(msg);
 							} finally {
 								setSubmitting(false);
 							}
 						}}
 					>
-						I agree — take me in
+						I agree, take me in
 					</Button>
 				</View>
 			}
