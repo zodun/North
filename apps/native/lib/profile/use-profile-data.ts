@@ -10,6 +10,14 @@ export type FocusAreaSummary = {
 	hue: string;
 };
 
+export type SignalBand = "Drifting" | "Finding" | "Aligned";
+
+export type SavedOpportunitySummary = {
+	id: string;
+	title: string;
+	org: string;
+};
+
 export type ProfileData = {
 	displayName: string | null;
 	focusAreas: FocusAreaSummary[];
@@ -24,6 +32,11 @@ export type ProfileData = {
 	directedDaysThisWeek: number;
 	tasksCompletedThisWeek: number;
 	totalTasksThisWeek: number;
+	/** null = no score computed yet */
+	signalBand: SignalBand | null;
+	signalTrend: "climbing" | "holding" | "easing" | null;
+	savedCount: number;
+	savedOpportunities: SavedOpportunitySummary[];
 };
 
 const DAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"];
@@ -75,33 +88,51 @@ export function useProfileData() {
 		})();
 		const weekStart = weekStartAST(today);
 
-		const [profileRes, focusRes, streakRes, missionRes] = await Promise.all([
-			supabase
-				.from("profiles")
-				.select("display_name")
-				.eq("user_id", userId)
-				.maybeSingle<{ display_name: string | null }>(),
+		const [profileRes, focusRes, streakRes, missionRes, signalRes, savedRes] =
+			await Promise.all([
+				supabase
+					.from("profiles")
+					.select("display_name")
+					.eq("user_id", userId)
+					.maybeSingle<{ display_name: string | null }>(),
 
-			supabase
-				.from("user_focus_areas")
-				.select("focus_area_id")
-				.eq("user_id", userId),
+				supabase
+					.from("user_focus_areas")
+					.select("focus_area_id")
+					.eq("user_id", userId),
 
-			supabase
-				.from("streaks")
-				.select("day, state")
-				.eq("user_id", userId)
-				.gte("day", windowStart)
-				.lte("day", today)
-				.order("day", { ascending: true }),
+				supabase
+					.from("streaks")
+					.select("day, state")
+					.eq("user_id", userId)
+					.gte("day", windowStart)
+					.lte("day", today)
+					.order("day", { ascending: true }),
 
-			supabase
-				.from("missions")
-				.select("id, mission_date, user_mission_tasks(done)")
-				.eq("user_id", userId)
-				.gte("mission_date", weekStart)
-				.lte("mission_date", today),
-		]);
+				supabase
+					.from("missions")
+					.select("id, mission_date, user_mission_tasks(done)")
+					.eq("user_id", userId)
+					.gte("mission_date", weekStart)
+					.lte("mission_date", today),
+
+				// Latest two signal scores to derive band + trend.
+				supabase
+					.from("signal_scores")
+					.select("band, raw_score")
+					.eq("user_id", userId)
+					.lte("week_ending", today)
+					.order("week_ending", { ascending: false })
+					.limit(2),
+
+				// Saved opportunities — count + last 3 titles.
+				supabase
+					.from("user_saved_opportunities")
+					.select("opportunity_id, opportunities(id, title, org)")
+					.eq("user_id", userId)
+					.order("saved_at", { ascending: false })
+					.limit(3),
+			]);
 
 		if (profileRes.error) {
 			setError(profileRes.error.message);
@@ -156,6 +187,30 @@ export function useProfileData() {
 
 		const week7 = streaks28.slice(-7);
 
+		// Signal band + trend.
+		const scoreRows = (signalRes.data ?? []) as {
+			band: SignalBand;
+			raw_score: number;
+		}[];
+		const signalBand = scoreRows[0]?.band ?? null;
+		let signalTrend: "climbing" | "holding" | "easing" | null = null;
+		if (scoreRows.length >= 2) {
+			const delta = scoreRows[0].raw_score - scoreRows[1].raw_score;
+			signalTrend = delta > 2 ? "climbing" : delta < -2 ? "easing" : "holding";
+		} else if (scoreRows.length === 1) {
+			signalTrend = "holding";
+		}
+
+		// Saved opportunities. Supabase returns the FK join as an array.
+		type SavedRow = {
+			opportunity_id: string;
+			opportunities: { id: string; title: string; org: string }[] | null;
+		};
+		const savedRows = (savedRes.data ?? []) as unknown as SavedRow[];
+		const savedOpportunities: SavedOpportunitySummary[] = savedRows
+			.flatMap((r) => r.opportunities ?? [])
+			.filter((o): o is SavedOpportunitySummary => Boolean(o?.id));
+
 		setData({
 			displayName: profileRes.data?.display_name ?? null,
 			focusAreas,
@@ -166,6 +221,10 @@ export function useProfileData() {
 			directedDaysThisWeek: week7.filter((s) => s === 2).length,
 			tasksCompletedThisWeek: tasksDone,
 			totalTasksThisWeek: tasksTotal,
+			signalBand,
+			signalTrend,
+			savedCount: savedRows.length,
+			savedOpportunities,
 		});
 		setLoading(false);
 	}, [session]);

@@ -1,10 +1,11 @@
-// Profile tab (PRO-01 / PRO-02).
+// Profile tab (PRO-01 / PRO-02 / PRO-03).
 //
 // PRO-01: name, focus areas, rhythm streak, mission completion stats,
-//         signal score + saved opportunities as M3 placeholders.
+//         signal score + saved opportunities.
 // PRO-02: ConsistencyGrid - 28-day heatmap as the identity-evolution
 //         visual. Understated; emphasises change over time, never a
 //         streak counter or loss-framing.
+// PRO-03: Signal band + saved opportunities wired to real M3 data.
 
 import { Card, ConsistencyGrid, RhythmStreakCard } from "@north/native-ui";
 import { getTokens } from "@north/tokens";
@@ -161,7 +162,7 @@ export default function Profile() {
 					</Card>
 				</View>
 
-				{/* ── Signal score (M3 placeholder) ──────────────────── */}
+				{/* ── Signal band (PRO-03) ────────────────────────────── */}
 				<View style={{ marginBottom: d.gap }}>
 					<Card p={p}>
 						<Text
@@ -172,42 +173,110 @@ export default function Profile() {
 						>
 							SIGNAL
 						</Text>
-						<Text
-							style={[
-								styles.placeholderValue,
-								{ color: p.inkDim, fontFamily: t.mono },
-							]}
-						>
-							-
-						</Text>
-						<Text
-							style={[styles.cardFooter, { color: p.inkDim, fontFamily: t.ui }]}
-						>
-							Your signal score arrives in M3.
-						</Text>
+						{data.signalBand ? (
+							<>
+								<Text
+									style={[
+										styles.bandValue,
+										{
+											color:
+												data.signalBand === "Aligned"
+													? p.accent
+													: data.signalBand === "Finding"
+														? p.inkMid
+														: p.warn,
+											fontFamily: t.display,
+											fontWeight: String(t.displayWeight) as "400",
+											fontStyle: t.editorialItalic ? "italic" : "normal",
+										},
+									]}
+								>
+									{data.signalBand}
+								</Text>
+								{data.signalTrend ? (
+									<Text
+										style={[
+											styles.cardFooter,
+											{ color: p.inkDim, fontFamily: t.ui },
+										]}
+									>
+										{data.signalTrend === "climbing"
+											? "↑ climbing"
+											: data.signalTrend === "easing"
+												? "↓ easing"
+												: "→ holding"}
+									</Text>
+								) : null}
+							</>
+						) : (
+							<Text
+								style={[
+									styles.cardFooter,
+									{ color: p.inkDim, fontFamily: t.ui, fontStyle: "italic" },
+								]}
+							>
+								Appears after your first full week of activity.
+							</Text>
+						)}
 					</Card>
 				</View>
 
-				{/* ── Saved opportunities (M3 placeholder) ───────────── */}
+				{/* ── Saved opportunities (PRO-03) ────────────────────── */}
 				<Card p={p}>
 					<Text
 						style={[styles.cardEyebrow, { color: p.inkDim, fontFamily: t.ui }]}
 					>
 						SAVED
 					</Text>
-					<Text
-						style={[
-							styles.placeholderValue,
-							{ color: p.inkDim, fontFamily: t.mono },
-						]}
-					>
-						-
-					</Text>
-					<Text
-						style={[styles.cardFooter, { color: p.inkDim, fontFamily: t.ui }]}
-					>
-						Saved opportunities will appear here in M3.
-					</Text>
+					{data.savedCount > 0 ? (
+						<>
+							<View style={styles.statRow}>
+								<Text
+									style={[
+										styles.statNumber,
+										{
+											color: p.ink,
+											fontFamily: t.display,
+											fontWeight: String(t.displayWeight) as "400",
+											fontStyle: t.editorialItalic ? "italic" : "normal",
+										},
+									]}
+								>
+									{data.savedCount}
+								</Text>
+								<Text
+									style={[
+										styles.statUnit,
+										{ color: p.inkMid, fontFamily: t.ui },
+									]}
+								>
+									{data.savedCount === 1 ? "opportunity" : "opportunities"}{" "}
+									saved
+								</Text>
+							</View>
+							{data.savedOpportunities.map((opp) => (
+								<Text
+									key={opp.id}
+									style={[
+										styles.savedItem,
+										{ color: p.inkMid, fontFamily: t.ui },
+									]}
+									numberOfLines={1}
+								>
+									{opp.title} · {opp.org}
+								</Text>
+							))}
+						</>
+					) : (
+						<Text
+							style={[
+								styles.cardFooter,
+								{ color: p.inkDim, fontFamily: t.ui, fontStyle: "italic" },
+							]}
+						>
+							Save opportunities from the Opportunities tab.
+						</Text>
+					)}
 				</Card>
 			</ScrollView>
 		</SafeAreaView>
@@ -243,5 +312,6 @@ const styles = StyleSheet.create({
 	statNumber: { fontSize: 42, lineHeight: 44 },
 	statUnit: { fontSize: 14 },
 	cardFooter: { fontSize: 12, lineHeight: 18 },
-	placeholderValue: { fontSize: 28, lineHeight: 34, marginBottom: 8 },
+	bandValue: { fontSize: 28, lineHeight: 34, marginBottom: 4 },
+	savedItem: { fontSize: 12, lineHeight: 18, marginTop: 4 },
 });
