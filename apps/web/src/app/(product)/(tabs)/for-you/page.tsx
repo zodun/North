@@ -44,9 +44,15 @@ export default async function ForYouPage() {
 			.map((r) => r.content_item_id),
 	);
 
+	const { data: categories } = await supabase
+		.from("content_categories")
+		.select("id, label")
+		.order("sort_order");
+
 	return (
 		<ForYouFeed
 			items={items ?? []}
+			categories={categories ?? []}
 			initialSaved={[...initialSaved]}
 			initialMatters={[...initialMatters]}
 		/>

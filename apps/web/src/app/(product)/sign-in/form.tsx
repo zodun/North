@@ -1,10 +1,17 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { supabase } from "@/lib/auth-client";
 
+type Mode = "password" | "magic" | "signup";
+
 export function ProductSignIn() {
+	const router = useRouter();
+	const [mode, setMode] = useState<Mode>("password");
 	const [email, setEmail] = useState("");
+	const [password, setPassword] = useState("");
+	const [confirmPassword, setConfirmPassword] = useState("");
 	const [sent, setSent] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -13,6 +20,22 @@ export function ProductSignIn() {
 		typeof window !== "undefined"
 			? `${window.location.origin}/auth/callback`
 			: undefined;
+
+	const handlePassword = async (e: React.FormEvent) => {
+		e.preventDefault();
+		setError(null);
+		setLoading(true);
+		const { error } = await supabase.auth.signInWithPassword({
+			email,
+			password,
+		});
+		setLoading(false);
+		if (error) {
+			setError(error.message);
+			return;
+		}
+		router.push("/for-you");
+	};
 
 	const handleMagicLink = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -35,6 +58,28 @@ export function ProductSignIn() {
 			provider: "google",
 			options: { redirectTo },
 		});
+	};
+
+	const handleSignUp = async (e: React.FormEvent) => {
+		e.preventDefault();
+		setError(null);
+		if (password !== confirmPassword) {
+			setError("Passwords don't match.");
+			return;
+		}
+		if (password.length < 6) {
+			setError("Password must be at least 6 characters.");
+			return;
+		}
+		setLoading(true);
+		const { error } = await supabase.auth.signUp({ email, password });
+		setLoading(false);
+		if (error) {
+			setError(error.message);
+			return;
+		}
+		// Use hard navigation so the proxy re-checks auth and redirects appropriately
+		window.location.href = "/onboarding";
 	};
 
 	if (sent) {
@@ -66,24 +111,130 @@ export function ProductSignIn() {
 				<div className="h-px flex-1 bg-white/10" />
 			</div>
 
-			<form onSubmit={handleMagicLink} className="flex flex-col gap-3">
-				<input
-					type="email"
-					required
-					placeholder="your@email.com"
-					value={email}
-					onChange={(e) => setEmail(e.target.value)}
-					className="w-full rounded-xl border border-white/12 bg-white/6 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-white/20"
-				/>
-				{error && <p className="text-[12px] text-red-400">{error}</p>}
-				<button
-					type="submit"
-					disabled={loading}
-					className="w-full rounded-xl bg-white py-3 font-semibold text-black text-sm disabled:opacity-50"
-				>
-					{loading ? "Sending..." : "Send magic link"}
-				</button>
-			</form>
+			{mode === "signup" ? (
+				<form onSubmit={handleSignUp} className="flex flex-col gap-3">
+					<input
+						type="email"
+						required
+						placeholder="your@email.com"
+						value={email}
+						onChange={(e) => setEmail(e.target.value)}
+						className="w-full rounded-xl border border-white/12 bg-white/6 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-white/20"
+					/>
+					<input
+						type="password"
+						required
+						placeholder="Password"
+						value={password}
+						onChange={(e) => setPassword(e.target.value)}
+						className="w-full rounded-xl border border-white/12 bg-white/6 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-white/20"
+					/>
+					<input
+						type="password"
+						required
+						placeholder="Confirm password"
+						value={confirmPassword}
+						onChange={(e) => setConfirmPassword(e.target.value)}
+						className="w-full rounded-xl border border-white/12 bg-white/6 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-white/20"
+					/>
+					{error && <p className="text-[12px] text-red-400">{error}</p>}
+					<button
+						type="submit"
+						disabled={loading}
+						className="w-full rounded-xl bg-white py-3 font-semibold text-black text-sm disabled:opacity-50"
+					>
+						{loading ? "Creating account…" : "Create account"}
+					</button>
+					<button
+						type="button"
+						onClick={() => {
+							setError(null);
+							setMode("password");
+						}}
+						className="text-center text-[12px] text-white/40 hover:text-white/60"
+					>
+						Already have an account? Sign in
+					</button>
+				</form>
+			) : mode === "password" ? (
+				<form onSubmit={handlePassword} className="flex flex-col gap-3">
+					<input
+						type="email"
+						required
+						placeholder="your@email.com"
+						value={email}
+						onChange={(e) => setEmail(e.target.value)}
+						className="w-full rounded-xl border border-white/12 bg-white/6 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-white/20"
+					/>
+					<input
+						type="password"
+						required
+						placeholder="Password"
+						value={password}
+						onChange={(e) => setPassword(e.target.value)}
+						className="w-full rounded-xl border border-white/12 bg-white/6 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-white/20"
+					/>
+					{error && <p className="text-[12px] text-red-400">{error}</p>}
+					<button
+						type="submit"
+						disabled={loading}
+						className="w-full rounded-xl bg-white py-3 font-semibold text-black text-sm disabled:opacity-50"
+					>
+						{loading ? "Signing in..." : "Sign in"}
+					</button>
+					<div className="flex items-center justify-between">
+						<button
+							type="button"
+							onClick={() => {
+								setError(null);
+								setMode("magic");
+							}}
+							className="text-[12px] text-white/40 hover:text-white/60"
+						>
+							Magic link instead
+						</button>
+						<button
+							type="button"
+							onClick={() => {
+								setError(null);
+								setMode("signup");
+							}}
+							className="text-[12px] text-white/40 hover:text-white/60"
+						>
+							Create account
+						</button>
+					</div>
+				</form>
+			) : (
+				<form onSubmit={handleMagicLink} className="flex flex-col gap-3">
+					<input
+						type="email"
+						required
+						placeholder="your@email.com"
+						value={email}
+						onChange={(e) => setEmail(e.target.value)}
+						className="w-full rounded-xl border border-white/12 bg-white/6 px-4 py-3 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-white/20"
+					/>
+					{error && <p className="text-[12px] text-red-400">{error}</p>}
+					<button
+						type="submit"
+						disabled={loading}
+						className="w-full rounded-xl bg-white py-3 font-semibold text-black text-sm disabled:opacity-50"
+					>
+						{loading ? "Sending..." : "Send magic link"}
+					</button>
+					<button
+						type="button"
+						onClick={() => {
+							setError(null);
+							setMode("password");
+						}}
+						className="text-center text-[12px] text-white/40 hover:text-white/60"
+					>
+						Sign in with password instead
+					</button>
+				</form>
+			)}
 		</div>
 	);
 }

@@ -26,35 +26,55 @@ export async function proxy(request: NextRequest) {
 	} = await supabase.auth.getSession();
 
 	const pathname = request.nextUrl.pathname;
-	const isAdmin = pathname.startsWith("/admin");
-	const isLogin = pathname === "/login";
+	const isSignIn = pathname === "/sign-in" || pathname === "/sign-up";
+	const isAuthRoute = pathname.startsWith("/auth/");
+	const isOnboarding = pathname.startsWith("/onboarding");
 	const isRoot = pathname === "/";
 
-	// Admin: redirect unauthenticated to /login
-	if (isAdmin && !session) {
-		const url = request.nextUrl.clone();
-		url.pathname = "/login";
-		return NextResponse.redirect(url);
-	}
-
-	// Admin login: redirect authenticated to /admin
-	if (isLogin && session) {
-		const url = request.nextUrl.clone();
-		url.pathname = "/admin";
-		return NextResponse.redirect(url);
-	}
-
-	// Root: redirect to product feed
+	// Redirect root to feed
 	if (isRoot) {
 		const url = request.nextUrl.clone();
 		url.pathname = "/for-you";
 		return NextResponse.redirect(url);
 	}
 
+	// Not signed in — protect all product routes
+	if (!session && !isSignIn && !isAuthRoute) {
+		const url = request.nextUrl.clone();
+		url.pathname = "/sign-in";
+		return NextResponse.redirect(url);
+	}
+
+	if (session) {
+		// Check onboarding completion
+		const { data: profile } = await supabase
+			.from("profiles")
+			.select("onboarded_at")
+			.eq("user_id", session.user.id)
+			.maybeSingle();
+
+		const isOnboarded = !!profile?.onboarded_at;
+
+		// Already signed in but not yet onboarded — go to onboarding
+		if (!isOnboarded && !isOnboarding && !isSignIn && !isAuthRoute) {
+			const url = request.nextUrl.clone();
+			url.pathname = "/onboarding";
+			return NextResponse.redirect(url);
+		}
+
+		// Onboarding complete but still on onboarding/sign-in — go to feed
+		if (isOnboarded && (isOnboarding || isSignIn)) {
+			const url = request.nextUrl.clone();
+			url.pathname = "/for-you";
+			return NextResponse.redirect(url);
+		}
+	}
+
 	return response;
 }
 
 export const config = {
-	// /north stays public so the design prototype is freely viewable.
-	matcher: ["/", "/login", "/admin/:path*"],
+	matcher: [
+		"/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|webmanifest|js|css)$).*)",
+	],
 };

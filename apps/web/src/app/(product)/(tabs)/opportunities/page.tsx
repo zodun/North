@@ -19,7 +19,7 @@ export default async function OpportunitiesPage() {
 	const { data: items } = await supabase
 		.from("opportunities")
 		.select(
-			"id, title, org, location, deadline, external_url, description, why, category_id",
+			"id, title, org, opportunity_type, location, deadline, external_url, why, category_id",
 		)
 		.order("created_at", { ascending: false })
 		.limit(50);
@@ -27,17 +27,23 @@ export default async function OpportunitiesPage() {
 	const { data: savedRows } = user
 		? await supabase
 				.from("user_saved_opportunities")
-				.select("opportunity_id")
+				.select("opportunity_id, applied")
 				.eq("user_id", user.id)
 		: { data: [] };
 
-	const initialSaved = (savedRows ?? []).map((r) => r.opportunity_id);
+	const initialSaved = (savedRows ?? [])
+		.filter((r) => !r.applied)
+		.map((r) => r.opportunity_id);
+	const initialApplied = (savedRows ?? [])
+		.filter((r) => r.applied)
+		.map((r) => r.opportunity_id);
 
 	return (
 		<OpportunitiesList
 			items={items ?? []}
 			categories={categories ?? []}
 			initialSaved={initialSaved}
+			initialApplied={initialApplied}
 		/>
 	);
 }

@@ -19,11 +19,86 @@ type Inputs = {
 	meaningfulInFocus: number;
 };
 
-const BAND_COLORS: Record<string, string> = {
-	Aligned: "#4ade80",
-	Finding: "#facc15",
-	Drifting: "#f87171",
+const BAND_SEGS: Record<string, string[]> = {
+	Drifting: [
+		"#E8B84B",
+		"#E8B84B",
+		"#E8B84B55",
+		"#E8B84B33",
+		"#1C2537",
+		"#1C2537",
+		"#1C2537",
+	],
+	Finding: [
+		"#1C2537",
+		"#1C2537",
+		"#E8B84B33",
+		"#E8B84B55",
+		"#E8B84B",
+		"#E8B84B",
+		"#1C2537",
+	],
+	Aligned: [
+		"#1C2537",
+		"#1C2537",
+		"#1C2537",
+		"#E8B84B33",
+		"#E8B84B55",
+		"#E8B84B",
+		"#E8B84B",
+	],
 };
+
+const BAND_ORDER = ["Drifting", "Finding", "Aligned"];
+
+const BAND_ACCENT = "#E8B84B";
+
+function BandBar({
+	band,
+	provisional,
+}: {
+	band: string;
+	provisional?: boolean;
+}) {
+	const segs = BAND_SEGS[band] ?? BAND_SEGS.Finding;
+	return (
+		<div className="mb-5 rounded-2xl border border-white/10 bg-white/5 p-5">
+			<p className="mb-3 font-semibold text-[10px] text-white/40 uppercase tracking-widest">
+				Your Signal
+			</p>
+			<div className="mb-2.5 flex gap-1.5">
+				{[...segs.entries()].map(([pos, color]) => (
+					<div
+						key={pos}
+						className="h-2 flex-1 rounded-full"
+						style={{ backgroundColor: color }}
+					/>
+				))}
+			</div>
+			<div className="flex items-baseline justify-between">
+				{BAND_ORDER.map((label) => {
+					const isActive = label === band;
+					return (
+						<span
+							key={label}
+							className={isActive ? "font-semibold text-[18px]" : "text-[11px]"}
+							style={{
+								color: isActive ? BAND_ACCENT : "rgba(255,255,255,0.3)",
+							}}
+						>
+							{label}
+						</span>
+					);
+				})}
+			</div>
+			{provisional && (
+				<p className="mt-1.5 text-[11px] text-white/30 italic">
+					Provisional, building signal
+				</p>
+			)}
+		</div>
+	);
+}
 
 export function SignalView({
 	scores,
@@ -77,6 +152,9 @@ export function SignalView({
 				How it's going
 			</h1>
 
+			{/* Band bar */}
+			{latest && <BandBar band={latest.band} />}
+
 			{/* Score card */}
 			{latest ? (
 				<div className="mb-5 rounded-2xl border border-white/10 bg-white/5 p-5">
@@ -85,8 +163,8 @@ export function SignalView({
 						<span
 							className="rounded-full px-3 py-1 font-semibold text-[11px]"
 							style={{
-								backgroundColor: `${BAND_COLORS[latest.band] ?? "#fff"}22`,
-								color: BAND_COLORS[latest.band] ?? "#fff",
+								backgroundColor: `${BAND_ACCENT}22`,
+								color: BAND_ACCENT,
 							}}
 						>
 							{latest.band}
@@ -106,7 +184,7 @@ export function SignalView({
 										height: `${Math.max(20, s.raw_score)}%`,
 										backgroundColor:
 											i === scores.length - 1
-												? (BAND_COLORS[s.band] ?? "#fff")
+												? BAND_ACCENT
 												: "rgba(255,255,255,0.15)",
 									}}
 								/>

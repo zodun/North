@@ -10,9 +10,6 @@ const withSerwist = withSerwistInit({
 const nextConfig: NextConfig = {
 	typedRoutes: true,
 	reactCompiler: true,
-	turbopack: {
-		root: require("node:path").resolve(__dirname, "../../"),
-	},
 };
 
 export default process.env.NODE_ENV === "development"

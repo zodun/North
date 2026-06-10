@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/auth-client";
+import { VideoUploadSheet } from "./video-upload-sheet";
 
 type Item = {
 	id: string;
@@ -67,17 +68,23 @@ function VideoBackground({ item }: { item: Item }) {
 	);
 }
 
+type Category = { id: string; label: string };
+
 export function ForYouFeed({
 	items,
+	categories,
 	initialSaved,
 	initialMatters,
 }: {
 	items: Item[];
+	categories: Category[];
 	initialSaved: string[];
 	initialMatters: string[];
 }) {
 	const [saved, setSaved] = useState<Set<string>>(new Set(initialSaved));
 	const [matters, setMatters] = useState<Set<string>>(new Set(initialMatters));
+	const [showUpload, setShowUpload] = useState(false);
+	const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
 	// Keep state in sync if server re-renders with fresh data (e.g. navigation)
 	// biome-ignore lint/correctness/useExhaustiveDependencies: stable join strings are intentional stable dep keys
@@ -107,6 +114,10 @@ export function ForYouFeed({
 		});
 	}
 
+	const filtered = activeCategory
+		? items.filter((item) => item.content_category_id === activeCategory)
+		: items;
+
 	if (items.length === 0) {
 		return (
 			<div className="flex h-full items-center justify-center p-8 text-center">
@@ -118,106 +129,165 @@ export function ForYouFeed({
 	}
 
 	return (
-		<div
-			className="h-full snap-y snap-mandatory overflow-y-scroll"
-			style={{ scrollbarWidth: "none" }}
-		>
-			{items.map((item) => {
-				const ytEmbed = item.external_url
-					? youtubeEmbedUrl(item.external_url)
-					: null;
-				const isVideo = item.kind === "video";
-
-				return (
-					<div
-						key={item.id}
-						className="relative flex h-svh snap-start snap-always flex-col overflow-hidden"
-						style={{ minHeight: "100svh" }}
+		<>
+			{showUpload && (
+				<VideoUploadSheet
+					onClose={() => setShowUpload(false)}
+					onPosted={() => setShowUpload(false)}
+				/>
+			)}
+			{/* Category filter bar */}
+			{categories.length > 0 && (
+				<div className="absolute top-14 right-0 left-0 z-10 flex gap-2 overflow-x-auto px-4 py-2 [&::-webkit-scrollbar]:hidden">
+					<button
+						type="button"
+						onClick={() => setActiveCategory(null)}
+						className={`shrink-0 rounded-full border px-3 py-1 font-medium text-[11px] backdrop-blur-sm transition-colors ${!activeCategory ? "border-white/30 bg-white/20 text-white" : "border-white/15 bg-black/30 text-white/50"}`}
 					>
-						{/* Background */}
-						{isVideo ? (
-							<VideoBackground item={item} />
-						) : (
-							<div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] to-[#111]" />
-						)}
-
-						{/* Top chrome */}
-						<div className="relative flex items-center justify-between px-5 pt-14 pb-4">
-							<span className="rounded-full border border-white/15 bg-white/8 px-3 py-1 font-medium text-[11px] text-white/70">
-								{KIND_LABELS[item.kind] ?? item.kind}
-							</span>
-							{item.eyebrow && (
-								<span className="text-[11px] text-white/40">
-									{item.eyebrow}
-								</span>
-							)}
-						</div>
-
-						{/* YouTube embed (full-height when video) */}
-						{isVideo && ytEmbed && (
-							<div className="relative flex-1 px-4 pb-4">
-								<iframe
-									src={ytEmbed}
-									className="h-full w-full rounded-2xl"
-									allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-									allowFullScreen
-									title={item.title}
-								/>
-							</div>
-						)}
-
-						{/* Text content */}
-						<div
-							className={`relative flex flex-col px-5 pb-6 ${isVideo && ytEmbed ? "pt-2" : "flex-1 justify-end"}`}
+						All
+					</button>
+					{categories.map((cat) => (
+						<button
+							key={cat.id}
+							type="button"
+							onClick={() =>
+								setActiveCategory(cat.id === activeCategory ? null : cat.id)
+							}
+							className={`shrink-0 rounded-full border px-3 py-1 font-medium text-[11px] backdrop-blur-sm transition-colors ${activeCategory === cat.id ? "border-white/30 bg-white/20 text-white" : "border-white/15 bg-black/30 text-white/50"}`}
 						>
-							<h2 className="mb-3 font-semibold text-[26px] text-white leading-[1.22] tracking-[-0.01em]">
-								{item.title}
-							</h2>
-							{item.body && !ytEmbed && (
-								<p className="mb-5 text-[15px] text-white/60 leading-relaxed">
-									{item.body}
-								</p>
+							{cat.label}
+						</button>
+					))}
+				</div>
+			)}
+			<div
+				className="h-full snap-y snap-mandatory overflow-y-scroll"
+				style={{ scrollbarWidth: "none" }}
+			>
+				{filtered.length === 0 ? (
+					<div className="flex h-full items-center justify-center">
+						<p className="text-sm text-white/40">
+							Nothing in this category yet.
+						</p>
+					</div>
+				) : null}
+				{filtered.map((item) => {
+					const ytEmbed = item.external_url
+						? youtubeEmbedUrl(item.external_url)
+						: null;
+					const isVideo = item.kind === "video";
+
+					return (
+						<div
+							key={item.id}
+							className="relative flex h-svh snap-start snap-always flex-col overflow-hidden"
+							style={{ minHeight: "100svh" }}
+						>
+							{/* Background */}
+							{isVideo ? (
+								<VideoBackground item={item} />
+							) : (
+								<div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] to-[#111]" />
 							)}
-							<div className="flex items-center gap-3">
-								{item.source && (
-									<span className="text-[13px] text-white/50">
-										{item.source}
+
+							{/* Top chrome */}
+							<div className="relative flex items-center justify-between px-5 pt-14 pb-4">
+								<span className="rounded-full border border-white/15 bg-white/8 px-3 py-1 font-medium text-[11px] text-white/70">
+									{KIND_LABELS[item.kind] ?? item.kind}
+								</span>
+								{item.eyebrow && (
+									<span className="text-[11px] text-white/40">
+										{item.eyebrow}
 									</span>
 								)}
-								{item.external_url && !isVideo && (
-									<a
-										href={item.external_url}
-										target="_blank"
-										rel="noopener noreferrer"
-										className="font-semibold text-[13px] text-white"
-									>
-										Open →
-									</a>
+							</div>
+
+							{/* YouTube embed (full-height when video) */}
+							{isVideo && ytEmbed && (
+								<div className="relative flex-1 px-4 pb-4">
+									<iframe
+										src={ytEmbed}
+										className="h-full w-full rounded-2xl"
+										allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+										allowFullScreen
+										title={item.title}
+									/>
+								</div>
+							)}
+
+							{/* Text content */}
+							<div
+								className={`relative flex flex-col px-5 pb-6 ${isVideo && ytEmbed ? "pt-2" : "flex-1 justify-end"}`}
+							>
+								<h2 className="mb-3 font-semibold text-[26px] text-white leading-[1.22] tracking-[-0.01em]">
+									{item.title}
+								</h2>
+								{item.body && !ytEmbed && (
+									<p className="mb-5 text-[15px] text-white/60 leading-relaxed">
+										{item.body}
+									</p>
 								)}
+								<div className="flex items-center gap-3">
+									{item.source && (
+										<span className="text-[13px] text-white/50">
+											{item.source}
+										</span>
+									)}
+									{item.external_url && !isVideo && (
+										<a
+											href={item.external_url}
+											target="_blank"
+											rel="noopener noreferrer"
+											className="font-semibold text-[13px] text-white"
+										>
+											Open →
+										</a>
+									)}
+								</div>
+							</div>
+
+							{/* Action rail */}
+							<div className="absolute right-3 bottom-28 flex flex-col items-center gap-5">
+								<ActionButton
+									active={matters.has(item.id)}
+									onClick={() => record(item, "matters")}
+									label="Matters"
+								>
+									<StarIcon active={matters.has(item.id)} />
+								</ActionButton>
+								<ActionButton
+									active={saved.has(item.id)}
+									onClick={() => record(item, "save")}
+									label="Save"
+								>
+									<BookmarkIcon active={saved.has(item.id)} />
+								</ActionButton>
+								<ActionButton
+									active={false}
+									onClick={() => setShowUpload(true)}
+									label="Post"
+								>
+									<svg
+										width="19"
+										height="19"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="white"
+										strokeWidth={1.8}
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										aria-hidden="true"
+									>
+										<path d="M23 7l-7 5 7 5V7z" />
+										<rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+									</svg>
+								</ActionButton>
 							</div>
 						</div>
-
-						{/* Action rail */}
-						<div className="absolute right-3 bottom-28 flex flex-col items-center gap-5">
-							<ActionButton
-								active={matters.has(item.id)}
-								onClick={() => record(item, "matters")}
-								label="Matters"
-							>
-								<StarIcon active={matters.has(item.id)} />
-							</ActionButton>
-							<ActionButton
-								active={saved.has(item.id)}
-								onClick={() => record(item, "save")}
-								label="Save"
-							>
-								<BookmarkIcon active={saved.has(item.id)} />
-							</ActionButton>
-						</div>
-					</div>
-				);
-			})}
-		</div>
+					);
+				})}
+			</div>
+		</>
 	);
 }
 
