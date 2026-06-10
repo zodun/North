@@ -182,13 +182,9 @@ export function OpportunitiesList({
 				) : (
 					<div className="flex flex-col gap-2.5">
 						{filtered.map((item) => {
-							const eyebrow = [
-								CAT_LABELS[item.category_id ?? ""] ?? item.category_id,
-								item.opportunity_type,
-							]
-								.filter(Boolean)
-								.join(" · ")
-								.toUpperCase();
+							const eyebrow =
+								(CAT_LABELS[item.category_id ?? ""] ?? item.category_id) ||
+								item.opportunity_type;
 							const isApplied = applied.has(item.id);
 
 							return (
@@ -196,11 +192,6 @@ export function OpportunitiesList({
 									key={item.id}
 									className="rounded-2xl border border-white/6 bg-white/[0.03] p-4"
 								>
-									{eyebrow && (
-										<p className="mb-1.5 font-medium text-[10px] text-white/35 tracking-widest">
-											{eyebrow}
-										</p>
-									)}
 									<div className="flex items-start justify-between gap-3">
 										<div className="min-w-0 flex-1">
 											<h3 className="font-semibold text-[15px] text-white leading-snug">
@@ -209,6 +200,24 @@ export function OpportunitiesList({
 											<p className="mt-0.5 text-[12px] text-white/45">
 												{item.org}
 											</p>
+											{eyebrow && (
+												<div className="mt-2 flex flex-wrap gap-1.5">
+													{[
+														CAT_LABELS[item.category_id ?? ""] ??
+															item.category_id,
+														item.opportunity_type,
+													]
+														.filter(Boolean)
+														.map((tag) => (
+															<span
+																key={tag}
+																className="rounded-full border border-white/12 bg-white/6 px-2.5 py-0.5 font-medium text-[11px] text-white/55"
+															>
+																{tag}
+															</span>
+														))}
+												</div>
+											)}
 										</div>
 										<button
 											type="button"
