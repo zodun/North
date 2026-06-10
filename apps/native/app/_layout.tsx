@@ -79,7 +79,7 @@ export default function RootLayout() {
 	// children so dev without analytics wired works fine.
 	return (
 		<PostHogProvider
-			apiKey={env.EXPO_PUBLIC_POSTHOG_KEY ?? ""}
+			apiKey={env.EXPO_PUBLIC_POSTHOG_KEY ?? "phc_disabled"}
 			options={{
 				host: env.EXPO_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com",
 				captureAppLifecycleEvents: true,

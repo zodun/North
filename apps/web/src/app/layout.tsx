@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import "../index.css";
 import Header from "@/components/header";
+import { InstallPrompt } from "@/components/install-prompt";
 import Providers from "@/components/providers";
 
 const geistSans = Geist({
@@ -16,8 +17,20 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-	title: "north",
-	description: "north",
+	title: "North",
+	description: "Convert inspiration into consistent, aligned action.",
+	applicationName: "North",
+	appleWebApp: {
+		capable: true,
+		statusBarStyle: "black-translucent",
+		title: "North",
+	},
+	formatDetection: {
+		telephone: false,
+	},
+	other: {
+		"mobile-web-app-capable": "yes",
+	},
 };
 
 export default function RootLayout({
@@ -35,6 +48,7 @@ export default function RootLayout({
 						<Header />
 						{children}
 					</div>
+					<InstallPrompt />
 				</Providers>
 			</body>
 		</html>

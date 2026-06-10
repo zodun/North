@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
 	const response = NextResponse.next({ request });
 
 	const supabase = createServerClient(
@@ -28,16 +28,26 @@ export async function middleware(request: NextRequest) {
 	const pathname = request.nextUrl.pathname;
 	const isAdmin = pathname.startsWith("/admin");
 	const isLogin = pathname === "/login";
+	const isRoot = pathname === "/";
 
+	// Admin: redirect unauthenticated to /login
 	if (isAdmin && !session) {
 		const url = request.nextUrl.clone();
 		url.pathname = "/login";
 		return NextResponse.redirect(url);
 	}
 
+	// Admin login: redirect authenticated to /admin
 	if (isLogin && session) {
 		const url = request.nextUrl.clone();
 		url.pathname = "/admin";
+		return NextResponse.redirect(url);
+	}
+
+	// Root: redirect to product feed
+	if (isRoot) {
+		const url = request.nextUrl.clone();
+		url.pathname = "/for-you";
 		return NextResponse.redirect(url);
 	}
 

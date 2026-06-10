@@ -19,6 +19,7 @@ const KIND_LABEL: Record<FeedItem["kind"], string> = {
 	voice: "Watch",
 	story: "Story",
 	opportunity: "Opportunity",
+	video: "Video",
 };
 
 const KIND_CTA: Record<FeedItem["kind"], string> = {
@@ -26,6 +27,7 @@ const KIND_CTA: Record<FeedItem["kind"], string> = {
 	voice: "Watch",
 	story: "Read",
 	opportunity: "View",
+	video: "Watch",
 };
 
 const CATEGORY_LABEL: Record<string, string> = {

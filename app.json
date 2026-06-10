@@ -1,5 +1,10 @@
 {
 	"ios": {
 		"bundleIdentifier": "com.zo123.north"
+	},
+	"extra": {
+		"eas": {
+			"projectId": "7a63d28f-a17f-4070-9a61-d335925d8c96"
+		}
 	}
 }

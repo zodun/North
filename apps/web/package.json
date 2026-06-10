@@ -13,6 +13,7 @@
 		"@north/supabase": "workspace:*",
 		"@north/tokens": "workspace:*",
 		"@north/ui": "workspace:*",
+		"@serwist/next": "^9.5.11",
 		"@supabase/ssr": "^0.10.3",
 		"@supabase/supabase-js": "^2.106.2",
 		"@tanstack/react-form": "catalog:",
@@ -26,6 +27,7 @@
 		"posthog-js": "^1.376.4",
 		"react": "^19.2.6",
 		"react-dom": "^19.2.6",
+		"serwist": "^9.5.11",
 		"sonner": "catalog:",
 		"zod": "catalog:"
 	},

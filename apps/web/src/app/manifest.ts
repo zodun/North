@@ -2,23 +2,33 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
 	return {
-		name: "north",
-		short_name: "north",
-		description: "my pwa app",
-		start_url: "/new",
+		name: "North — Find Your Direction",
+		short_name: "North",
+		description: "Convert inspiration into consistent, aligned action.",
+		start_url: "/",
 		display: "standalone",
-		background_color: "#ffffff",
-		theme_color: "#000000",
+		orientation: "portrait",
+		background_color: "#0a0a0a",
+		theme_color: "#0a0a0a",
+		categories: ["lifestyle", "education", "productivity"],
 		icons: [
 			{
 				src: "/favicon/web-app-manifest-192x192.png",
 				sizes: "192x192",
 				type: "image/png",
+				purpose: "any",
 			},
 			{
 				src: "/favicon/web-app-manifest-512x512.png",
 				sizes: "512x512",
 				type: "image/png",
+				purpose: "any",
+			},
+			{
+				src: "/favicon/web-app-manifest-512x512.png",
+				sizes: "512x512",
+				type: "image/png",
+				purpose: "maskable",
 			},
 		],
 	};

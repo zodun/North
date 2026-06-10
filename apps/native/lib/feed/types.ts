@@ -1,6 +1,6 @@
 export type FeedItem = {
 	id: string;
-	kind: "essay" | "voice" | "story" | "opportunity";
+	kind: "essay" | "voice" | "story" | "opportunity" | "video";
 	title: string;
 	eyebrow: string | null;
 	body: string | null;
@@ -8,6 +8,7 @@ export type FeedItem = {
 	attribution_text: string | null;
 	external_url: string | null;
 	cloudinary_public_id: string | null;
+	thumbnail_url: string | null;
 	content_category_id: string | null;
 	published_at: string;
 	sort_order: number;

@@ -1,42 +1,27 @@
-// Custom tab bar with the raised centre Mission button (DEC-24).
-// Implements BottomTabBarProps so it's drop-in via the `tabBar` prop
-// on expo-router's <Tabs>. Renders 5 buttons; the centre Mission
-// button sits raised above the bar in an accent circle, matching the
-// prototype's app-shell.jsx.
-//
-// All buttons hit MIN_TOUCH_TARGET (44pt) per WCAG (DEC-25).
-
 import { Icon, type IconName, MIN_TOUCH_TARGET } from "@north/native-ui";
 import { getTokens } from "@north/tokens";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-// Minimal shape of what expo-router's <Tabs> passes to a custom
-// tabBar prop. Avoids depending on @react-navigation/bottom-tabs
-// at the top-level package.json (it's bundled inside expo-router
-// and not exposed as its own resolvable specifier).
-// Loose structural shape — the real type is expo-router's bundled
-// BottomTabBarProps from @react-navigation/bottom-tabs, which isn't
-// a directly resolvable specifier. We pull only what we use; the
-// layout-side spread upcasts to this shape.
-// biome-ignore lint/suspicious/noExplicitAny: see comment above
+// biome-ignore lint/suspicious/noExplicitAny: BottomTabBarProps isn't a resolvable specifier
 type TabsBarProps = any;
 
-type TabSpec = {
-	route: string;
-	label: string;
-	icon: IconName;
-	centre?: boolean;
-};
+type TabSpec =
+	| { route: string; label: string; icon: IconName; centre?: false }
+	| { route: "__add__"; label: string; centre: true };
 
 const TABS: TabSpec[] = [
 	{ route: "for-you", label: "For You", icon: "forYou" },
 	{ route: "opportunities", label: "Open", icon: "opportunities" },
-	{ route: "mission", label: "Mission", icon: "mission", centre: true },
+	{ route: "__add__", label: "Post", centre: true },
 	{ route: "signal", label: "Signal", icon: "signal" },
 	{ route: "profile", label: "You", icon: "profile" },
 ];
 
-export function CustomTabBar({ state, navigation }: TabsBarProps) {
+export function CustomTabBar({
+	state,
+	navigation,
+	onAdd,
+}: TabsBarProps & { onAdd?: () => void }) {
 	// Default to the warm/humanist combo per the prototype's final
 	// recommendation (chat transcript). A future tweak panel could
 	// thread these through.
@@ -54,6 +39,36 @@ export function CustomTabBar({ state, navigation }: TabsBarProps) {
 				]}
 			>
 				{TABS.map((tab) => {
+					if (tab.centre) {
+						return (
+							<Pressable
+								key={tab.route}
+								onPress={() => onAdd?.()}
+								accessibilityRole="button"
+								accessibilityLabel={tab.label}
+								style={({ pressed }) => [
+									styles.centreButton,
+									{
+										backgroundColor: p.accent,
+										shadowColor: p.accent,
+										opacity: pressed ? 0.85 : 1,
+									},
+								]}
+							>
+								<Text
+									style={{
+										fontSize: 28,
+										color: p.accentInk,
+										lineHeight: 32,
+										marginTop: -2,
+									}}
+								>
+									+
+								</Text>
+							</Pressable>
+						);
+					}
+
 					const routeIndex = state.routes.findIndex(
 						(r: { name: string }) => r.name === tab.route,
 					);
@@ -72,33 +87,6 @@ export function CustomTabBar({ state, navigation }: TabsBarProps) {
 							navigation.navigate(route.name, route.params);
 						}
 					};
-
-					if (tab.centre) {
-						return (
-							<Pressable
-								key={tab.route}
-								onPress={onPress}
-								accessibilityRole="button"
-								accessibilityLabel={tab.label}
-								accessibilityState={{ selected: focused }}
-								style={({ pressed }) => [
-									styles.centreButton,
-									{
-										backgroundColor: p.accent,
-										shadowColor: p.accent,
-										opacity: pressed ? 0.9 : 1,
-									},
-								]}
-							>
-								<Icon
-									name={tab.icon}
-									size={22}
-									color={p.accentInk}
-									strokeWidth={1.8}
-								/>
-							</Pressable>
-						);
-					}
 
 					return (
 						<Pressable

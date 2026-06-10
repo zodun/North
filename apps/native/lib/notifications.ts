@@ -32,13 +32,18 @@ export type RegisterResult = {
 export async function registerForPushNotificationsAsync(): Promise<RegisterResult | null> {
 	if (!Device.isDevice) return null; // emulators / simulators have no real token
 
-	const { status: existing } = await Notifications.getPermissionsAsync();
-	let status = existing;
-	if (status !== "granted") {
-		const ask = await Notifications.requestPermissionsAsync();
-		status = ask.status;
+	// expo-notifications@56 imports PermissionResponse from expo but root expo is v54 (no export),
+	// so cast through unknown to access runtime properties.
+	type Perm = { status: string };
+	const existing =
+		(await Notifications.getPermissionsAsync()) as unknown as Perm;
+	let permStatus = existing.status;
+	if (permStatus !== "granted") {
+		const ask =
+			(await Notifications.requestPermissionsAsync()) as unknown as Perm;
+		permStatus = ask.status;
 	}
-	if (status !== "granted") return null;
+	if (permStatus !== "granted") return null;
 
 	if (Platform.OS === "android") {
 		await Notifications.setNotificationChannelAsync("default", {
