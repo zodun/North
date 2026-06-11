@@ -154,6 +154,8 @@ export default async function ProfilePage() {
 
 	const scores = signalRows ?? [];
 	const signalBand = (scores[0] as { band: string } | undefined)?.band ?? null;
+	const signalScore =
+		(scores[0] as { raw_score: number } | undefined)?.raw_score ?? null;
 	let signalTrend: "climbing" | "holding" | "easing" | null = null;
 	if (scores.length >= 2) {
 		const delta =
@@ -197,6 +199,7 @@ export default async function ProfilePage() {
 			rhythmStreak={rhythmStreak}
 			tasksCompleted={tasksDone}
 			tasksTotal={tasksTotal}
+			signalScore={signalScore}
 			signalBand={signalBand}
 			signalTrend={signalTrend}
 			savedCount={savedRows?.length ?? 0}
