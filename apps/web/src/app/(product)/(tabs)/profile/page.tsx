@@ -13,14 +13,6 @@ const FOCUS_AREAS: Record<string, { label: string; hue: string }> = {
 	learn: { label: "Deeper learning", hue: "#b39ad8" },
 };
 
-function weekStartISO(dateStr: string): string {
-	const d = new Date(`${dateStr}T12:00:00Z`);
-	const day = d.getUTCDay();
-	const offset = day === 0 ? 6 : day - 1;
-	d.setUTCDate(d.getUTCDate() - offset);
-	return d.toISOString().slice(0, 10);
-}
-
 export default async function ProfilePage() {
 	const supabase = await getServerSupabase();
 	const {
@@ -45,7 +37,6 @@ export default async function ProfilePage() {
 	}
 
 	const today = new Date().toISOString().slice(0, 10);
-	const weekStart = weekStartISO(today);
 	const DAY_LETTERS = ["S", "M", "T", "W", "T", "F", "S"];
 
 	const dates28 = Array.from({ length: 28 }, (_, i) => {
@@ -59,13 +50,13 @@ export default async function ProfilePage() {
 		{ data: focusRows },
 		{ data: streakRows },
 		{ data: signalRows },
-		{ data: missionRows },
+		{ data: monthlyMission },
 		{ data: savedRows },
 	] = await Promise.all([
 		supabase
 			.from("profiles")
 			.select(
-				"display_name, statement_of_intent, season_label, time_budget_label",
+				"display_name, statement_of_intent, season_label, time_budget_label, mission_cadence",
 			)
 			.eq("user_id", user.id)
 			.single(),
@@ -86,11 +77,12 @@ export default async function ProfilePage() {
 			.order("week_ending", { ascending: false })
 			.limit(2),
 		supabase
-			.from("user_missions")
-			.select("id, user_mission_tasks(done)")
+			.from("monthly_missions")
+			.select("id, month_start, goal_title, focus_area_id")
 			.eq("user_id", user.id)
-			.gte("mission_date", weekStart)
-			.lte("mission_date", today),
+			.order("month_start", { ascending: false })
+			.limit(1)
+			.maybeSingle(),
 		supabase
 			.from("user_saved_opportunities")
 			.select("opportunity_id, opportunities(id, title, org)")
@@ -118,15 +110,47 @@ export default async function ProfilePage() {
 		else break;
 	}
 
-	let tasksTotal = 0;
-	let tasksDone = 0;
-	for (const m of missionRows ?? []) {
-		for (const t of (m as { user_mission_tasks: { done: boolean }[] })
-			.user_mission_tasks ?? []) {
-			tasksTotal++;
-			if (t.done) tasksDone++;
-		}
-	}
+	// "This week" reflects the active monthly goal, in the user's chosen cadence.
+	const cadence = profile?.mission_cadence === "weekly" ? "weekly" : "daily";
+	const currentWeekIndex = monthlyMission
+		? Math.min(
+				3,
+				Math.max(
+					0,
+					Math.floor(
+						(Date.parse(today) - Date.parse(monthlyMission.month_start)) /
+							(7 * 86_400_000),
+					),
+				),
+			)
+		: 0;
+
+	const { data: stepRows } = monthlyMission
+		? await supabase
+				.from("monthly_mission_steps")
+				.select("week_index, done")
+				.eq("monthly_mission_id", monthlyMission.id)
+				.eq("cadence", cadence)
+		: { data: [] };
+
+	const cadenceSteps = stepRows ?? [];
+	const weekSteps = cadenceSteps.filter(
+		(s) => s.week_index === currentWeekIndex,
+	);
+	const tasksTotal = weekSteps.length;
+	const tasksDone = weekSteps.filter((s) => s.done).length;
+
+	// Whole-month progress for the goal card.
+	const goalTotal = cadenceSteps.length;
+	const goalDone = cadenceSteps.filter((s) => s.done).length;
+	const goalHue =
+		FOCUS_AREAS[monthlyMission?.focus_area_id ?? ""]?.hue ?? "#7ec4bb";
+	const goalMonth = monthlyMission
+		? new Date(`${monthlyMission.month_start}T12:00:00Z`).toLocaleDateString(
+				"en-US",
+				{ month: "long" },
+			)
+		: null;
 
 	const scores = signalRows ?? [];
 	const signalBand = (scores[0] as { band: string } | undefined)?.band ?? null;
@@ -161,6 +185,12 @@ export default async function ProfilePage() {
 			statementOfIntent={profile?.statement_of_intent ?? null}
 			seasonLabel={profile?.season_label ?? null}
 			timeBudgetLabel={profile?.time_budget_label ?? null}
+			goalTitle={monthlyMission?.goal_title ?? null}
+			goalMonth={goalMonth}
+			goalDone={goalDone}
+			goalTotal={goalTotal}
+			goalUnit={cadence === "daily" ? "days" : "weeks"}
+			goalHue={goalHue}
 			focusAreas={focusAreas}
 			streaks28={streaks28}
 			dayLabels28={dayLabels28}

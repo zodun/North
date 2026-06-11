@@ -13,6 +13,12 @@ type Props = {
 	statementOfIntent: string | null;
 	seasonLabel: string | null;
 	timeBudgetLabel: string | null;
+	goalTitle: string | null;
+	goalMonth: string | null;
+	goalDone: number;
+	goalTotal: number;
+	goalUnit: string;
+	goalHue: string;
 	focusAreas: { id: string; label: string; hue: string }[];
 	streaks28: number[];
 	dayLabels28: string[];
@@ -30,6 +36,12 @@ export function ProfileView({
 	statementOfIntent,
 	seasonLabel,
 	timeBudgetLabel,
+	goalTitle,
+	goalMonth,
+	goalDone,
+	goalTotal,
+	goalUnit,
+	goalHue,
 	focusAreas,
 	streaks28,
 	dayLabels28,
@@ -88,6 +100,44 @@ export function ProfileView({
 					</div>
 				)}
 			</div>
+
+			{/* This month's goal */}
+			{goalTitle && (
+				<div
+					className="mb-3 rounded-2xl border p-4"
+					style={{
+						borderColor: `${goalHue}30`,
+						background: `linear-gradient(135deg, ${goalHue}12 0%, rgba(255,255,255,0.02) 100%)`,
+					}}
+				>
+					<p
+						className="mb-2 font-medium text-[11px] uppercase tracking-widest"
+						style={{ color: goalHue }}
+					>
+						{goalMonth} goal
+					</p>
+					<p className="mb-3 font-semibold text-[16px] text-white leading-snug">
+						{goalTitle}
+					</p>
+					<div className="mb-2 flex items-center justify-between">
+						<span className="text-[12px] text-white/50">
+							{goalDone} of {goalTotal} {goalUnit}
+						</span>
+						<span className="font-semibold text-[12px] text-white">
+							{goalTotal > 0 ? Math.round((goalDone / goalTotal) * 100) : 0}%
+						</span>
+					</div>
+					<div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+						<div
+							className="h-full rounded-full transition-all duration-500"
+							style={{
+								width: `${goalTotal > 0 ? (goalDone / goalTotal) * 100 : 0}%`,
+								backgroundColor: goalHue,
+							}}
+						/>
+					</div>
+				</div>
+			)}
 
 			{/* Rhythm streak (7-day) */}
 			<div className="mb-3 rounded-2xl border border-white/6 bg-white/[0.03] p-4">
