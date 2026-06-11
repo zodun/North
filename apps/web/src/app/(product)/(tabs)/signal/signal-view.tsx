@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { colors } from "@/components/product/north-ui";
 import { supabase } from "@/lib/auth-client";
 import { JournalCard } from "./journal-card";
 import { PeopleSection } from "./people-section";
@@ -19,9 +20,9 @@ type Inputs = {
 	meaningfulInFocus: number;
 };
 
-const GOLD = "#F5C842";
-const TEAL = "#3ECFBF";
-const VIOLET = "#7B61FF";
+const GOLD = colors.gold;
+const TEAL = colors.teal;
+const VIOLET = colors.violet;
 const RED = "rgba(245,100,100,0.85)";
 
 // Left→right band: drifting (violet) · finding (teal) · aligned (gold).

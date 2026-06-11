@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { CtaButton, colors } from "@/components/product/north-ui";
 import { supabase } from "@/lib/auth-client";
 
 export type JournalAnalysis = {
@@ -33,7 +34,7 @@ function getRecognitionCtor(): RecognitionCtor | null {
 	return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
-const TEAL = "#3ECFBF";
+const TEAL = colors.teal;
 const RED = "rgba(245,100,100,0.85)";
 
 function Triangle({ up, color }: { up: boolean; color: string }) {
@@ -174,19 +175,13 @@ export function JournalCard({
 				)}
 			</div>
 
-			<button
-				type="button"
+			<CtaButton
+				className="mt-2.5"
 				onClick={() => void submit()}
 				disabled={!text.trim() || submitting}
-				className="mt-2.5 w-full cursor-pointer rounded-[10px] border py-[10px] font-bold text-[13px] transition-colors duration-200 hover:bg-[rgba(62,207,191,0.15)] disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
-				style={{
-					backgroundColor: "rgba(62,207,191,0.1)",
-					borderColor: "rgba(62,207,191,0.25)",
-					color: TEAL,
-				}}
 			>
 				{submitting ? "Reading the day…" : "Find the signal"}
-			</button>
+			</CtaButton>
 		</div>
 	);
 }

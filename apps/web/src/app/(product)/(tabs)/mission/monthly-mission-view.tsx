@@ -1,6 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import {
+	CheckIcon,
+	colors,
+	Pill,
+	StatusBadge,
+} from "@/components/product/north-ui";
 import { supabase } from "@/lib/auth-client";
 
 type Step = {
@@ -28,8 +34,8 @@ const STREAK_LABELS: Record<number, string> = {
 	3: "Rest day",
 };
 
-const GOLD = "#F5C842";
-const TEAL = "#3ECFBF";
+const GOLD = colors.gold;
+const TEAL = colors.teal;
 
 function dayLabel(date: string): { wd: string; d: string } {
 	const dt = new Date(`${date}T00:00:00`);
@@ -37,27 +43,6 @@ function dayLabel(date: string): { wd: string; d: string } {
 		wd: dt.toLocaleDateString("en-US", { weekday: "narrow" }),
 		d: String(dt.getDate()),
 	};
-}
-
-function CheckIcon({ className }: { className?: string }) {
-	return (
-		<svg
-			width="11"
-			height="11"
-			viewBox="0 0 12 12"
-			fill="none"
-			aria-hidden="true"
-			className={className}
-		>
-			<path
-				d="M2 6l2.5 2.5L10 3"
-				stroke="currentColor"
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</svg>
-	);
 }
 
 export function MonthlyMissionView({
@@ -221,28 +206,15 @@ export function MonthlyMissionView({
 
 				{/* Daily / Weekly toggle */}
 				<div className="mt-3 flex gap-2">
-					{(["daily", "weekly"] as const).map((c) => {
-						const active = cadence === c;
-						return (
-							<button
-								key={c}
-								type="button"
-								aria-pressed={active}
-								onClick={() => void changeCadence(c)}
-								className="cursor-pointer rounded-full px-3 py-1 font-bold text-[10px] capitalize transition-colors duration-200 motion-reduce:transition-none"
-								style={
-									active
-										? { backgroundColor: GOLD, color: "#05050E" }
-										: {
-												border: "1px solid rgba(255,255,255,0.10)",
-												color: "rgba(255,255,255,0.35)",
-											}
-								}
-							>
-								{c}
-							</button>
-						);
-					})}
+					{(["daily", "weekly"] as const).map((c) => (
+						<Pill
+							key={c}
+							active={cadence === c}
+							onClick={() => void changeCadence(c)}
+						>
+							{c}
+						</Pill>
+					))}
 				</div>
 			</section>
 
@@ -285,30 +257,12 @@ export function MonthlyMissionView({
 								<p className="font-bold text-[13px] text-white leading-[1.35]">
 									{w.title}
 								</p>
-								<span
-									className="mt-1.5 inline-block rounded-full border px-2 py-0.5 font-bold text-[9px]"
-									style={
-										isCurrent
-											? {
-													backgroundColor: "rgba(62,207,191,0.1)",
-													borderColor: "rgba(62,207,191,0.2)",
-													color: TEAL,
-												}
-											: isDone
-												? {
-														backgroundColor: "rgba(245,200,66,0.1)",
-														borderColor: "rgba(245,200,66,0.2)",
-														color: GOLD,
-													}
-												: {
-														backgroundColor: "rgba(255,255,255,0.05)",
-														borderColor: "rgba(255,255,255,0.08)",
-														color: "rgba(255,255,255,0.30)",
-													}
-									}
+								<StatusBadge
+									variant={isDone ? "done" : isCurrent ? "current" : "upcoming"}
+									className="mt-1.5"
 								>
 									{isDone ? "Done" : isCurrent ? "In progress" : "Upcoming"}
-								</span>
+								</StatusBadge>
 							</div>
 						</div>
 					);
