@@ -107,6 +107,7 @@ export function SignalView({
 	ratings: initialRatings,
 	inputs,
 	lastReflection,
+	embedded = false,
 }: {
 	scores: Score[];
 	summary: Summary | null;
@@ -117,6 +118,9 @@ export function SignalView({
 		body: string;
 		analysis: { themes: string[]; nudge: string } | null;
 	} | null;
+	// When rendered below the mission on the Task tab, drop the page-level top
+	// padding and use a section header instead of a page title.
+	embedded?: boolean;
 }) {
 	const latest = scores[0];
 	const callouts =
@@ -147,10 +151,22 @@ export function SignalView({
 			: null;
 
 	return (
-		<div className="px-5 pt-14 pb-8">
-			<h1 className="mb-6 font-semibold text-2xl text-white tracking-tight">
-				How it's going
-			</h1>
+		<div className={embedded ? "px-5 pb-8" : "px-5 pt-14 pb-8"}>
+			{embedded ? (
+				<div className="mb-5 flex items-center gap-2.5">
+					<span
+						className="h-1.5 w-1.5 shrink-0 rounded-full"
+						style={{ backgroundColor: BAND_ACCENT }}
+					/>
+					<h2 className="font-semibold text-white text-xl tracking-tight">
+						How it's going
+					</h2>
+				</div>
+			) : (
+				<h1 className="mb-6 font-semibold text-2xl text-white tracking-tight">
+					How it's going
+				</h1>
+			)}
 
 			{/* Band bar */}
 			{latest && <BandBar band={latest.band} />}

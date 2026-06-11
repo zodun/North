@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import { getServerSupabase } from "@/lib/supabase-server";
-import { MissionView } from "./mission-view";
+import { loadSignalData } from "../signal/load-signal-data";
+import { SignalView } from "../signal/signal-view";
+import { MonthlyMissionView } from "./monthly-mission-view";
 
 export const metadata: Metadata = { title: "Mission" };
+
+const DAY_MS = 86_400_000;
 
 export default async function MissionPage() {
 	const supabase = await getServerSupabase();
@@ -19,35 +23,78 @@ export default async function MissionPage() {
 		);
 	}
 
+	// Make sure this month's goal exists (covers users created after the
+	// migration's one-time backfill, and the first load of a new month).
+	await supabase.rpc("ensure_monthly_mission", { p_user: user.id });
+
 	const today = new Date().toISOString().slice(0, 10);
 
-	const { data: mission } = await supabase
-		.from("missions")
-		.select("id, title, intent, mission_date")
-		.eq("user_id", user.id)
-		.eq("mission_date", today)
-		.single();
+	const [missionRes, profileRes, streakRes] = await Promise.all([
+		supabase
+			.from("monthly_missions")
+			.select("id, goal_title, goal_intent, focus_area_id, month_start")
+			.eq("user_id", user.id)
+			.order("month_start", { ascending: false })
+			.limit(1)
+			.maybeSingle(),
+		supabase
+			.from("profiles")
+			.select("mission_cadence")
+			.eq("user_id", user.id)
+			.maybeSingle(),
+		supabase
+			.from("streaks")
+			.select("state")
+			.eq("user_id", user.id)
+			.eq("day", today)
+			.maybeSingle(),
+	]);
 
-	const { data: tasks } = mission
+	const mission = missionRes.data ?? null;
+
+	const { data: steps } = mission
 		? await supabase
-				.from("user_mission_tasks")
-				.select("id, label, kind, estimate_label, done")
-				.eq("mission_id", mission.id)
-				.order("created_at")
+				.from("monthly_mission_steps")
+				.select(
+					"id, cadence, week_index, due_date, title, detail, estimate_label, done",
+				)
+				.eq("monthly_mission_id", mission.id)
+				.order("sort_order")
 		: { data: [] };
 
-	const { data: streakRow } = await supabase
-		.from("streaks")
-		.select("state")
-		.eq("user_id", user.id)
-		.eq("day", today)
-		.single();
+	const cadence =
+		profileRes.data?.mission_cadence === "weekly" ? "weekly" : "daily";
+
+	const currentWeekIndex = mission
+		? Math.min(
+				3,
+				Math.max(
+					0,
+					Math.floor(
+						(Date.parse(today) - Date.parse(mission.month_start)) /
+							(7 * DAY_MS),
+					),
+				),
+			)
+		: 0;
+
+	// Signal lives on the same tab, below this month's plan.
+	const signal = await loadSignalData(supabase, user.id);
 
 	return (
-		<MissionView
-			mission={mission ?? null}
-			tasks={tasks ?? []}
-			streakState={streakRow?.state ?? null}
-		/>
+		<>
+			<MonthlyMissionView
+				mission={mission}
+				steps={steps ?? []}
+				cadence={cadence}
+				today={today}
+				currentWeekIndex={currentWeekIndex}
+				streakState={streakRes.data?.state ?? null}
+			/>
+			<div className="mt-8 mb-7 px-5">
+				<div className="h-px w-full bg-gradient-to-r from-transparent via-white/12 to-transparent" />
+			</div>
+			<SignalView {...signal} embedded />
+		</>
 	);
 }
