@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/auth-client";
-import { VideoUploadSheet } from "./video-upload-sheet";
 
 type Item = {
 	id: string;
@@ -26,15 +25,96 @@ const KIND_LABELS: Record<string, string> = {
 	video: "Watch",
 };
 
+// Per-kind accent colour
+const KIND_ACCENT: Record<string, string> = {
+	essay: "#F5C842",
+	voice: "#3ECFBF",
+	story: "#7B61FF",
+	opportunity: "#3ECFBF",
+	video: "rgba(240,240,245,0.7)",
+};
+
+// Per-kind atmospheric radial glow for non-video cards
+const KIND_GLOW: Record<string, string> = {
+	essay:
+		"radial-gradient(ellipse at 18% 18%, rgba(245,200,66,0.22) 0%, transparent 58%)",
+	voice:
+		"radial-gradient(ellipse at 82% 78%, rgba(62,207,191,0.2) 0%, transparent 58%)",
+	story:
+		"radial-gradient(ellipse at 80% 18%, rgba(123,97,255,0.2) 0%, transparent 58%)",
+	opportunity:
+		"radial-gradient(ellipse at 18% 20%, rgba(62,207,191,0.2) 0%, transparent 58%)",
+};
+
 function youtubeEmbedUrl(url: string): string | null {
 	const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
 	return match ? `https://www.youtube.com/embed/${match[1]}?rel=0` : null;
 }
 
+// ── Static compass watermark ───────────────────────────────────────────────
+
+function CompassWatermark() {
+	return (
+		<div
+			aria-hidden="true"
+			className="pointer-events-none absolute inset-0 flex items-center justify-center"
+		>
+			<svg
+				width="280"
+				height="280"
+				viewBox="0 0 32 32"
+				fill="none"
+				opacity="0.045"
+				aria-hidden="true"
+			>
+				<circle cx="16" cy="16" r="14" stroke="white" strokeWidth="0.6" />
+				<circle
+					cx="16"
+					cy="16"
+					r="9"
+					stroke="white"
+					strokeWidth="0.5"
+					strokeDasharray="1.5 3"
+				/>
+				<circle cx="16" cy="16" r="5" stroke="white" strokeWidth="0.5" />
+				<line x1="16" y1="2" x2="16" y2="30" stroke="white" strokeWidth="0.4" />
+				<line x1="2" y1="16" x2="30" y2="16" stroke="white" strokeWidth="0.4" />
+				<line
+					x1="4.7"
+					y1="4.7"
+					x2="27.3"
+					y2="27.3"
+					stroke="white"
+					strokeWidth="0.3"
+				/>
+				<line
+					x1="27.3"
+					y1="4.7"
+					x2="4.7"
+					y2="27.3"
+					stroke="white"
+					strokeWidth="0.3"
+				/>
+				<polygon points="16,4 14,16 18,16" fill="white" />
+				<polygon points="16,28 14,16 18,16" fill="white" fillOpacity="0.6" />
+				<polygon points="28,16 16,14 16,18" fill="white" fillOpacity="0.4" />
+				<polygon points="4,16 16,14 16,18" fill="white" fillOpacity="0.4" />
+				<circle cx="16" cy="16" r="1.8" fill="white" />
+				<circle cx="16" cy="16" r="0.7" fill="#05050E" />
+			</svg>
+		</div>
+	);
+}
+
+// ── Video card background ──────────────────────────────────────────────────
+
 function VideoBackground({ item }: { item: Item }) {
 	if (!item.external_url) {
 		return (
-			<div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] to-[#111]" />
+			<>
+				<div className="absolute inset-0 bg-[#05050E]" />
+				<CompassWatermark />
+			</>
 		);
 	}
 	const ytEmbed = youtubeEmbedUrl(item.external_url);
@@ -49,7 +129,15 @@ function VideoBackground({ item }: { item: Item }) {
 						className="absolute inset-0 h-full w-full object-cover"
 					/>
 				)}
-				<div className="absolute inset-0 bg-black/50" />
+				<div className="absolute inset-0 bg-black/55" />
+				{/* Bottom vignette */}
+				<div
+					className="absolute inset-0"
+					style={{
+						background:
+							"linear-gradient(to top, rgba(5,5,14,0.96) 0%, rgba(5,5,14,0.55) 35%, transparent 65%)",
+					}}
+				/>
 			</div>
 		);
 	}
@@ -63,12 +151,57 @@ function VideoBackground({ item }: { item: Item }) {
 				loop
 				playsInline
 			/>
-			<div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/70" />
+			<div
+				className="absolute inset-0"
+				style={{
+					background:
+						"linear-gradient(to top, rgba(5,5,14,0.94) 0%, rgba(5,5,14,0.4) 35%, transparent 65%)",
+				}}
+			/>
 		</div>
 	);
 }
 
+// ── Static card background for non-video ──────────────────────────────────
+
+function CardBackground({ kind }: { kind: string }) {
+	const glow =
+		KIND_GLOW[kind] ??
+		"radial-gradient(ellipse at 50% 50%, rgba(245,200,66,0.1) 0%, transparent 60%)";
+
+	return (
+		<>
+			{/* Base */}
+			<div className="absolute inset-0 bg-[#05050E]" />
+			{/* Type glow */}
+			<div className="absolute inset-0" style={{ background: glow }} />
+			{/* Subtle violet counter-glow */}
+			<div
+				className="absolute inset-0"
+				style={{
+					background:
+						"radial-gradient(ellipse at 90% 85%, rgba(123,97,255,0.1) 0%, transparent 55%)",
+				}}
+			/>
+			{/* Compass watermark */}
+			<CompassWatermark />
+			{/* Bottom vignette for text legibility */}
+			<div
+				className="absolute inset-0"
+				style={{
+					background:
+						"linear-gradient(to top, rgba(5,5,14,0.98) 0%, rgba(5,5,14,0.82) 28%, rgba(5,5,14,0.3) 55%, transparent 75%)",
+				}}
+			/>
+		</>
+	);
+}
+
+// ── Types ──────────────────────────────────────────────────────────────────
+
 type Category = { id: string; label: string };
+
+// ── Main feed ──────────────────────────────────────────────────────────────
 
 export function ForYouFeed({
 	items,
@@ -83,10 +216,8 @@ export function ForYouFeed({
 }) {
 	const [saved, setSaved] = useState<Set<string>>(new Set(initialSaved));
 	const [matters, setMatters] = useState<Set<string>>(new Set(initialMatters));
-	const [showUpload, setShowUpload] = useState(false);
 	const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
-	// Keep state in sync if server re-renders with fresh data (e.g. navigation)
 	// biome-ignore lint/correctness/useExhaustiveDependencies: stable join strings are intentional stable dep keys
 	useEffect(() => {
 		setSaved(new Set(initialSaved));
@@ -120,8 +251,9 @@ export function ForYouFeed({
 
 	if (items.length === 0) {
 		return (
-			<div className="flex h-full items-center justify-center p-8 text-center">
-				<p className="text-sm text-white/40">
+			<div className="flex h-full flex-col items-center justify-center gap-4 p-8 text-center">
+				<CompassWatermark />
+				<p className="relative z-10 font-medium text-[14px] text-white/30">
 					No content yet. Check back soon.
 				</p>
 			</div>
@@ -130,52 +262,45 @@ export function ForYouFeed({
 
 	return (
 		<>
-			{showUpload && (
-				<VideoUploadSheet
-					onClose={() => setShowUpload(false)}
-					onPosted={() => setShowUpload(false)}
-				/>
-			)}
 			{/* Category filter bar */}
 			{categories.length > 0 && (
 				<div className="absolute top-14 right-0 left-0 z-10 flex gap-2 overflow-x-auto px-4 py-2 [&::-webkit-scrollbar]:hidden">
-					<button
-						type="button"
+					<CategoryPill
+						label="All"
+						active={!activeCategory}
 						onClick={() => setActiveCategory(null)}
-						className={`shrink-0 rounded-full border px-3 py-1 font-medium text-[11px] backdrop-blur-sm transition-colors ${!activeCategory ? "border-white/30 bg-white/20 text-white" : "border-white/15 bg-black/30 text-white/50"}`}
-					>
-						All
-					</button>
+					/>
 					{categories.map((cat) => (
-						<button
+						<CategoryPill
 							key={cat.id}
-							type="button"
+							label={cat.label}
+							active={activeCategory === cat.id}
 							onClick={() =>
 								setActiveCategory(cat.id === activeCategory ? null : cat.id)
 							}
-							className={`shrink-0 rounded-full border px-3 py-1 font-medium text-[11px] backdrop-blur-sm transition-colors ${activeCategory === cat.id ? "border-white/30 bg-white/20 text-white" : "border-white/15 bg-black/30 text-white/50"}`}
-						>
-							{cat.label}
-						</button>
+						/>
 					))}
 				</div>
 			)}
+
 			<div
 				className="h-full snap-y snap-mandatory overflow-y-scroll"
 				style={{ scrollbarWidth: "none" }}
 			>
 				{filtered.length === 0 ? (
 					<div className="flex h-full items-center justify-center">
-						<p className="text-sm text-white/40">
+						<p className="font-medium text-[14px] text-white/30">
 							Nothing in this category yet.
 						</p>
 					</div>
 				) : null}
+
 				{filtered.map((item) => {
 					const ytEmbed = item.external_url
 						? youtubeEmbedUrl(item.external_url)
 						: null;
 					const isVideo = item.kind === "video";
+					const accent = KIND_ACCENT[item.kind] ?? "rgba(240,240,245,0.7)";
 
 					return (
 						<div
@@ -187,22 +312,30 @@ export function ForYouFeed({
 							{isVideo ? (
 								<VideoBackground item={item} />
 							) : (
-								<div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] to-[#111]" />
+								<CardBackground kind={item.kind} />
 							)}
 
 							{/* Top chrome */}
 							<div className="relative flex items-center justify-between px-5 pt-14 pb-4">
-								<span className="rounded-full border border-white/15 bg-white/8 px-3 py-1 font-medium text-[11px] text-white/70">
+								{/* Kind badge with type accent */}
+								<span
+									className="rounded-full border px-3 py-[5px] font-bold text-[11px] backdrop-blur-sm"
+									style={{
+										borderColor: `${accent}50`,
+										backgroundColor: `${accent}18`,
+										color: accent,
+									}}
+								>
 									{KIND_LABELS[item.kind] ?? item.kind}
 								</span>
 								{item.eyebrow && (
-									<span className="text-[11px] text-white/40">
+									<span className="text-[11px] text-white/35">
 										{item.eyebrow}
 									</span>
 								)}
 							</div>
 
-							{/* YouTube embed (full-height when video) */}
+							{/* YouTube embed */}
 							{isVideo && ytEmbed && (
 								<div className="relative flex-1 px-4 pb-4">
 									<iframe
@@ -219,17 +352,19 @@ export function ForYouFeed({
 							<div
 								className={`relative flex flex-col px-5 pb-6 ${isVideo && ytEmbed ? "pt-2" : "flex-1 justify-end"}`}
 							>
-								<h2 className="mb-3 font-semibold text-[26px] text-white leading-[1.22] tracking-[-0.01em]">
+								<h2 className="mb-3 font-black font-jakarta text-[27px] text-white leading-[1.18] tracking-tight">
 									{item.title}
 								</h2>
+
 								{item.body && !ytEmbed && (
-									<p className="mb-5 text-[15px] text-white/60 leading-relaxed">
+									<p className="mb-5 font-medium text-[15px] text-white/55 leading-relaxed">
 										{item.body}
 									</p>
 								)}
+
 								<div className="flex items-center gap-3">
 									{item.source && (
-										<span className="text-[13px] text-white/50">
+										<span className="text-[12px] text-white/35">
 											{item.source}
 										</span>
 									)}
@@ -238,7 +373,12 @@ export function ForYouFeed({
 											href={item.external_url}
 											target="_blank"
 											rel="noopener noreferrer"
-											className="font-semibold text-[13px] text-white"
+											className="rounded-full border px-4 py-[7px] font-bold text-[13px] transition-colors"
+											style={{
+												borderColor: `${accent}45`,
+												backgroundColor: `${accent}15`,
+												color: accent,
+											}}
 										>
 											Open →
 										</a>
@@ -250,6 +390,7 @@ export function ForYouFeed({
 							<div className="absolute right-3 bottom-28 flex flex-col items-center gap-5">
 								<ActionButton
 									active={matters.has(item.id)}
+									activeColor="#F5C842"
 									onClick={() => record(item, "matters")}
 									label="Matters"
 								>
@@ -257,30 +398,11 @@ export function ForYouFeed({
 								</ActionButton>
 								<ActionButton
 									active={saved.has(item.id)}
+									activeColor="#3ECFBF"
 									onClick={() => record(item, "save")}
 									label="Save"
 								>
 									<BookmarkIcon active={saved.has(item.id)} />
-								</ActionButton>
-								<ActionButton
-									active={false}
-									onClick={() => setShowUpload(true)}
-									label="Post"
-								>
-									<svg
-										width="19"
-										height="19"
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="white"
-										strokeWidth={1.8}
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										aria-hidden="true"
-									>
-										<path d="M23 7l-7 5 7 5V7z" />
-										<rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
-									</svg>
 								</ActionButton>
 							</div>
 						</div>
@@ -291,13 +413,52 @@ export function ForYouFeed({
 	);
 }
 
+// ── Category pill ──────────────────────────────────────────────────────────
+
+function CategoryPill({
+	label,
+	active,
+	onClick,
+}: {
+	label: string;
+	active: boolean;
+	onClick: () => void;
+}) {
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			className="shrink-0 cursor-pointer rounded-full border px-3 py-[5px] font-bold text-[11px] backdrop-blur-sm transition-all"
+			style={
+				active
+					? {
+							borderColor: "rgba(245,200,66,0.5)",
+							backgroundColor: "rgba(245,200,66,0.14)",
+							color: "#F5C842",
+						}
+					: {
+							borderColor: "rgba(255,255,255,0.12)",
+							backgroundColor: "rgba(5,5,14,0.5)",
+							color: "rgba(240,240,245,0.4)",
+						}
+			}
+		>
+			{label}
+		</button>
+	);
+}
+
+// ── Action button ──────────────────────────────────────────────────────────
+
 function ActionButton({
 	active,
+	activeColor,
 	onClick,
 	label,
 	children,
 }: {
 	active: boolean;
+	activeColor: string;
 	onClick: () => void;
 	label: string;
 	children: React.ReactNode;
@@ -306,17 +467,28 @@ function ActionButton({
 		<button
 			type="button"
 			onClick={onClick}
-			className="flex flex-col items-center gap-1.5"
+			className="flex cursor-pointer flex-col items-center gap-1.5"
 		>
 			<div
-				className={`flex h-11 w-11 items-center justify-center rounded-full border transition-all ${
-					active ? "border-white/40 bg-white/15" : "border-white/12 bg-white/6"
-				}`}
+				className="flex h-11 w-11 items-center justify-center rounded-full border transition-all"
+				style={
+					active
+						? {
+								borderColor: `${activeColor}55`,
+								backgroundColor: `${activeColor}18`,
+								boxShadow: `0 0 16px ${activeColor}40`,
+							}
+						: {
+								borderColor: "rgba(255,255,255,0.1)",
+								backgroundColor: "rgba(255,255,255,0.05)",
+							}
+				}
 			>
 				{children}
 			</div>
 			<span
-				className={`font-medium text-[10px] ${active ? "text-white" : "text-white/40"}`}
+				className="font-bold text-[10px] transition-colors"
+				style={{ color: active ? activeColor : "rgba(240,240,245,0.35)" }}
 			>
 				{label}
 			</span>
@@ -324,14 +496,16 @@ function ActionButton({
 	);
 }
 
+// ── Icons ──────────────────────────────────────────────────────────────────
+
 function StarIcon({ active }: { active: boolean }) {
 	return (
 		<svg
 			width="19"
 			height="19"
 			viewBox="0 0 24 24"
-			fill={active ? "white" : "none"}
-			stroke="white"
+			fill={active ? "#F5C842" : "none"}
+			stroke={active ? "#F5C842" : "white"}
 			strokeWidth={1.8}
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -348,8 +522,8 @@ function BookmarkIcon({ active }: { active: boolean }) {
 			width="19"
 			height="19"
 			viewBox="0 0 24 24"
-			fill={active ? "white" : "none"}
-			stroke="white"
+			fill={active ? "#3ECFBF" : "none"}
+			stroke={active ? "#3ECFBF" : "white"}
 			strokeWidth={1.8}
 			strokeLinecap="round"
 			strokeLinejoin="round"
