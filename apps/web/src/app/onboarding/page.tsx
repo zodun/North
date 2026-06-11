@@ -15,11 +15,22 @@ const FOCUS_AREAS = [
 	{ id: "learn", label: "Deeper learning", hue: "#b39ad8" },
 ];
 
+// Maps to public.opportunity_categories.id — the answer ranks the
+// Opportunities feed toward the kinds the user actually wants.
+const OPPORTUNITY_TYPES = [
+	{ id: "scholarship", label: "Scholarships" },
+	{ id: "internship", label: "Internships & Fellowships" },
+	{ id: "job", label: "Jobs" },
+	{ id: "grant", label: "Grants & Funding" },
+	{ id: "accelerator", label: "Accelerators" },
+	{ id: "event", label: "Competitions & Events" },
+	{ id: "community", label: "Communities" },
+	{ id: "creator-programme", label: "Creator Programmes" },
+];
+
 const SEASON_OPTIONS = [
-	"I know what I want and I'm moving on it.",
-	"I know what I want but I'm stuck.",
-	"I'm between things and figuring it out.",
-	"I'm doing fine but I've drifted.",
+	"I know my purpose — I need help finding opportunities.",
+	"I don't know my purpose yet.",
 ];
 
 const TIME_OPTIONS = [
@@ -50,7 +61,7 @@ const CONSENT_DISCLOSURE =
 	"To withdraw consent, delete your account. This erases all behavioural data. " +
 	"Governed by the Jamaica Data Protection Act 2020.";
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 8;
 
 // ── Shared styles ──────────────────────────────────────────────────────
 
@@ -65,6 +76,7 @@ export default function OnboardingPage() {
 	const [name, setName] = useState("");
 	const [season, setSeason] = useState<string | null>(null);
 	const [focus, setFocus] = useState<string[]>([]);
+	const [oppTypes, setOppTypes] = useState<string[]>([]);
 	const [time, setTime] = useState<string | null>(null);
 	const [avoid, setAvoid] = useState("");
 	const [baseline, setBaseline] = useState<number | null>(null);
@@ -104,6 +116,16 @@ export default function OnboardingPage() {
 		);
 	}
 
+	function toggleOppType(id: string) {
+		setOppTypes((prev) =>
+			prev.includes(id)
+				? prev.filter((t) => t !== id)
+				: prev.length < 4
+					? [...prev, id]
+					: prev,
+		);
+	}
+
 	async function saveCurrentStep() {
 		if (!userId) return;
 		setError(null);
@@ -136,13 +158,20 @@ export default function OnboardingPage() {
 				.from("user_focus_areas")
 				.insert(focus.map((id) => ({ user_id: userId, focus_area_id: id })));
 		}
-		if (step === 3 && time) {
+		if (step === 3) {
+			const { error: err } = await supabase
+				.from("profiles")
+				.update({ preferred_opportunity_categories: oppTypes })
+				.eq("user_id", userId);
+			if (err) throw new Error(err.message);
+		}
+		if (step === 4 && time) {
 			await supabase
 				.from("profiles")
 				.update({ time_budget_label: time })
 				.eq("user_id", userId);
 		}
-		if (step === 4) {
+		if (step === 5) {
 			const note = avoid.trim();
 			await Promise.all([
 				supabase
@@ -204,10 +233,11 @@ export default function OnboardingPage() {
 		if (step === 0) return name.trim().length > 0;
 		if (step === 1) return season !== null;
 		if (step === 2) return focus.length > 0;
-		if (step === 3) return time !== null;
-		if (step === 4) return true; // optional
-		if (step === 5) return baseline !== null;
-		if (step === 6) return focus.length > 0 && baseline !== null;
+		if (step === 3) return oppTypes.length > 0;
+		if (step === 4) return time !== null;
+		if (step === 5) return true; // optional
+		if (step === 6) return baseline !== null;
+		if (step === 7) return focus.length > 0 && baseline !== null;
 		return false;
 	})();
 
@@ -226,10 +256,13 @@ export default function OnboardingPage() {
 				{step === 0 && <StepName value={name} onChange={setName} />}
 				{step === 1 && <StepSeason value={season} onChange={setSeason} />}
 				{step === 2 && <StepFocus value={focus} onToggle={toggleFocus} />}
-				{step === 3 && <StepTime value={time} onChange={setTime} />}
-				{step === 4 && <StepAvoid value={avoid} onChange={setAvoid} />}
-				{step === 5 && <StepBaseline value={baseline} onChange={setBaseline} />}
-				{step === 6 && <StepConsent />}
+				{step === 3 && (
+					<StepOpportunityTypes value={oppTypes} onToggle={toggleOppType} />
+				)}
+				{step === 4 && <StepTime value={time} onChange={setTime} />}
+				{step === 5 && <StepAvoid value={avoid} onChange={setAvoid} />}
+				{step === 6 && <StepBaseline value={baseline} onChange={setBaseline} />}
+				{step === 7 && <StepConsent />}
 			</div>
 
 			{error && <p className="mb-3 text-[13px] text-red-400">{error}</p>}
@@ -319,8 +352,8 @@ function StepSeason({
 }) {
 	return (
 		<StepShell
-			prompt="Which feels closer to where you are right now?"
-			sub="There is no right answer. We use this once, then never again."
+			prompt="Where are you with your purpose?"
+			sub="There is no right answer. It helps us pitch North to where you are."
 		>
 			<div className="flex flex-col gap-3">
 				{SEASON_OPTIONS.map((opt) => (
@@ -391,6 +424,46 @@ function StepFocus({
 			{value.length === 3 && (
 				<p className="mt-3 text-center text-[12px] text-white/30">
 					Maximum 3 selected
+				</p>
+			)}
+		</StepShell>
+	);
+}
+
+function StepOpportunityTypes({
+	value,
+	onToggle,
+}: {
+	value: string[];
+	onToggle: (id: string) => void;
+}) {
+	return (
+		<StepShell
+			prompt="What kinds of opportunities should we surface?"
+			sub="Pick up to four. We'll lead your Opportunities feed with these."
+		>
+			<div className="grid grid-cols-2 gap-2.5">
+				{OPPORTUNITY_TYPES.map((opt) => {
+					const isSelected = value.includes(opt.id);
+					return (
+						<button
+							key={opt.id}
+							type="button"
+							onClick={() => onToggle(opt.id)}
+							className={`rounded-xl border p-4 text-left font-medium text-[13px] leading-snug transition-colors ${
+								isSelected
+									? "border-[#3ECFBF]/50 bg-[#3ECFBF]/12 text-white"
+									: "border-white/10 bg-white/3 text-white/55"
+							}`}
+						>
+							{opt.label}
+						</button>
+					);
+				})}
+			</div>
+			{value.length === 4 && (
+				<p className="mt-3 text-center text-[12px] text-white/30">
+					Maximum 4 selected
 				</p>
 			)}
 		</StepShell>
