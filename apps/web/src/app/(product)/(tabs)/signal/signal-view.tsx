@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/auth-client";
+import { JournalCard } from "./journal-card";
 import { PeopleSection } from "./people-section";
-import { ReflectionCard } from "./reflection-card";
 
 type Score = { week_ending: string; band: string; raw_score: number };
 type Summary = {
@@ -106,7 +106,7 @@ export function SignalView({
 	weekEnding,
 	ratings: initialRatings,
 	inputs,
-	lastReflection,
+	lastJournal,
 	embedded = false,
 }: {
 	scores: Score[];
@@ -114,9 +114,9 @@ export function SignalView({
 	weekEnding: string | null;
 	ratings: Record<number, "up" | "down">;
 	inputs: Inputs | null;
-	lastReflection: {
+	lastJournal: {
 		body: string;
-		analysis: { themes: string[]; nudge: string } | null;
+		analysis: { signal: string[]; noise: string[]; read: string } | null;
 	} | null;
 	// When rendered below the mission on the Task tab, drop the page-level top
 	// padding and use a section header instead of a page title.
@@ -336,13 +336,13 @@ export function SignalView({
 			{/* People section */}
 			<PeopleSection />
 
-			{/* Reflection */}
-			{weekEnding && (
-				<ReflectionCard
-					weekEnding={weekEnding}
-					initialReflection={lastReflection}
+			{/* Daily journal */}
+			<div className="mt-5">
+				<JournalCard
+					entryDate={new Date().toISOString().slice(0, 10)}
+					initialEntry={lastJournal}
 				/>
-			)}
+			</div>
 		</div>
 	);
 }

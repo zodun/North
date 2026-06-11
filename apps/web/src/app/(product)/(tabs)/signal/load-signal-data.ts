@@ -22,23 +22,25 @@ export async function loadSignalData(supabase: ServerSupabase, userId: string) {
 
 	const weekEnding = scores?.[0]?.week_ending ?? null;
 
-	const [ratingsRes, reflectionRes] = weekEnding
-		? await Promise.all([
-				supabase
+	// Callout ratings are tied to the weekly summary; the journal is its own
+	// daily thing, so it's fetched independently (latest entry, any day).
+	const [ratingsRes, journalRes] = await Promise.all([
+		weekEnding
+			? supabase
 					.from("callout_ratings")
 					.select("callout_idx, rating")
 					.eq("user_id", userId)
-					.eq("week_ending", weekEnding),
-				supabase
-					.from("user_reflections")
-					.select("body, analysis")
-					.eq("user_id", userId)
 					.eq("week_ending", weekEnding)
-					.order("created_at", { ascending: false })
-					.limit(1)
-					.maybeSingle(),
-			])
-		: [{ data: [] }, { data: null }];
+			: Promise.resolve({ data: [] }),
+		supabase
+			.from("user_reflections")
+			.select("body, analysis, entry_date")
+			.eq("user_id", userId)
+			.order("entry_date", { ascending: false })
+			.order("created_at", { ascending: false })
+			.limit(1)
+			.maybeSingle(),
+	]);
 
 	const ratings: Record<number, "up" | "down"> = {};
 	for (const r of (ratingsRes.data ?? []) as {
@@ -67,9 +69,9 @@ export async function loadSignalData(supabase: ServerSupabase, userId: string) {
 			}
 		: null;
 
-	const reflection = reflectionRes.data as {
+	const lastJournal = journalRes.data as {
 		body: string;
-		analysis: { themes: string[]; nudge: string } | null;
+		analysis: { signal: string[]; noise: string[]; read: string } | null;
 	} | null;
 
 	return {
@@ -78,6 +80,6 @@ export async function loadSignalData(supabase: ServerSupabase, userId: string) {
 		weekEnding,
 		ratings,
 		inputs,
-		lastReflection: reflection,
+		lastJournal,
 	};
 }

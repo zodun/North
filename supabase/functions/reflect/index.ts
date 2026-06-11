@@ -63,37 +63,27 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 
 		// ── Parse body ───────────────────────────────────────────────────
 		let body: string;
-		let weekEnding: string | undefined;
+		let entryDate: string;
 		try {
 			const parsed = (await req.json()) as {
 				body?: unknown;
-				week_ending?: unknown;
+				entry_date?: unknown;
 			};
 			if (typeof parsed.body !== "string" || parsed.body.trim().length === 0) {
 				return json({ error: "body is required" }, 400);
 			}
 			body = parsed.body.trim().slice(0, MAX_BODY_LENGTH);
-			weekEnding =
-				typeof parsed.week_ending === "string" ? parsed.week_ending : undefined;
+			entryDate =
+				typeof parsed.entry_date === "string"
+					? parsed.entry_date
+					: new Date().toISOString().slice(0, 10);
 		} catch {
 			return json({ error: "invalid JSON" }, 400);
 		}
 
-		// ── Derive week_ending if not provided ───────────────────────────
-		// Use the most recent signal_scores row's week_ending, or today as fallback.
-		if (!weekEnding) {
-			const { data: scoreRow } = await userClient
-				.from("signal_scores")
-				.select("week_ending")
-				.eq("user_id", user.id)
-				.order("week_ending", { ascending: false })
-				.limit(1)
-				.maybeSingle<{ week_ending: string }>();
-			weekEnding =
-				scoreRow?.week_ending ?? new Date().toISOString().slice(0, 10);
-		}
-
 		// ── Fetch context for the prompt ─────────────────────────────────
+		// Band context comes from the most recent signal score (weekly), not the
+		// journal day.
 		const [focusRes, scoreRes] = await Promise.all([
 			userClient
 				.from("user_focus_areas")
@@ -103,7 +93,8 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 				.from("signal_scores")
 				.select("band, provisional")
 				.eq("user_id", user.id)
-				.eq("week_ending", weekEnding)
+				.order("week_ending", { ascending: false })
+				.limit(1)
 				.maybeSingle<{ band: string; provisional: boolean }>(),
 		]);
 
@@ -116,7 +107,12 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 		// ── Insert reflection row (client identity) ──────────────────────
 		const { data: reflection, error: insertErr } = await userClient
 			.from("user_reflections")
-			.insert({ user_id: user.id, week_ending: weekEnding, body })
+			.insert({
+				user_id: user.id,
+				entry_date: entryDate,
+				week_ending: entryDate,
+				body,
+			})
 			.select("id")
 			.single<{ id: string }>();
 		if (insertErr || !reflection) {
@@ -129,9 +125,9 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 		if (!openaiKey) {
 			// No key configured — return a stub analysis so the UI isn't blocked.
 			analysis = {
-				themes: ["reflection"],
-				alignment: "unclear",
-				nudge: "Keep showing up. That's the work.",
+				signal: ["showed up and reflected"],
+				noise: [],
+				read: "Notice what pulled your attention today.",
 			};
 		} else {
 			const payload: ReflectPayload = {
@@ -195,10 +191,10 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 			.eq("id", reflectionId);
 
 		// ── Analytics (best-effort) ──────────────────────────────────────
-		await captureServer("reflection_analyzed", user.id, {
-			week_ending: weekEnding,
-			alignment: analysis.alignment,
-			themes_count: analysis.themes.length,
+		await captureServer("journal_analyzed", user.id, {
+			entry_date: entryDate,
+			signal_count: analysis.signal.length,
+			noise_count: analysis.noise.length,
 			model: MODEL_NAME,
 			prompt_version: PROMPT_VERSION,
 		});
