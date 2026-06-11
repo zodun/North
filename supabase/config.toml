@@ -383,6 +383,12 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# Cron-triggered scraper. The function authenticates callers with its own
+# x-trigger-secret header, and the pg_cron job sends only that header (no JWT),
+# so the gateway's JWT check must stay off or the daily 06:00 UTC run 401s.
+[functions.scrape-opportunities]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327
