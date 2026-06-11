@@ -33,8 +33,16 @@ function getRecognitionCtor(): RecognitionCtor | null {
 	return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
-const SIGNAL = "#4ECCA3";
-const NOISE = "#f87171";
+const TEAL = "#3ECFBF";
+const RED = "rgba(245,100,100,0.85)";
+
+function Triangle({ up, color }: { up: boolean; color: string }) {
+	return (
+		<svg width="9" height="9" viewBox="0 0 10 10" aria-hidden="true">
+			<path d={up ? "M5 1l4 7H1z" : "M5 9L1 2h8z"} fill={color} />
+		</svg>
+	);
+}
 
 export function JournalCard({
 	entryDate,
@@ -104,31 +112,20 @@ export function JournalCard({
 	}
 
 	return (
-		<div className="rounded-2xl border border-white/8 bg-white/4 p-5">
-			<h2 className="mb-1 font-semibold text-[11px] text-white/40 uppercase tracking-widest">
-				Journal
-			</h2>
-			<p className="mb-3 text-[12px] text-white/35">
+		<div className="mb-2 rounded-[14px] border border-white/[0.07] bg-white/[0.03] p-[14px] font-jakarta">
+			<p className="mb-1 font-bold text-[13px] text-white">Journal</p>
+			<p className="mb-3 text-[11px] text-white/35 leading-relaxed">
 				Type or talk through your day — we'll surface the signal and the noise.
 			</p>
 
 			{analysis && (
-				<div className="mb-4 flex flex-col gap-3">
-					<SignalNoiseList
-						label="Signal"
-						color={SIGNAL}
-						items={analysis.signal}
-						up
-					/>
+				<div className="mb-3 flex flex-col gap-3">
+					<ObsList label="Signal" color={TEAL} items={analysis.signal} up />
 					{analysis.noise.length > 0 && (
-						<SignalNoiseList
-							label="Noise"
-							color={NOISE}
-							items={analysis.noise}
-						/>
+						<ObsList label="Noise" color={RED} items={analysis.noise} />
 					)}
 					{analysis.read && (
-						<p className="text-[13px] text-white/60 italic leading-relaxed">
+						<p className="text-[12px] text-white/55 italic leading-relaxed">
 							{analysis.read}
 						</p>
 					)}
@@ -140,24 +137,22 @@ export function JournalCard({
 					value={text}
 					onChange={(e) => setText(e.target.value)}
 					placeholder={
-						listening
-							? "Listening…"
-							: "What happened today? What pulled at you?"
+						listening ? "Listening…" : "What pulled your attention today?"
 					}
 					maxLength={1000}
 					rows={3}
-					className="mb-3 w-full rounded-lg border bg-white/5 px-3 py-2.5 pr-11 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1"
-					style={{ borderColor: "rgba(255,255,255,0.12)", resize: "none" }}
+					className="w-full resize-none rounded-[10px] border border-white/9 bg-white/5 px-3 py-2.5 pr-11 text-[13px] text-white outline-none transition-colors placeholder:text-white/22 focus:border-[#3ECFBF] motion-reduce:transition-none"
 				/>
 				{voiceSupported && (
 					<button
 						type="button"
 						onClick={toggleVoice}
 						aria-label={listening ? "Stop recording" : "Record voice"}
-						className="absolute top-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full border transition-colors"
+						aria-pressed={listening}
+						className="absolute top-2.5 right-2.5 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border transition-colors duration-200 motion-reduce:transition-none"
 						style={{
-							borderColor: listening ? `${NOISE}66` : "rgba(255,255,255,0.15)",
-							backgroundColor: listening ? `${NOISE}22` : "transparent",
+							borderColor: listening ? `${RED}66` : "rgba(255,255,255,0.15)",
+							backgroundColor: listening ? `${RED}1f` : "transparent",
 						}}
 					>
 						<svg
@@ -165,12 +160,11 @@ export function JournalCard({
 							height="15"
 							viewBox="0 0 24 24"
 							fill="none"
-							stroke={listening ? NOISE : "rgba(255,255,255,0.55)"}
+							stroke={listening ? RED : "rgba(255,255,255,0.55)"}
 							strokeWidth={2}
 							strokeLinecap="round"
 							strokeLinejoin="round"
 							aria-hidden="true"
-							className={listening ? "animate-pulse" : ""}
 						>
 							<path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
 							<path d="M19 10v2a7 7 0 0 1-14 0v-2" />
@@ -184,8 +178,12 @@ export function JournalCard({
 				type="button"
 				onClick={() => void submit()}
 				disabled={!text.trim() || submitting}
-				className="w-full rounded-xl py-2.5 font-semibold text-black text-sm transition-opacity disabled:opacity-40"
-				style={{ backgroundColor: "#E8B84B" }}
+				className="mt-2.5 w-full cursor-pointer rounded-[10px] border py-[10px] font-bold text-[13px] transition-colors duration-200 hover:bg-[rgba(62,207,191,0.15)] disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
+				style={{
+					backgroundColor: "rgba(62,207,191,0.1)",
+					borderColor: "rgba(62,207,191,0.25)",
+					color: TEAL,
+				}}
 			>
 				{submitting ? "Reading the day…" : "Find the signal"}
 			</button>
@@ -193,7 +191,7 @@ export function JournalCard({
 	);
 }
 
-function SignalNoiseList({
+function ObsList({
 	label,
 	color,
 	items,
@@ -208,11 +206,9 @@ function SignalNoiseList({
 	return (
 		<div>
 			<div className="mb-1.5 flex items-center gap-1.5">
-				<span className="font-bold text-[11px]" style={{ color }}>
-					{up ? "▲" : "▽"}
-				</span>
+				<Triangle up={Boolean(up)} color={color} />
 				<span
-					className="font-bold text-[10px] uppercase tracking-[0.12em]"
+					className="font-bold text-[9px] uppercase tracking-[0.12em]"
 					style={{ color }}
 				>
 					{label}
@@ -222,7 +218,7 @@ function SignalNoiseList({
 				{items.map((item) => (
 					<li
 						key={item}
-						className="flex items-start gap-2 text-[13px] text-white/70 leading-snug"
+						className="flex items-start gap-2 text-[12px] text-white/70 leading-snug"
 					>
 						<span
 							className="mt-1.5 h-1 w-1 shrink-0 rounded-full"

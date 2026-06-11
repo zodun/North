@@ -28,21 +28,36 @@ const STREAK_LABELS: Record<number, string> = {
 	3: "Rest day",
 };
 
-const FOCUS_COLORS: Record<string, string> = {
-	craft: "#7ec4bb",
-	venture: "#d4a574",
-	mind: "#9aaee0",
-	people: "#c97a5a",
-	money: "#a8b97a",
-	learn: "#b39ad8",
-};
+const GOLD = "#F5C842";
+const TEAL = "#3ECFBF";
 
 function dayLabel(date: string): { wd: string; d: string } {
 	const dt = new Date(`${date}T00:00:00`);
 	return {
-		wd: dt.toLocaleDateString("en-US", { weekday: "short" }),
+		wd: dt.toLocaleDateString("en-US", { weekday: "narrow" }),
 		d: String(dt.getDate()),
 	};
+}
+
+function CheckIcon({ className }: { className?: string }) {
+	return (
+		<svg
+			width="11"
+			height="11"
+			viewBox="0 0 12 12"
+			fill="none"
+			aria-hidden="true"
+			className={className}
+		>
+			<path
+				d="M2 6l2.5 2.5L10 3"
+				stroke="currentColor"
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+			/>
+		</svg>
+	);
 }
 
 export function MonthlyMissionView({
@@ -63,14 +78,15 @@ export function MonthlyMissionView({
 	const [steps, setSteps] = useState(initialSteps);
 	const [cadence, setCadence] = useState(initialCadence);
 
-	const accent = FOCUS_COLORS[mission?.focus_area_id ?? "craft"] ?? "#7ec4bb";
-
 	const daily = useMemo(
 		() => steps.filter((s) => s.cadence === "daily"),
 		[steps],
 	);
 	const weekly = useMemo(
-		() => steps.filter((s) => s.cadence === "weekly"),
+		() =>
+			steps
+				.filter((s) => s.cadence === "weekly")
+				.sort((a, b) => a.week_index - b.week_index),
 		[steps],
 	);
 	const weekDays = useMemo(
@@ -83,9 +99,11 @@ export function MonthlyMissionView({
 	const todayStep = daily.find((s) => s.due_date === today) ?? null;
 	const weekMilestone = weekly.find((s) => s.week_index === currentWeekIndex);
 
-	const pool = cadence === "daily" ? daily : weekly;
-	const doneCount = pool.filter((s) => s.done).length;
-	const progress = pool.length > 0 ? doneCount / pool.length : 0;
+	// The goal card always tracks the 4-week macro plan, independent of the
+	// daily/weekly task toggle.
+	const weeksDone = weekly.filter((s) => s.done).length;
+	const weeksTotal = weekly.length || 4;
+	const goalPct = Math.round((weeksDone / weeksTotal) * 100);
 
 	async function setStepDone(id: string, done: boolean) {
 		setSteps((prev) => prev.map((s) => (s.id === id ? { ...s, done } : s)));
@@ -111,9 +129,20 @@ export function MonthlyMissionView({
 
 	if (!mission) {
 		return (
-			<div className="flex h-full flex-col items-center justify-center gap-4 p-8 text-center">
-				<div className="text-4xl">🧭</div>
-				<h2 className="font-semibold text-white text-xl">No goal yet</h2>
+			<div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-[18px] pt-14 text-center font-jakarta">
+				<svg
+					width="40"
+					height="40"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke={GOLD}
+					strokeWidth={1.4}
+					aria-hidden="true"
+				>
+					<circle cx="12" cy="12" r="10" />
+					<polygon points="16.2 7.8 13.4 13.4 7.8 16.2 10.6 10.6" fill={GOLD} />
+				</svg>
+				<h2 className="font-bold text-white text-xl">No goal yet</h2>
 				<p className="text-sm text-white/50">
 					Your monthly goal will appear here shortly.
 				</p>
@@ -124,227 +153,246 @@ export function MonthlyMissionView({
 	const monthName = new Date(
 		`${mission.month_start}T00:00:00`,
 	).toLocaleDateString("en-US", { month: "long" });
+	const goalShort = mission.goal_title.replace(/\.\s*$/, "");
+
+	const taskStep = cadence === "daily" ? todayStep : (weekMilestone ?? null);
 
 	return (
-		<div className="px-5 pt-14">
-			{/* Header */}
-			<div className="mb-5 flex items-center justify-between">
+		<div className="px-[18px] pt-14 font-jakarta">
+			{/* ── Header ── */}
+			<header className="mb-4 flex items-start justify-between">
 				<div>
-					<p className="font-medium text-[11px] text-white/35 uppercase tracking-[0.12em]">
-						{monthName} goal
+					<p className="font-bold text-[9px] text-white/30 uppercase tracking-[0.15em]">
+						{monthName} Goal
 					</p>
-					<h1 className="font-semibold text-2xl text-white tracking-tight">
-						This month
+					<h1 className="font-black text-[22px] text-white tracking-tight">
+						Mission
 					</h1>
+					<p className="text-[12px] text-white/40">This month</p>
 				</div>
 				{streakState !== null && (
-					<span className="rounded-full border border-white/15 bg-white/8 px-3 py-1 font-medium text-[11px] text-white/60">
+					<span className="mt-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-1 font-bold text-[10px] text-white/55">
 						{STREAK_LABELS[streakState] ?? "–"}
 					</span>
 				)}
-			</div>
+			</header>
 
-			{/* Goal card */}
-			<div
-				className="mb-4 rounded-2xl border p-5"
+			{/* ── Section 1 · Active goal card ── */}
+			<section
+				className="relative mb-4 overflow-hidden rounded-[18px] border p-4"
 				style={{
-					borderColor: `${accent}30`,
-					background: `linear-gradient(135deg, ${accent}12 0%, rgba(255,255,255,0.02) 100%)`,
+					borderColor: "rgba(245,200,66,0.22)",
+					background:
+						"linear-gradient(135deg, rgba(245,200,66,0.10), rgba(245,200,66,0.03))",
 				}}
 			>
-				<h2 className="mb-3 font-semibold text-lg text-white leading-snug">
+				<span
+					aria-hidden="true"
+					className="absolute top-0 bottom-0 left-0 w-[3px] rounded-r-[3px]"
+					style={{ backgroundColor: GOLD }}
+				/>
+				<p
+					className="mb-2 font-bold text-[9px] uppercase tracking-[0.15em]"
+					style={{ color: "rgba(245,200,66,0.6)" }}
+				>
+					This Month's Goal
+				</p>
+				<p className="mb-3 font-bold text-[15px] text-white leading-[1.4]">
 					{mission.goal_title}
-				</h2>
+				</p>
+
 				<div className="mb-2 flex items-center justify-between">
-					<span className="text-[12px] text-white/50">
-						{doneCount} of {pool.length}{" "}
-						{cadence === "daily" ? "days" : "weeks"}
+					<span className="text-[11px] text-white/40">
+						{weeksDone} of {weeksTotal} weeks
 					</span>
-					<span className="font-semibold text-[12px] text-white">
-						{Math.round(progress * 100)}%
+					<span className="font-bold text-[11px]" style={{ color: GOLD }}>
+						{goalPct}%
 					</span>
 				</div>
-				<div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+				<div className="h-[5px] overflow-hidden rounded-full bg-white/8">
 					<div
-						className="h-full rounded-full transition-all duration-500"
-						style={{ width: `${progress * 100}%`, backgroundColor: accent }}
+						className="h-full rounded-full transition-[width] duration-300 motion-reduce:transition-none"
+						style={{
+							width: `${goalPct}%`,
+							background: `linear-gradient(90deg, ${GOLD}, ${TEAL})`,
+						}}
 					/>
 				</div>
-			</div>
 
-			{/* Cadence toggle */}
-			<div className="mb-5 flex rounded-xl border border-white/10 bg-white/4 p-1">
-				{(["daily", "weekly"] as const).map((c) => (
-					<button
-						key={c}
-						type="button"
-						onClick={() => void changeCadence(c)}
-						className={`flex-1 rounded-lg py-2 font-semibold text-[13px] capitalize transition-colors ${
-							cadence === c ? "bg-white text-black" : "text-white/50"
-						}`}
-					>
-						{c}
-					</button>
-				))}
-			</div>
-
-			{/* Active steps */}
-			{cadence === "daily" ? (
-				<div>
-					{weekMilestone && (
-						<p className="mb-3 text-[12px] text-white/45">
-							Week {currentWeekIndex + 1} ·{" "}
-							<span className="text-white/70">{weekMilestone.title}</span>
-						</p>
-					)}
-
-					{/* Today's task */}
-					{todayStep ? (
-						<StepRow
-							step={todayStep}
-							accent={accent}
-							emphasis
-							leading="Today"
-							onToggle={(done) => void setStepDone(todayStep.id, done)}
-						/>
-					) : (
-						<p className="text-[13px] text-white/35">
-							No step scheduled for today.
-						</p>
-					)}
-
-					{/* This week's day strip */}
-					<div className="mt-5 flex gap-1.5">
-						{weekDays.map((s) => {
-							const { wd, d } = dayLabel(s.due_date ?? today);
-							const isToday = s.due_date === today;
-							return (
-								<button
-									key={s.id}
-									type="button"
-									onClick={() => void setStepDone(s.id, !s.done)}
-									className="flex flex-1 flex-col items-center gap-1 rounded-lg py-2 transition-colors"
-									style={{
-										backgroundColor: s.done
-											? `${accent}1f`
-											: "rgba(255,255,255,0.03)",
-										border: isToday
-											? `1px solid ${accent}`
-											: "1px solid transparent",
-									}}
-								>
-									<span className="text-[9px] text-white/35 uppercase">
-										{wd}
-									</span>
-									<span
-										className="font-semibold text-[13px]"
-										style={{ color: s.done ? accent : "rgba(255,255,255,0.7)" }}
-									>
-										{s.done ? "✓" : d}
-									</span>
-								</button>
-							);
-						})}
-					</div>
+				{/* Daily / Weekly toggle */}
+				<div className="mt-3 flex gap-2">
+					{(["daily", "weekly"] as const).map((c) => {
+						const active = cadence === c;
+						return (
+							<button
+								key={c}
+								type="button"
+								aria-pressed={active}
+								onClick={() => void changeCadence(c)}
+								className="cursor-pointer rounded-full px-3 py-1 font-bold text-[10px] capitalize transition-colors duration-200 motion-reduce:transition-none"
+								style={
+									active
+										? { backgroundColor: GOLD, color: "#05050E" }
+										: {
+												border: "1px solid rgba(255,255,255,0.10)",
+												color: "rgba(255,255,255,0.35)",
+											}
+								}
+							>
+								{c}
+							</button>
+						);
+					})}
 				</div>
+			</section>
+
+			{/* ── Section 2 · 4-week plan ── */}
+			<p className="mt-1 mb-3 font-bold text-[10px] text-white/30 uppercase tracking-[0.12em]">
+				4-Week Plan
+			</p>
+			<div className="flex flex-col gap-2">
+				{weekly.map((w) => {
+					const isDone = w.done || w.week_index < currentWeekIndex;
+					const isCurrent = !isDone && w.week_index === currentWeekIndex;
+					const circle = isDone
+						? { bg: "rgba(245,200,66,0.15)", border: GOLD, color: GOLD }
+						: isCurrent
+							? { bg: "rgba(62,207,191,0.15)", border: TEAL, color: TEAL }
+							: {
+									bg: "transparent",
+									border: "rgba(255,255,255,0.10)",
+									color: "rgba(255,255,255,0.30)",
+								};
+					return (
+						<div
+							key={w.id}
+							className="flex items-start gap-3 rounded-[14px] border border-white/[0.07] bg-white/[0.04] px-[14px] py-[13px]"
+						>
+							<div
+								className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-[1.5px] font-black text-[11px]"
+								style={{
+									backgroundColor: circle.bg,
+									borderColor: circle.border,
+									color: circle.color,
+								}}
+							>
+								{isDone ? <CheckIcon /> : w.week_index + 1}
+							</div>
+							<div className="min-w-0 flex-1">
+								<p className="mb-1 font-bold text-[9px] text-white/30 uppercase tracking-[0.1em]">
+									Week {w.week_index + 1}
+								</p>
+								<p className="font-bold text-[13px] text-white leading-[1.35]">
+									{w.title}
+								</p>
+								<span
+									className="mt-1.5 inline-block rounded-full border px-2 py-0.5 font-bold text-[9px]"
+									style={
+										isCurrent
+											? {
+													backgroundColor: "rgba(62,207,191,0.1)",
+													borderColor: "rgba(62,207,191,0.2)",
+													color: TEAL,
+												}
+											: isDone
+												? {
+														backgroundColor: "rgba(245,200,66,0.1)",
+														borderColor: "rgba(245,200,66,0.2)",
+														color: GOLD,
+													}
+												: {
+														backgroundColor: "rgba(255,255,255,0.05)",
+														borderColor: "rgba(255,255,255,0.08)",
+														color: "rgba(255,255,255,0.30)",
+													}
+									}
+								>
+									{isDone ? "Done" : isCurrent ? "In progress" : "Upcoming"}
+								</span>
+							</div>
+						</div>
+					);
+				})}
+			</div>
+
+			{/* ── Section 3 · Today's micro-steps ── */}
+			<p className="mt-4 mb-3 font-bold text-[10px] text-white/30 uppercase tracking-[0.12em]">
+				{cadence === "daily" ? "Today's Micro-Step" : "This Week's Focus"}
+			</p>
+			{taskStep ? (
+				<button
+					type="button"
+					aria-pressed={taskStep.done}
+					onClick={() => void setStepDone(taskStep.id, !taskStep.done)}
+					className="mb-2 flex w-full cursor-pointer items-start gap-3 rounded-[14px] border border-white/[0.07] bg-white/[0.04] px-[14px] py-[13px] text-left transition-colors duration-200 hover:bg-white/[0.07] motion-reduce:transition-none"
+				>
+					<span
+						className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors duration-200 motion-reduce:transition-none"
+						style={
+							taskStep.done
+								? { backgroundColor: TEAL, borderColor: TEAL, color: "#fff" }
+								: { borderColor: "rgba(255,255,255,0.20)" }
+						}
+					>
+						{taskStep.done && <CheckIcon />}
+					</span>
+					<span className="min-w-0 flex-1">
+						<span
+							className={`block font-semibold text-[13px] ${
+								taskStep.done ? "text-white/40 line-through" : "text-white"
+							}`}
+						>
+							{taskStep.title}
+						</span>
+						<span
+							className="mt-0.5 block font-medium text-[10px]"
+							style={{ color: "rgba(245,200,66,0.55)" }}
+						>
+							→ {goalShort}
+						</span>
+					</span>
+				</button>
 			) : (
-				<div className="flex flex-col gap-3">
-					{weekly
-						.sort((a, b) => a.week_index - b.week_index)
-						.map((s) => (
-							<StepRow
+				<p className="text-[13px] text-white/35">
+					No step scheduled for today.
+				</p>
+			)}
+
+			{/* This week's rhythm (daily cadence) */}
+			{cadence === "daily" && weekDays.length > 0 && (
+				<div className="mt-1 flex gap-1.5">
+					{weekDays.map((s) => {
+						const { wd, d } = dayLabel(s.due_date ?? today);
+						const isToday = s.due_date === today;
+						return (
+							<button
 								key={s.id}
-								step={s}
-								accent={accent}
-								emphasis={s.week_index === currentWeekIndex}
-								leading={`Week ${s.week_index + 1}`}
-								onToggle={(done) => void setStepDone(s.id, done)}
-							/>
-						))}
+								type="button"
+								aria-pressed={s.done}
+								aria-label={`${wd} ${d}`}
+								onClick={() => void setStepDone(s.id, !s.done)}
+								className="flex flex-1 cursor-pointer flex-col items-center gap-1 rounded-[10px] py-2 transition-colors duration-200 motion-reduce:transition-none"
+								style={{
+									backgroundColor: s.done
+										? "rgba(62,207,191,0.14)"
+										: "rgba(255,255,255,0.03)",
+									border: isToday
+										? `1px solid ${TEAL}`
+										: "1px solid transparent",
+								}}
+							>
+								<span className="text-[8px] text-white/35 uppercase">{wd}</span>
+								<span
+									className="font-bold text-[12px]"
+									style={{ color: s.done ? TEAL : "rgba(255,255,255,0.7)" }}
+								>
+									{s.done ? <CheckIcon /> : d}
+								</span>
+							</button>
+						);
+					})}
 				</div>
 			)}
 		</div>
-	);
-}
-
-function StepRow({
-	step,
-	accent,
-	emphasis,
-	leading,
-	onToggle,
-}: {
-	step: Step;
-	accent: string;
-	emphasis?: boolean;
-	leading?: string;
-	onToggle: (done: boolean) => void;
-}) {
-	return (
-		<button
-			type="button"
-			onClick={() => onToggle(!step.done)}
-			className="flex w-full items-start gap-3 rounded-xl border p-4 text-left transition-colors"
-			style={{
-				borderColor: step.done
-					? `${accent}40`
-					: emphasis
-						? `${accent}30`
-						: "rgba(255,255,255,0.08)",
-				backgroundColor: step.done
-					? `${accent}12`
-					: emphasis
-						? "rgba(255,255,255,0.05)"
-						: "transparent",
-			}}
-		>
-			<div
-				className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition-colors"
-				style={{
-					borderColor: step.done ? accent : "rgba(255,255,255,0.3)",
-					backgroundColor: step.done ? accent : "transparent",
-				}}
-			>
-				{step.done && (
-					<svg
-						width="11"
-						height="11"
-						viewBox="0 0 12 12"
-						fill="none"
-						aria-hidden="true"
-					>
-						<path
-							d="M2 6l3 3 5-5"
-							stroke="#000"
-							strokeWidth={1.8}
-							strokeLinecap="round"
-							strokeLinejoin="round"
-						/>
-					</svg>
-				)}
-			</div>
-			<div className="flex-1">
-				{leading && (
-					<p
-						className="mb-0.5 font-bold text-[10px] uppercase tracking-[0.1em]"
-						style={{ color: emphasis ? accent : "rgba(255,255,255,0.35)" }}
-					>
-						{leading}
-					</p>
-				)}
-				<p
-					className={`font-medium text-[14px] leading-snug ${
-						step.done ? "text-white/50 line-through" : "text-white"
-					}`}
-				>
-					{step.title}
-				</p>
-				{step.estimate_label && (
-					<p className="mt-0.5 text-[11px] text-white/35">
-						{step.estimate_label}
-					</p>
-				)}
-			</div>
-		</button>
 	);
 }

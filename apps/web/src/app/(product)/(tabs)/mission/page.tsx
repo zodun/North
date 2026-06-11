@@ -82,7 +82,7 @@ export default async function MissionPage() {
 	const signal = await loadSignalData(supabase, user.id);
 
 	return (
-		<>
+		<div className="min-h-full bg-[#05050E] pb-24 font-jakarta">
 			<MonthlyMissionView
 				mission={mission}
 				steps={steps ?? []}
@@ -91,10 +91,7 @@ export default async function MissionPage() {
 				currentWeekIndex={currentWeekIndex}
 				streakState={streakRes.data?.state ?? null}
 			/>
-			<div className="mt-8 mb-7 px-5">
-				<div className="h-px w-full bg-gradient-to-r from-transparent via-white/12 to-transparent" />
-			</div>
 			<SignalView {...signal} embedded />
-		</>
+		</div>
 	);
 }

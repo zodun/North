@@ -148,31 +148,32 @@ export function PeopleSection() {
 	const weekLabel = `w/e ${new Date(weekEnding).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
 
 	return (
-		<div className="mb-5">
-			<div className="mb-3 flex items-center justify-between">
-				<h2 className="font-semibold text-[11px] text-white/40 uppercase tracking-widest">
-					People
-				</h2>
+		<div className="font-jakarta">
+			{/* People card */}
+			<div className="mb-2 flex items-center justify-between rounded-[14px] border border-white/[0.07] bg-white/[0.03] p-[14px]">
+				<div>
+					<p className="mb-0.5 font-bold text-[13px] text-white">People</p>
+					<p className="text-[11px] text-white/35">
+						Track others' signal and noise
+					</p>
+				</div>
 				<button
 					type="button"
 					onClick={() => setShowAdd(true)}
-					className="font-semibold text-[#E8B84B] text-[12px]"
+					className="cursor-pointer rounded-[8px] border px-3 py-1.5 font-bold text-[11px]"
+					style={{
+						backgroundColor: "rgba(245,200,66,0.1)",
+						borderColor: "rgba(245,200,66,0.25)",
+						color: "#F5C842",
+					}}
 				>
 					+ Add
 				</button>
 			</div>
 
-			{loading ? null : people.length === 0 ? (
-				<button
-					type="button"
-					onClick={() => setShowAdd(true)}
-					className="w-full rounded-xl border border-white/8 bg-white/4 p-4 text-left text-[13px] text-white/40"
-				>
-					Add people to track their signal and noise each week.
-				</button>
-			) : (
+			{!loading && people.length > 0 && (
 				<div
-					className="flex gap-3 overflow-x-auto pb-1"
+					className="mb-2 flex gap-2 overflow-x-auto pb-1"
 					style={{ scrollbarWidth: "none" }}
 				>
 					{people.map((person) => {
@@ -183,14 +184,17 @@ export function PeopleSection() {
 								key={person.id}
 								type="button"
 								onClick={() => setSelected(person)}
-								className="w-36 shrink-0 rounded-xl border border-white/10 bg-white/5 p-3.5 text-left"
+								className="w-36 shrink-0 cursor-pointer rounded-[14px] border border-white/[0.07] bg-white/[0.04] p-3.5 text-left transition-colors duration-200 hover:bg-white/[0.07] motion-reduce:transition-none"
 							>
-								<div className="mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-[#E8B84B]/15">
-									<span className="font-semibold text-[#E8B84B] text-lg">
+								<div
+									className="mb-2 flex h-9 w-9 items-center justify-center rounded-full"
+									style={{ backgroundColor: "rgba(245,200,66,0.15)" }}
+								>
+									<span className="font-bold text-[#F5C842] text-lg">
 										{person.name[0]?.toUpperCase()}
 									</span>
 								</div>
-								<p className="truncate font-semibold text-[13px] text-white">
+								<p className="truncate font-bold text-[13px] text-white">
 									{person.name}
 								</p>
 								{goal?.goal ? (
@@ -204,7 +208,7 @@ export function PeopleSection() {
 								)}
 								<div className="mt-2 flex gap-1.5">
 									<span
-										className={`h-2 w-2 rounded-full ${checkIn?.signal ? "bg-[#4ECCA3]" : "bg-white/15"}`}
+										className={`h-2 w-2 rounded-full ${checkIn?.signal ? "bg-[#3ECFBF]" : "bg-white/15"}`}
 									/>
 									<span
 										className={`h-2 w-2 rounded-full ${checkIn?.noise ? "bg-[#f87171]" : "bg-white/15"}`}
