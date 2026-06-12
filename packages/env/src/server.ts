@@ -31,6 +31,14 @@ export const env = createEnv({
 		CLOUDINARY_API_SECRET: z.string().min(1).optional(),
 		CLOUDINARY_URL: z.string().min(1).optional(),
 		POSTHOG_API_KEY: z.string().min(1).optional(),
+		// Polar billing (premium subscriptions). All optional locally so the
+		// env validator passes without billing wired in; the checkout/portal
+		// routes return 503 when POLAR_ACCESS_TOKEN is unset.
+		POLAR_ACCESS_TOKEN: z.string().min(1).optional(),
+		POLAR_WEBHOOK_SECRET: z.string().min(1).optional(),
+		POLAR_PRODUCT_ID: z.string().min(1).optional(),
+		POLAR_SERVER: z.enum(["sandbox", "production"]).default("sandbox"),
+		POLAR_SUCCESS_URL: z.url().optional(),
 		CORS_ORIGIN: z.url(),
 		NODE_ENV: z
 			.enum(["development", "production", "test"])

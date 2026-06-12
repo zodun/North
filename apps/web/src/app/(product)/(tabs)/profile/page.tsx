@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getIsPremium } from "@/lib/entitlement";
 import { getServerSupabase } from "@/lib/supabase-server";
 import { ProfileView } from "./profile-view";
 
@@ -56,7 +57,7 @@ export default async function ProfilePage() {
 		supabase
 			.from("profiles")
 			.select(
-				"display_name, statement_of_intent, season_label, time_budget_label, mission_cadence",
+				"display_name, statement_of_intent, season_label, time_budget_label, mission_cadence, career_stage, fields, country, open_to_remote, open_to_relocate",
 			)
 			.eq("user_id", user.id)
 			.single(),
@@ -152,6 +153,8 @@ export default async function ProfilePage() {
 			)
 		: null;
 
+	const isPremium = await getIsPremium(supabase, user.id);
+
 	const scores = signalRows ?? [];
 	const signalBand = (scores[0] as { band: string } | undefined)?.band ?? null;
 	const signalScore =
@@ -204,6 +207,13 @@ export default async function ProfilePage() {
 			signalTrend={signalTrend}
 			savedCount={savedRows?.length ?? 0}
 			savedOpportunities={savedOpps}
+			isPremium={isPremium}
+			userId={user.id}
+			careerStage={profile?.career_stage ?? null}
+			fields={profile?.fields ?? []}
+			country={profile?.country ?? null}
+			openToRemote={profile?.open_to_remote ?? false}
+			openToRelocate={profile?.open_to_relocate ?? false}
 		/>
 	);
 }

@@ -380,13 +380,45 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
-# [edge_runtime.secrets]
-# secret_key = "env(SECRET_VALUE)"
+# Secrets injected into edge functions locally. `env(...)` reads from the shell
+# environment (or a .env the CLI loads) when you run `supabase start`; if it's
+# unset you just get a warning and the AI functions use their deterministic
+# fallback. Set OPENAI_API_KEY to have plan-month / reflect generate real
+# AI output (e.g. tasks built from the user's goal). For a deployed project,
+# use `supabase secrets set OPENAI_API_KEY=sk-...` instead.
+[edge_runtime.secrets]
+ANTHROPIC_API_KEY = "env(ANTHROPIC_API_KEY)"
+OPENAI_API_KEY = "env(OPENAI_API_KEY)"
 
 # Cron-triggered scraper. The function authenticates callers with its own
 # x-trigger-secret header, and the pg_cron job sends only that header (no JWT),
 # so the gateway's JWT check must stay off or the daily 06:00 UTC run 401s.
 [functions.scrape-opportunities]
+verify_jwt = false
+
+# The goal planner authenticates the caller itself (reads the user from the JWT
+# via supabase.auth.getUser), so the gateway JWT check is redundant — and the
+# local edge runtime can't verify the stack's ES256 user tokens with its
+# symmetric secret, which 401s every authenticated call. Skip it here.
+[functions.plan-month]
+verify_jwt = false
+
+# The journal reflector authenticates the caller itself (supabase.auth.getUser),
+# so the gateway JWT check is redundant — and the local edge runtime can't verify
+# the stack's ES256 user tokens, which 401s every authenticated call. Skip it.
+[functions.reflect]
+verify_jwt = false
+
+# Cron-triggered weekly. The pg_cron job sends only an x-trigger-secret header
+# (no JWT), which the function checks itself — so the gateway JWT check must stay
+# off or the Sunday 09:00 UTC run 401s before the function executes.
+[functions.signal-summary]
+verify_jwt = false
+
+# Personalization ranker. Authenticates the caller itself (supabase.auth.getUser)
+# and gates on premium, so the gateway JWT check is redundant — and the local
+# edge runtime can't verify the stack's ES256 user tokens. Skip it.
+[functions.personalize]
 verify_jwt = false
 
 [analytics]

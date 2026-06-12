@@ -1,6 +1,7 @@
 "use client";
 
 import { colors } from "@/components/product/north-ui";
+import { PreferencesSection } from "./preferences-section";
 
 const GOLD = colors.gold;
 const TEAL = colors.teal;
@@ -39,6 +40,13 @@ type Props = {
 	signalTrend: "climbing" | "holding" | "easing" | null;
 	savedCount: number;
 	savedOpportunities: { id: string; title: string; org: string }[];
+	isPremium: boolean;
+	userId: string;
+	careerStage: string | null;
+	fields: string[];
+	country: string | null;
+	openToRemote: boolean;
+	openToRelocate: boolean;
 };
 
 // Calm section label — readable (WCAG AA) rather than the faint /30.
@@ -70,6 +78,13 @@ export function ProfileView({
 	signalBand,
 	savedCount,
 	savedOpportunities,
+	isPremium,
+	userId,
+	careerStage,
+	fields,
+	country,
+	openToRemote,
+	openToRelocate,
 }: Props) {
 	const litCount =
 		signalScore != null
@@ -205,6 +220,77 @@ export function ProfileView({
 					</section>
 				)}
 
+				{/* ── Premium ── */}
+				<section className="mb-10">
+					<Label>Premium</Label>
+					{isPremium ? (
+						<div
+							className="rounded-[18px] border p-5"
+							style={{
+								borderColor: "rgba(123,97,255,0.28)",
+								background:
+									"linear-gradient(135deg, rgba(123,97,255,0.12), rgba(123,97,255,0.02))",
+							}}
+						>
+							<div className="flex items-center justify-between gap-3">
+								<div className="min-w-0">
+									<p className="font-bold text-[15px] text-white">
+										North Premium
+									</p>
+									<p className="mt-0.5 text-[12px] text-white/50">
+										AI tailors your feed and opportunities to you.
+									</p>
+								</div>
+								<span
+									className="shrink-0 rounded-full border px-3 py-1 font-bold text-[10px]"
+									style={{
+										color: VIOLET,
+										borderColor: "rgba(123,97,255,0.4)",
+										backgroundColor: "rgba(123,97,255,0.12)",
+									}}
+								>
+									Active
+								</span>
+							</div>
+							<a
+								href="/api/billing/portal"
+								className="mt-4 inline-block cursor-pointer font-semibold text-[12px] text-white/45 underline-offset-2 transition-colors hover:text-white/70 hover:underline motion-reduce:transition-none"
+							>
+								Manage subscription
+							</a>
+						</div>
+					) : (
+						<div
+							className="relative overflow-hidden rounded-[18px] border p-5"
+							style={{
+								borderColor: "rgba(123,97,255,0.28)",
+								background:
+									"linear-gradient(135deg, rgba(123,97,255,0.12), rgba(123,97,255,0.02))",
+							}}
+						>
+							<span
+								aria-hidden="true"
+								className="absolute top-0 bottom-0 left-0 w-[3px] rounded-r-[3px]"
+								style={{ backgroundColor: VIOLET }}
+							/>
+							<p className="font-bold text-[16px] text-white leading-[1.4]">
+								Make North truly yours
+							</p>
+							<p className="mt-1.5 text-[13px] text-white/55 leading-relaxed">
+								Premium uses AI to rank your feed and opportunities around your
+								focus, goal, and interests — with a reason for every pick.
+							</p>
+							<a
+								href="/api/billing/checkout"
+								className="mt-4 inline-flex cursor-pointer items-center justify-center rounded-[12px] px-5 py-2.5 font-extrabold text-[#05050E] text-[13px]"
+								style={{ backgroundColor: GOLD }}
+							>
+								Upgrade to Premium
+							</a>
+						</div>
+					)}
+				</section>
+
 				{/* ── Rhythm — quiet, no card ── */}
 				<section className="mb-10">
 					<Label>Rhythm</Label>
@@ -268,6 +354,16 @@ export function ProfileView({
 						</div>
 					)}
 				</section>
+
+				{/* ── Preferences (editable; steers For You + Opportunities) ── */}
+				<PreferencesSection
+					userId={userId}
+					careerStage={careerStage}
+					fields={fields}
+					country={country}
+					openToRemote={openToRemote}
+					openToRelocate={openToRelocate}
+				/>
 
 				{/* ── Sign out (auth POST preserved) ── */}
 				<form action="/auth/signout" method="POST" className="text-center">

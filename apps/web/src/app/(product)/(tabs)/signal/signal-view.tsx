@@ -4,7 +4,6 @@ import { useState } from "react";
 import { colors } from "@/components/product/north-ui";
 import { supabase } from "@/lib/auth-client";
 import { JournalCard } from "./journal-card";
-import { PeopleSection } from "./people-section";
 
 type Score = { week_ending: string; band: string; raw_score: number };
 type Summary = {
@@ -279,11 +278,6 @@ export function SignalView({
 					</div>
 				);
 			})}
-
-			{/* People section */}
-			<div className="mt-4">
-				<PeopleSection />
-			</div>
 
 			{/* Daily journal */}
 			<JournalCard

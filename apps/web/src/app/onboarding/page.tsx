@@ -3,6 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/auth-client";
+import {
+	CAREER_STAGES,
+	COUNTRIES,
+	FIELDS,
+	MAX_FIELDS,
+} from "@/lib/personalization-options";
 
 // ── Data (stored values unchanged — visual labels/colors only) ──────────────
 
@@ -66,6 +72,17 @@ const OPPORTUNITY_TYPES = [
 	{ id: "creator-programme", label: "Creator Programmes" },
 ];
 
+// Career-stage / field / country option lists are shared with the Profile
+// editor (see @/lib/personalization-options) so a stored value round-trips
+// identically. Icons are onboarding-only chrome, keyed by the shared value.
+const CAREER_STAGE_ICONS: Record<string, keyof typeof ICONS> = {
+	Student: "book",
+	"About to graduate": "rocket",
+	"0–2 years in": "compass",
+	"3–5 years in": "chart",
+	"Building my own thing": "pencil",
+};
+
 // Stored season_label values — unchanged. Card copy is presentational.
 const SEASON_OPTIONS = [
 	"I know my purpose — I need help finding opportunities.",
@@ -119,6 +136,9 @@ const CONSENT_ROWS = [
 
 const CTA_LABELS = [
 	"That's me",
+	"This is my stage",
+	"These are my fields",
+	"That's where I am",
 	"This is me",
 	"These are my focus areas",
 	"Show me these",
@@ -128,7 +148,7 @@ const CTA_LABELS = [
 	"Take me to North",
 ];
 
-const TOTAL_STEPS = 8;
+const TOTAL_STEPS = 11;
 
 // ── Main component ─────────────────────────────────────────────────────────
 
@@ -136,6 +156,11 @@ export default function OnboardingPage() {
 	const router = useRouter();
 	const [step, setStep] = useState(0);
 	const [name, setName] = useState("");
+	const [careerStage, setCareerStage] = useState<string | null>(null);
+	const [fields, setFields] = useState<string[]>([]);
+	const [country, setCountry] = useState<string>("");
+	const [openToRemote, setOpenToRemote] = useState(false);
+	const [openToRelocate, setOpenToRelocate] = useState(false);
 	const [season, setSeason] = useState<string | null>(null);
 	const [focus, setFocus] = useState<string[]>([]);
 	const [oppTypes, setOppTypes] = useState<string[]>([]);
@@ -178,6 +203,16 @@ export default function OnboardingPage() {
 		);
 	}
 
+	function toggleField(value: string) {
+		setFields((prev) =>
+			prev.includes(value)
+				? prev.filter((f) => f !== value)
+				: prev.length < MAX_FIELDS
+					? [...prev, value]
+					: prev,
+		);
+	}
+
 	function toggleOppType(id: string) {
 		setOppTypes((prev) =>
 			prev.includes(id)
@@ -199,7 +234,32 @@ export default function OnboardingPage() {
 				.eq("user_id", userId);
 			if (err) throw new Error(err.message);
 		}
-		if (step === 1 && season) {
+		if (step === 1 && careerStage) {
+			const { error: err } = await supabase
+				.from("profiles")
+				.update({ career_stage: careerStage })
+				.eq("user_id", userId);
+			if (err) throw new Error(err.message);
+		}
+		if (step === 2) {
+			const { error: err } = await supabase
+				.from("profiles")
+				.update({ fields })
+				.eq("user_id", userId);
+			if (err) throw new Error(err.message);
+		}
+		if (step === 3) {
+			const { error: err } = await supabase
+				.from("profiles")
+				.update({
+					country: country || null,
+					open_to_remote: openToRemote,
+					open_to_relocate: openToRelocate,
+				})
+				.eq("user_id", userId);
+			if (err) throw new Error(err.message);
+		}
+		if (step === 4 && season) {
 			await Promise.all([
 				supabase
 					.from("profiles")
@@ -213,26 +273,26 @@ export default function OnboardingPage() {
 					),
 			]);
 		}
-		if (step === 2 && focus.length > 0) {
+		if (step === 5 && focus.length > 0) {
 			await supabase.from("user_focus_areas").delete().eq("user_id", userId);
 			await supabase
 				.from("user_focus_areas")
 				.insert(focus.map((id) => ({ user_id: userId, focus_area_id: id })));
 		}
-		if (step === 3) {
+		if (step === 6) {
 			const { error: err } = await supabase
 				.from("profiles")
 				.update({ preferred_opportunity_categories: oppTypes })
 				.eq("user_id", userId);
 			if (err) throw new Error(err.message);
 		}
-		if (step === 4 && time) {
+		if (step === 7 && time) {
 			await supabase
 				.from("profiles")
 				.update({ time_budget_label: time })
 				.eq("user_id", userId);
 		}
-		if (step === 5) {
+		if (step === 8) {
 			const note = avoid.trim();
 			await Promise.all([
 				supabase
@@ -292,13 +352,16 @@ export default function OnboardingPage() {
 
 	const canContinue = (() => {
 		if (step === 0) return name.trim().length > 0;
-		if (step === 1) return season !== null;
-		if (step === 2) return focus.length > 0;
-		if (step === 3) return oppTypes.length > 0;
-		if (step === 4) return time !== null;
-		if (step === 5) return true;
-		if (step === 6) return baseline !== null;
-		if (step === 7) return focus.length > 0 && baseline !== null && consent;
+		if (step === 1) return careerStage !== null;
+		if (step === 2) return fields.length > 0;
+		if (step === 3) return country !== "";
+		if (step === 4) return season !== null;
+		if (step === 5) return focus.length > 0;
+		if (step === 6) return oppTypes.length > 0;
+		if (step === 7) return time !== null;
+		if (step === 8) return true;
+		if (step === 9) return baseline !== null;
+		if (step === 10) return focus.length > 0 && baseline !== null && consent;
 		return false;
 	})();
 
@@ -345,15 +408,31 @@ export default function OnboardingPage() {
 				className="step-in relative z-10 mx-auto flex min-h-svh max-w-[420px] flex-col justify-center px-6 pt-16 pb-10"
 			>
 				{step === 0 && <StepName value={name} onChange={setName} />}
-				{step === 1 && <StepPurpose value={season} onSelect={setSeason} />}
-				{step === 2 && <StepFocus value={focus} onToggle={toggleFocus} />}
+				{step === 1 && (
+					<StepCareerStage value={careerStage} onSelect={setCareerStage} />
+				)}
+				{step === 2 && <StepFields value={fields} onToggle={toggleField} />}
 				{step === 3 && (
+					<StepLocation
+						country={country}
+						onCountry={setCountry}
+						remote={openToRemote}
+						onRemote={setOpenToRemote}
+						relocate={openToRelocate}
+						onRelocate={setOpenToRelocate}
+					/>
+				)}
+				{step === 4 && <StepPurpose value={season} onSelect={setSeason} />}
+				{step === 5 && <StepFocus value={focus} onToggle={toggleFocus} />}
+				{step === 6 && (
 					<StepOpportunityTypes value={oppTypes} onToggle={toggleOppType} />
 				)}
-				{step === 4 && <StepTime value={time} onSelect={setTime} />}
-				{step === 5 && <StepAvoid value={avoid} onChange={setAvoid} />}
-				{step === 6 && <StepBaseline value={baseline} onSelect={setBaseline} />}
-				{step === 7 && <StepConsent consent={consent} onConsent={setConsent} />}
+				{step === 7 && <StepTime value={time} onSelect={setTime} />}
+				{step === 8 && <StepAvoid value={avoid} onChange={setAvoid} />}
+				{step === 9 && <StepBaseline value={baseline} onSelect={setBaseline} />}
+				{step === 10 && (
+					<StepConsent consent={consent} onConsent={setConsent} />
+				)}
 
 				{error && (
 					<p className="mt-5 text-[13px] text-red-400" role="alert">
@@ -370,7 +449,7 @@ export default function OnboardingPage() {
 					>
 						{CTA_LABELS[step]}
 					</CtaButton>
-					{step === 5 && (
+					{step === 8 && (
 						<button
 							type="button"
 							onClick={handleNext}
@@ -379,7 +458,7 @@ export default function OnboardingPage() {
 							Skip for now
 						</button>
 					)}
-					{step === 7 && !consent && (
+					{step === 10 && !consent && (
 						<p className="mt-2 text-center text-[11px] text-white/30">
 							You must agree to continue
 						</p>
@@ -514,6 +593,226 @@ function StepName({
 				onChange={(e) => onChange(e.target.value)}
 				className="w-full rounded-[14px] border border-white/10 bg-white/5 px-5 py-4 font-bold text-[18px] text-white outline-none transition-all placeholder:text-white/[0.18] focus:border-[#F5C842] focus:bg-[rgba(245,200,66,0.03)]"
 			/>
+		</div>
+	);
+}
+
+function StepCareerStage({
+	value,
+	onSelect,
+}: {
+	value: string | null;
+	onSelect: (v: string) => void;
+}) {
+	return (
+		<div>
+			<StepHead
+				eyebrow="A bit about you"
+				headline="Where are you in your career?"
+				sub="This is the biggest filter for what's actually open to you."
+			/>
+			<div className="flex flex-col gap-2">
+				{CAREER_STAGES.map((opt) => {
+					const selected = value === opt.value;
+					return (
+						<button
+							key={opt.value}
+							type="button"
+							aria-pressed={selected}
+							onClick={() => onSelect(opt.value)}
+							className={`relative flex items-center gap-4 rounded-[16px] border-[1.5px] p-4 text-left transition-all hover:bg-white/[0.07] ${selectableRing()} motion-reduce:transition-none`}
+							style={{
+								backgroundColor: selected
+									? "rgba(245,200,66,0.08)"
+									: "rgba(255,255,255,0.04)",
+								borderColor: selected ? GOLD : "rgba(255,255,255,0.08)",
+							}}
+						>
+							<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-white/[0.06]">
+								<Icon
+									name={CAREER_STAGE_ICONS[opt.value] ?? "compass"}
+									color="rgba(255,255,255,0.5)"
+									size={18}
+								/>
+							</span>
+							<span className="flex-1">
+								<span className="block font-black text-[14px] text-white">
+									{opt.value}
+								</span>
+								<span className="mt-0.5 block text-[11px] text-white/40">
+									{opt.sub}
+								</span>
+							</span>
+							{selected && <CheckBadge color={GOLD} size={22} />}
+						</button>
+					);
+				})}
+			</div>
+		</div>
+	);
+}
+
+function StepFields({
+	value,
+	onToggle,
+}: {
+	value: string[];
+	onToggle: (v: string) => void;
+}) {
+	return (
+		<div>
+			<StepHead
+				eyebrow="Your work"
+				headline="What field are you in — or moving toward?"
+				sub="Pick up to two. This shapes the opportunities and stories you'll see."
+			/>
+			<div className="flex flex-wrap gap-2">
+				{FIELDS.map((label) => {
+					const selected = value.includes(label);
+					return (
+						<button
+							key={label}
+							type="button"
+							aria-pressed={selected}
+							onClick={() => onToggle(label)}
+							className={`cursor-pointer rounded-full border px-4 py-2.5 font-bold text-[12px] transition-all hover:bg-white/[0.09] ${selectableRing()} motion-reduce:transition-none`}
+							style={
+								selected
+									? {
+											backgroundColor: "rgba(62,207,191,0.1)",
+											borderColor: "rgba(62,207,191,0.35)",
+											color: TEAL,
+										}
+									: {
+											backgroundColor: "rgba(255,255,255,0.05)",
+											borderColor: "rgba(255,255,255,0.10)",
+											color: "rgba(255,255,255,0.5)",
+										}
+							}
+						>
+							{label}
+						</button>
+					);
+				})}
+			</div>
+			<p className="mt-4 text-center text-[11px] text-white/35">
+				<span style={{ color: value.length > 0 ? TEAL : undefined }}>
+					{value.length}
+				</span>{" "}
+				of {MAX_FIELDS} selected
+			</p>
+		</div>
+	);
+}
+
+function StepLocation({
+	country,
+	onCountry,
+	remote,
+	onRemote,
+	relocate,
+	onRelocate,
+}: {
+	country: string;
+	onCountry: (v: string) => void;
+	remote: boolean;
+	onRemote: (v: boolean) => void;
+	relocate: boolean;
+	onRelocate: (v: boolean) => void;
+}) {
+	return (
+		<div>
+			<StepHead
+				eyebrow="Where you are"
+				headline="Where are you based — and how far will you go?"
+				sub="So we honour what you're eligible for, and rank remote-friendly picks for you."
+			/>
+			<label htmlFor="onb-country" className="sr-only">
+				Your country
+			</label>
+			<div className="relative">
+				<select
+					id="onb-country"
+					value={country}
+					onChange={(e) => onCountry(e.target.value)}
+					className="w-full appearance-none rounded-[14px] border border-white/10 bg-white/5 px-5 py-4 font-bold text-[16px] text-white outline-none transition-all focus:border-[#F5C842] focus:bg-[rgba(245,200,66,0.03)]"
+					style={{ color: country ? "#fff" : "rgba(255,255,255,0.3)" }}
+				>
+					<option value="" disabled className="bg-[#05050E] text-white/40">
+						Select your country
+					</option>
+					{COUNTRIES.map((c) => (
+						<option key={c} value={c} className="bg-[#05050E] text-white">
+							{c}
+						</option>
+					))}
+				</select>
+				<span
+					aria-hidden="true"
+					className="pointer-events-none absolute top-1/2 right-5 -translate-y-1/2 text-white/40"
+				>
+					<svg
+						width="14"
+						height="14"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						strokeWidth={2.5}
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						aria-hidden="true"
+					>
+						<path d="m6 9 6 6 6-6" />
+					</svg>
+				</span>
+			</div>
+
+			<div className="mt-4 flex flex-col gap-2">
+				<ToggleRow
+					label="Open to remote opportunities"
+					checked={remote}
+					onChange={onRemote}
+				/>
+				<ToggleRow
+					label="Open to relocating"
+					checked={relocate}
+					onChange={onRelocate}
+				/>
+			</div>
+		</div>
+	);
+}
+
+function ToggleRow({
+	label,
+	checked,
+	onChange,
+}: {
+	label: string;
+	checked: boolean;
+	onChange: (v: boolean) => void;
+}) {
+	return (
+		<div className="flex items-center justify-between rounded-[16px] border border-white/8 bg-white/4 px-4 py-3.5">
+			<span className="font-bold text-[13px] text-white">{label}</span>
+			<button
+				type="button"
+				role="switch"
+				aria-checked={checked}
+				aria-label={label}
+				onClick={() => onChange(!checked)}
+				className={`relative h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors ${selectableRing()} motion-reduce:transition-none`}
+				style={{
+					backgroundColor: checked ? TEAL : "rgba(255,255,255,0.1)",
+				}}
+			>
+				<span
+					className="absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform motion-reduce:transition-none"
+					style={{
+						transform: checked ? "translateX(22px)" : "translateX(2px)",
+					}}
+				/>
+			</button>
 		</div>
 	);
 }

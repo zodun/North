@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { getIsPremium } from "@/lib/entitlement";
+import { applyOrder, personalize } from "@/lib/personalize";
 import { getServerSupabase } from "@/lib/supabase-server";
 import { ForYouFeed } from "./feed";
 
@@ -49,12 +51,54 @@ export default async function ForYouPage() {
 		.select("id, label")
 		.order("sort_order");
 
+	// AI re-ranks the feed around the user's direction. Premium sees the full
+	// personalized order + a reason on every card; free users get a one-pick
+	// preview — their single best match with its reason, then the default order
+	// — and an upgrade prompt to unlock the rest.
+	const isPremium = user ? await getIsPremium(supabase, user.id) : false;
+	let feedItems: (NonNullable<typeof items>[number] & {
+		why?: string | null;
+	})[] = items ?? [];
+	let preview = false;
+	if (user && feedItems.length > 0) {
+		const res = await personalize(
+			supabase,
+			"feed",
+			feedItems.map((i) => ({
+				id: i.id,
+				label: `${i.kind}: ${i.title}${i.eyebrow ? ` — ${i.eyebrow}` : ""}`,
+			})),
+		);
+		if (res && res.order.length > 0) {
+			if (isPremium) {
+				feedItems = applyOrder(feedItems, res.order).map((i) => ({
+					...i,
+					why: res.whyById.get(i.id) ?? null,
+				}));
+			} else {
+				const topId = res.order[0];
+				const topWhy = res.whyById.get(topId) ?? null;
+				const top = feedItems.find((i) => i.id === topId);
+				if (top && topWhy) {
+					feedItems = [
+						{ ...top, why: topWhy },
+						...feedItems
+							.filter((i) => i.id !== topId)
+							.map((i) => ({ ...i, why: null })),
+					];
+					preview = true;
+				}
+			}
+		}
+	}
+
 	return (
 		<ForYouFeed
-			items={items ?? []}
+			items={feedItems}
 			categories={categories ?? []}
 			initialSaved={[...initialSaved]}
 			initialMatters={[...initialMatters]}
+			preview={preview}
 		/>
 	);
 }

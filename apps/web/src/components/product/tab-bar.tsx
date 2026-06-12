@@ -132,18 +132,17 @@ function OpportunitiesIcon({ active }: { active: boolean }) {
 function UploadIcon() {
 	return (
 		<svg
-			width="22"
-			height="22"
+			width="24"
+			height="24"
 			viewBox="0 0 24 24"
 			fill="none"
 			stroke="#05050E"
-			strokeWidth={2.2}
+			strokeWidth={2.4}
 			strokeLinecap="round"
 			strokeLinejoin="round"
 			aria-hidden="true"
 		>
-			<path d="M12 16V8M8 12l4-4 4 4" />
-			<path d="M20 16.5A4.5 4.5 0 0 1 15.5 21h-7A4.5 4.5 0 0 1 4 16.5" />
+			<path d="M12 5v14M5 12h14" />
 		</svg>
 	);
 }

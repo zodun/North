@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { getIsPremium } from "@/lib/entitlement";
+import { personalize } from "@/lib/personalize";
 import { getServerSupabase } from "@/lib/supabase-server";
 import { OpportunitiesList } from "./list";
 
@@ -71,12 +73,6 @@ export default async function OpportunitiesPage() {
 		return { ...item, matchScore: focusScore + categoryScore };
 	});
 
-	// "Best for you" = items with at least one matching focus area, up to 10
-	const topPicks = scored
-		.filter((i) => i.matchScore > 0)
-		.sort((a, b) => b.matchScore - a.matchScore)
-		.slice(0, 10);
-
 	const initialSaved = savedRows
 		.filter((r) => !r.applied)
 		.map((r) => r.opportunity_id);
@@ -85,10 +81,50 @@ export default async function OpportunitiesPage() {
 		.filter((r) => r.applied)
 		.map((r) => r.opportunity_id);
 
+	// AI re-ranks opportunities to the user's direction with a personalized
+	// "why this fits you". Premium gets the full ranking (folded into matchScore,
+	// which the list already sorts by) + a reason on every pick. Free users get a
+	// one-pick preview — their single best match as the hero + reason — and an
+	// upgrade card to unlock the rest; everything else stays in focus order.
+	const isPremium = user ? await getIsPremium(supabase, user.id) : false;
+	let listItems = scored;
+	let preview = false;
+	if (user && scored.length > 0) {
+		const res = await personalize(
+			supabase,
+			"opportunities",
+			scored.map((i) => ({
+				id: i.id,
+				label: `${i.opportunity_type ?? i.category_id ?? "Opportunity"}: ${i.title} — ${i.org}`,
+			})),
+		);
+		if (res && res.order.length > 0) {
+			if (isPremium) {
+				const pos = new Map(res.order.map((id, idx) => [id, idx]));
+				listItems = scored.map((it) => ({
+					...it,
+					matchScore: pos.has(it.id)
+						? res.order.length - (pos.get(it.id) ?? 0)
+						: 0,
+					why: res.whyById.get(it.id) ?? it.why,
+				}));
+			} else {
+				const topId = res.order[0];
+				const topWhy = res.whyById.get(topId) ?? null;
+				if (topWhy) {
+					listItems = scored.map((it) =>
+						it.id === topId ? { ...it, matchScore: 9999, why: topWhy } : it,
+					);
+					preview = true;
+				}
+			}
+		}
+	}
+
 	return (
 		<OpportunitiesList
-			items={scored}
-			topPicks={topPicks}
+			items={listItems}
+			preview={preview}
 			categories={categoriesRes.data ?? []}
 			initialSaved={initialSaved}
 			initialApplied={initialApplied}

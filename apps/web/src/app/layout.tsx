@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 
 import "../index.css";
-import Header from "@/components/header";
 import { InstallPrompt } from "@/components/install-prompt";
 import Providers from "@/components/providers";
 
@@ -50,10 +49,7 @@ export default function RootLayout({
 				className={`${geistSans.variable} ${geistMono.variable} ${plusJakarta.variable} antialiased`}
 			>
 				<Providers>
-					<div className="grid h-svh grid-rows-[auto_1fr]">
-						<Header />
-						{children}
-					</div>
+					<div className="h-svh">{children}</div>
 					<InstallPrompt />
 				</Providers>
 			</body>

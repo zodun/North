@@ -10,6 +10,15 @@ const withSerwist = withSerwistInit({
 const nextConfig: NextConfig = {
 	typedRoutes: true,
 	reactCompiler: true,
+	// Same-origin proxy to the local Supabase, so the browser can reach it over
+	// HTTPS through a tunnel (e.g. ngrok) without mixed-content/CORS. Set the
+	// browser's NEXT_PUBLIC_SUPABASE_URL to `https://<tunnel>/sb` to use it; the
+	// server keeps talking to SUPABASE_URL directly. Excluded from proxy.ts
+	// middleware. Harmless in normal local dev (nothing calls /sb).
+	async rewrites() {
+		const sb = process.env.SUPABASE_URL ?? "http://127.0.0.1:54321";
+		return [{ source: "/sb/:path*", destination: `${sb}/:path*` }];
+	},
 };
 
 export default process.env.NODE_ENV === "development"

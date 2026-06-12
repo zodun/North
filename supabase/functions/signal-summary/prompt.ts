@@ -47,9 +47,12 @@ function fmt(n: number | null): string {
 	return n.toFixed(2);
 }
 
-export const RESPONSE_SCHEMA = {
+// Anthropic tool — forced via tool_choice so Claude returns the summary as the
+// tool's structured `input` (the Messages API has no response_format).
+export const SUMMARY_TOOL = {
 	name: "weekly_summary",
-	schema: {
+	description: "Record the weekly summary and callouts.",
+	input_schema: {
 		type: "object",
 		properties: {
 			summary: {
@@ -74,5 +77,4 @@ export const RESPONSE_SCHEMA = {
 		required: ["summary", "callouts"],
 		additionalProperties: false,
 	},
-	strict: true,
 } as const;

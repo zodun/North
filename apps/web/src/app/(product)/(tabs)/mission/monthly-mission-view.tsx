@@ -8,6 +8,7 @@ import {
 	StatusBadge,
 } from "@/components/product/north-ui";
 import { supabase } from "@/lib/auth-client";
+import { type GoalSetResult, SetGoalModal } from "./set-goal-modal";
 
 type Step = {
 	id: string;
@@ -25,6 +26,7 @@ type Mission = {
 	goal_intent: string | null;
 	focus_area_id: string | null;
 	month_start: string;
+	generated_by: string;
 };
 
 const STREAK_LABELS: Record<number, string> = {
@@ -46,12 +48,13 @@ function dayLabel(date: string): { wd: string; d: string } {
 }
 
 export function MonthlyMissionView({
-	mission,
+	mission: initialMission,
 	steps: initialSteps,
 	cadence: initialCadence,
 	today,
 	currentWeekIndex,
 	streakState,
+	promptGoal = false,
 }: {
 	mission: Mission | null;
 	steps: Step[];
@@ -59,9 +62,19 @@ export function MonthlyMissionView({
 	today: string;
 	currentWeekIndex: number;
 	streakState: number | null;
+	promptGoal?: boolean;
 }) {
+	const [mission, setMission] = useState(initialMission);
 	const [steps, setSteps] = useState(initialSteps);
 	const [cadence, setCadence] = useState(initialCadence);
+	const [showGoal, setShowGoal] = useState(promptGoal);
+
+	function handleGoalSet(result: GoalSetResult) {
+		setMission(result.mission);
+		setSteps(result.steps);
+		setCadence(result.cadence);
+		setShowGoal(false);
+	}
 
 	const daily = useMemo(
 		() => steps.filter((s) => s.cadence === "daily"),
@@ -176,12 +189,21 @@ export function MonthlyMissionView({
 					className="absolute top-0 bottom-0 left-0 w-[3px] rounded-r-[3px]"
 					style={{ backgroundColor: GOLD }}
 				/>
-				<p
-					className="mb-2 font-bold text-[9px] uppercase tracking-[0.15em]"
-					style={{ color: "rgba(245,200,66,0.6)" }}
-				>
-					This Month's Goal
-				</p>
+				<div className="mb-2 flex items-center justify-between">
+					<p
+						className="font-bold text-[9px] uppercase tracking-[0.15em]"
+						style={{ color: "rgba(245,200,66,0.6)" }}
+					>
+						This Month's Goal
+					</p>
+					<button
+						type="button"
+						onClick={() => setShowGoal(true)}
+						className="cursor-pointer font-bold text-[10px] text-white/40 uppercase tracking-[0.1em] transition-colors hover:text-white/70"
+					>
+						Edit
+					</button>
+				</div>
 				<p className="mb-3 font-bold text-[15px] text-white leading-[1.4]">
 					{mission.goal_title}
 				</p>
@@ -346,6 +368,19 @@ export function MonthlyMissionView({
 						);
 					})}
 				</div>
+			)}
+
+			{showGoal && (
+				<SetGoalModal
+					monthName={monthName}
+					monthStart={mission.month_start}
+					initialGoal={mission.goal_title}
+					initialIntent={mission.goal_intent ?? ""}
+					initialCadence={cadence}
+					autosuggest={mission.generated_by !== "manual"}
+					onDismiss={() => setShowGoal(false)}
+					onGoalSet={handleGoalSet}
+				/>
 			)}
 		</div>
 	);

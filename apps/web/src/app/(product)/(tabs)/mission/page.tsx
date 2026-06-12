@@ -32,14 +32,16 @@ export default async function MissionPage() {
 	const [missionRes, profileRes, streakRes] = await Promise.all([
 		supabase
 			.from("monthly_missions")
-			.select("id, goal_title, goal_intent, focus_area_id, month_start")
+			.select(
+				"id, goal_title, goal_intent, focus_area_id, month_start, generated_by",
+			)
 			.eq("user_id", user.id)
 			.order("month_start", { ascending: false })
 			.limit(1)
 			.maybeSingle(),
 		supabase
 			.from("profiles")
-			.select("mission_cadence")
+			.select("mission_cadence, goal_prompt_dismissed_month")
 			.eq("user_id", user.id)
 			.maybeSingle(),
 		supabase
@@ -78,6 +80,13 @@ export default async function MissionPage() {
 			)
 		: 0;
 
+	// Prompt the user to author their own goal when this month's mission is
+	// still the seeded template and they haven't dismissed the prompt this month.
+	const promptGoal =
+		!!mission &&
+		mission.generated_by === "template" &&
+		profileRes.data?.goal_prompt_dismissed_month !== mission.month_start;
+
 	// Signal lives on the same tab, below this month's plan.
 	const signal = await loadSignalData(supabase, user.id);
 
@@ -90,6 +99,7 @@ export default async function MissionPage() {
 				today={today}
 				currentWeekIndex={currentWeekIndex}
 				streakState={streakRes.data?.state ?? null}
+				promptGoal={promptGoal}
 			/>
 			<SignalView {...signal} embedded />
 		</div>

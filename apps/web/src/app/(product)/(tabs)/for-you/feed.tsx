@@ -16,6 +16,7 @@ type Item = {
 	thumbnail_url: string | null;
 	content_category_id: string | null;
 	published_at: string;
+	why?: string | null;
 };
 
 type Category = { id: string; label: string };
@@ -141,6 +142,30 @@ function TextBackground({
 	);
 }
 
+// Full-bleed article image (carried from the source's og:image), with a dark
+// vignette so the title + actions stay legible over it.
+function ImageBackground({ src }: { src: string }) {
+	return (
+		<div className="absolute inset-0 bg-black">
+			{/* biome-ignore lint/performance/noImgElement: decorative full-bleed background, no fixed dimensions */}
+			<img
+				src={src}
+				alt=""
+				loading="lazy"
+				className="absolute inset-0 h-full w-full object-cover"
+			/>
+			<div className="absolute inset-0 bg-black/25" />
+			<div
+				className="absolute inset-0"
+				style={{
+					background:
+						"linear-gradient(to top, rgba(5,5,14,0.96) 0%, rgba(5,5,14,0.6) 36%, rgba(5,5,14,0.18) 64%, transparent 82%)",
+				}}
+			/>
+		</div>
+	);
+}
+
 function VideoBackground({ item }: { item: Item }) {
 	if (!item.external_url) {
 		return <div className="absolute inset-0 bg-black" />;
@@ -196,11 +221,13 @@ export function ForYouFeed({
 	categories,
 	initialSaved,
 	initialMatters,
+	preview = false,
 }: {
 	items: Item[];
 	categories: Category[];
 	initialSaved: string[];
 	initialMatters: string[];
+	preview?: boolean;
 }) {
 	const [saved, setSaved] = useState<Set<string>>(new Set(initialSaved));
 	const [matters, setMatters] = useState<Set<string>>(new Set(initialMatters));
@@ -322,6 +349,7 @@ export function ForYouFeed({
 						key={item.id}
 						ref={(el) => registerCard(el, item.id)}
 						item={item}
+						preview={preview}
 						categoryLabel={catLabel(item.content_category_id) ?? item.eyebrow}
 						isActive={activeId === item.id}
 						isSaved={saved.has(item.id)}
@@ -349,6 +377,7 @@ export function ForYouFeed({
 const FeedCard = ({
 	ref,
 	item,
+	preview,
 	categoryLabel,
 	isActive,
 	isSaved,
@@ -360,6 +389,7 @@ const FeedCard = ({
 }: {
 	ref: (el: HTMLDivElement | null) => void;
 	item: Item;
+	preview: boolean;
 	categoryLabel: string | null;
 	isActive: boolean;
 	isSaved: boolean;
@@ -380,9 +410,11 @@ const FeedCard = ({
 			className="relative flex snap-start snap-always flex-col overflow-hidden"
 			style={{ height: "100svh", minHeight: "100svh" }}
 		>
-			{/* Background */}
+			{/* Background — video player, the article's own image, else a gradient */}
 			{isVideo ? (
 				<VideoBackground item={item} />
+			) : item.thumbnail_url ? (
+				<ImageBackground src={item.thumbnail_url} />
 			) : (
 				<TextBackground
 					accent={conf.accent}
@@ -450,6 +482,35 @@ const FeedCard = ({
 					)}
 					{rt && <span className="text-[11px] text-white/40">{rt}</span>}
 				</div>
+
+				{/* Personalized reason — teal "on course" accent, no stripe */}
+				{item.why && (
+					<p className="mb-3 text-[12px] text-white/70 leading-snug">
+						<span
+							className="mr-2 font-bold text-[9px] uppercase tracking-[0.12em]"
+							style={{ color: TEAL }}
+						>
+							{preview ? "Your top pick" : "For you"}
+						</span>
+						{item.why}
+					</p>
+				)}
+
+				{/* Free preview — the one personalized pick, then an unlock prompt */}
+				{preview && item.why && (
+					<a
+						href="/api/billing/checkout"
+						className="mb-3 inline-flex w-fit cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-1.5 font-bold text-[11px]"
+						style={{
+							color: VIOLET,
+							backgroundColor: "rgba(123,97,255,0.14)",
+							border: "1px solid rgba(123,97,255,0.35)",
+						}}
+					>
+						Premium ranks your whole feed — unlock
+						<span aria-hidden="true">→</span>
+					</a>
+				)}
 
 				{item.body && !(isVideo && ytEmbed) && (
 					<p className="mb-4 line-clamp-2 text-[13px] text-white/60 leading-relaxed">
