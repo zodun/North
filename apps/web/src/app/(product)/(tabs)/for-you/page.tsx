@@ -51,6 +51,23 @@ export default async function ForYouPage() {
 		.select("id, label")
 		.order("sort_order");
 
+	// Aspiration captured in onboarding — personalises the "Chosen with you in
+	// mind" line on each card.
+	const { data: profile } = user
+		? await supabase
+				.from("profiles")
+				.select("aspiration")
+				.eq("user_id", user.id)
+				.maybeSingle()
+		: { data: null };
+
+	// Peer stories ("someone on your path used this") — real, optionally-sourced
+	// rows; the feed falls back to its built-in set per focus area when empty.
+	const { data: peerStories } = await supabase
+		.from("peer_stories")
+		.select("focus_area, name, who, quote, outcome, source_name, source_url")
+		.order("sort_order");
+
 	// AI re-ranks the feed around the user's direction. Premium sees the full
 	// personalized order + a reason on every card; free users get a one-pick
 	// preview — their single best match with its reason, then the default order
@@ -99,6 +116,16 @@ export default async function ForYouPage() {
 			initialSaved={[...initialSaved]}
 			initialMatters={[...initialMatters]}
 			preview={preview}
+			aspiration={(profile?.aspiration as string | null) ?? null}
+			stories={(peerStories ?? []).map((s) => ({
+				focusArea: s.focus_area as string,
+				name: s.name as string,
+				who: s.who as string,
+				quote: s.quote as string,
+				outcome: s.outcome as string,
+				sourceName: (s.source_name as string | null) ?? null,
+				sourceUrl: (s.source_url as string | null) ?? null,
+			}))}
 		/>
 	);
 }

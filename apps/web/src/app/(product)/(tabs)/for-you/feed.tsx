@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/auth-client";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -228,6 +228,8 @@ export function ForYouFeed({
 	initialMatters,
 	preview = false,
 	streak = null,
+	aspiration = null,
+	stories = [],
 }: {
 	items: Item[];
 	categories: Category[];
@@ -235,10 +237,20 @@ export function ForYouFeed({
 	initialMatters: string[];
 	preview?: boolean;
 	streak?: number | null;
+	aspiration?: string | null;
+	stories?: PeerStoryRow[];
 }) {
+	const storiesByArea = useMemo(() => {
+		const m: Record<string, Story[]> = {};
+		for (const s of stories) {
+			const arr = m[s.focusArea] ?? [];
+			arr.push(s);
+			m[s.focusArea] = arr;
+		}
+		return m;
+	}, [stories]);
 	const [saved, setSaved] = useState<Set<string>>(new Set(initialSaved));
 	const [matters, setMatters] = useState<Set<string>>(new Set(initialMatters));
-	const [activeCategory, setActiveCategory] = useState<string | null>(null);
 	const [toast, setToast] = useState<string | null>(null);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: stable join strings are intentional stable dep keys
@@ -362,10 +374,7 @@ export function ForYouFeed({
 	// FIX 2 — hold back Read cards (essays/stories) from non-approved sources so
 	// every Read card has a reliable rich thumbnail. Display-only; the underlying
 	// query is untouched.
-	const visible = items.filter(passesSourceGate);
-	const filtered = activeCategory
-		? visible.filter((item) => item.content_category_id === activeCategory)
-		: visible;
+	const filtered = items.filter(passesSourceGate);
 	const catLabel = (id: string | null) =>
 		categories.find((c) => c.id === id)?.label ?? null;
 
@@ -375,11 +384,7 @@ export function ForYouFeed({
 				className="flex h-full flex-col font-jakarta"
 				style={{ background: BG, color: TEXT }}
 			>
-				<TopNav
-					categories={categories}
-					active={activeCategory}
-					onSelect={setActiveCategory}
-				/>
+				<TopNav />
 				<EmptyState />
 			</div>
 		);
@@ -391,11 +396,7 @@ export function ForYouFeed({
 			style={{ background: BG, color: TEXT }}
 		>
 			<style>{ANIM}</style>
-			<TopNav
-				categories={categories}
-				active={activeCategory}
-				onSelect={setActiveCategory}
-			/>
+			<TopNav />
 
 			<div
 				ref={feedRef}
@@ -425,6 +426,8 @@ export function ForYouFeed({
 						isSaved={saved.has(item.id)}
 						isMattered={matters.has(item.id)}
 						streak={i >= 2 ? streak : null}
+						aspiration={aspiration}
+						storiesByArea={storiesByArea}
 						showSwipeHint={i === 0 && showSwipeHint}
 						onSave={() => void record(item, "save")}
 						onMatters={() => void record(item, "matters")}
@@ -461,6 +464,8 @@ function FeedCard({
 	isSaved,
 	isMattered,
 	streak,
+	aspiration,
+	storiesByArea,
 	showSwipeHint,
 	onSave,
 	onMatters,
@@ -475,6 +480,8 @@ function FeedCard({
 	isSaved: boolean;
 	isMattered: boolean;
 	streak: number | null;
+	aspiration: string | null;
+	storiesByArea: Record<string, Story[]>;
 	showSwipeHint: boolean;
 	onSave: () => void;
 	onMatters: () => void;
@@ -558,15 +565,6 @@ function FeedCard({
 		});
 	}, []);
 
-	const primaryLabel =
-		conf.label === "Watch"
-			? "Watch now"
-			: conf.label === "Listen"
-				? "Listen"
-				: conf.label === "Open"
-					? "Open"
-					: "Read article";
-
 	return (
 		<article
 			ref={(el) => {
@@ -605,7 +603,7 @@ function FeedCard({
 						}}
 						className="fy-imgin absolute inset-0 h-full w-full object-cover"
 						style={{
-							objectPosition: "center 20%",
+							objectPosition: "center 30%",
 							filter: "brightness(1.08) saturate(1.6) contrast(1.05)",
 						}}
 					/>
@@ -646,14 +644,14 @@ function FeedCard({
 						aria-hidden="true"
 						className="pointer-events-none absolute inset-0 z-[3]"
 						style={{
-							background: `linear-gradient(to top, rgba(${bgC},0.88) 0%, rgba(${bgC},0.7) 15%, rgba(${bgC},0.45) 30%, rgba(${bgC},0.15) 50%, transparent 65%)`,
+							background: `linear-gradient(to top, rgba(${bgC},0.6) 0%, rgba(${bgC},0.28) 18%, rgba(${bgC},0.08) 38%, transparent 58%)`,
 						}}
 					/>
 					<div
 						aria-hidden="true"
 						className="pointer-events-none absolute inset-0 z-[4]"
 						style={{
-							background: `linear-gradient(to right, rgba(${bgC},0.82) 0%, rgba(${bgC},0.55) 22%, rgba(${bgC},0.25) 42%, transparent 62%)`,
+							background: `linear-gradient(to right, rgba(${bgC},0.42) 0%, rgba(${bgC},0.16) 26%, transparent 52%)`,
 						}}
 					/>
 					<div
@@ -664,26 +662,6 @@ function FeedCard({
 						}}
 					/>
 				</>
-			)}
-
-			{/* OG source label */}
-			{(hasImage || phase === "done") && (
-				<div
-					className="absolute top-[14px] right-[54px] z-10 flex items-center gap-1.5 rounded-[8px] px-2.5 py-1 font-semibold text-[9px] backdrop-blur-sm"
-					style={{
-						background: withAlpha(bg, 0.85),
-						border: `1px solid ${withAlpha(accent, 0.2)}`,
-						color: hasImage
-							? withAlpha(titleColor, 0.5)
-							: withAlpha(accent, 0.6),
-					}}
-				>
-					<span
-						className="h-1.5 w-1.5 rounded-full"
-						style={{ background: hasImage ? "#2E9E5B" : accent }}
-					/>
-					{hasImage ? "Pulled from article" : "No image · compass fallback"}
-				</div>
 			)}
 
 			{/* Streak reminder — cards 3+ only (gated by the streak prop upstream) */}
@@ -715,23 +693,29 @@ function FeedCard({
 				<KindPill
 					type={conf.type}
 					label={conf.label}
-					accent={accent}
-					ink={ink}
-					bg={bg}
+					href={item.external_url ?? undefined}
 				/>
 
 				{categoryLabel && (
 					<p
-						className="mt-3 mb-[7px] font-bold text-[10px] uppercase tracking-[0.15em]"
-						style={{ color: withAlpha(accent, 0.7) }}
+						className="mt-3 mb-[7px] font-bold text-[9px] uppercase tracking-[0.2em]"
+						style={{ color: withAlpha(accent, 0.65) }}
 					>
 						{categoryLabel}
 					</p>
 				)}
 
 				<h2
-					className="font-black text-[26px] leading-[1.12] tracking-[-0.7px]"
-					style={{ color: titleColor }}
+					className="line-clamp-3"
+					style={{
+						color: titleColor,
+						fontFamily:
+							"'Iowan Old Style', Palatino, Georgia, 'Times New Roman', serif",
+						fontSize: "clamp(28px, 7vw, 44px)",
+						fontWeight: 600,
+						letterSpacing: "-0.5px",
+						lineHeight: 1.05,
+					}}
 				>
 					{item.title}
 				</h2>
@@ -764,21 +748,15 @@ function FeedCard({
 					</div>
 				)}
 
-				{/* Your top pick — mandatory, never hidden. */}
+				{/* Your top pick — dark glass card with social proof inside. */}
 				<WhyThis
 					why={item.why}
-					categoryLabel={categoryLabel}
-					accent={accent}
-					ink={ink}
-					bg={bg}
+					aspiration={aspiration}
+					count={item.saves_count ?? 12 + (hashId(item.id) % 78)}
 				/>
 
-				{/* Social proof — people on a similar path */}
-				<SocialProof
-					count={item.saves_count ?? 120 + (hashId(item.id) % 280)}
-					accent={accent}
-					titleColor={titleColor}
-				/>
+				{/* Peer story — how someone on the same path used this. */}
+				<PeerStory story={pickStory(categoryLabel, item.id, storiesByArea)} />
 
 				{preview && item.why && (
 					<a
@@ -790,23 +768,8 @@ function FeedCard({
 							border: "1px solid rgba(124,77,255,0.3)",
 						}}
 					>
-						Premium ranks your whole feed — unlock
+						Premium ranks your whole feed
 						<span aria-hidden="true">→</span>
-					</a>
-				)}
-
-				{item.external_url && (
-					<a
-						href={item.external_url}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="inline-block cursor-pointer rounded-[12px] px-[22px] py-[11px] font-black text-[13px] text-white transition-[filter] duration-200 hover:brightness-90 motion-reduce:transition-none"
-						style={{
-							background: accent,
-							boxShadow: `0 4px 20px ${withAlpha(accent, 0.4)}`,
-						}}
-					>
-						{primaryLabel}
 					</a>
 				)}
 			</div>
@@ -953,91 +916,276 @@ function Waveform({ accent }: { accent: string }) {
 	);
 }
 
+// ── Peer story — how someone on the same path used this ──────────────────────
+// Real, sourced stories come from the peer_stories table (passed in via the
+// `stories` prop). When none exist for a focus area we fall back to the
+// illustrative set below. A sourceUrl renders a "Read the story" link. Kept
+// dash-free to match the rest of the card copy.
+type Story = {
+	name: string;
+	who: string;
+	quote: string;
+	outcome: string;
+	sourceName?: string | null;
+	sourceUrl?: string | null;
+};
+type PeerStoryRow = Story & { focusArea: string };
+const STORY_GRADS = [
+	"linear-gradient(135deg, #F5C842, #C47D00)",
+	"linear-gradient(135deg, #3ECFBF, #0EA596)",
+	"linear-gradient(135deg, #9B7DFF, #7C4DFF)",
+];
+const STORIES: Record<string, Story[]> = {
+	career: [
+		{
+			name: "Andre",
+			who: "20, Kingston",
+			quote:
+				"I almost talked myself out of applying. I sent it anyway, and two weeks later I was in my first real interview.",
+			outcome: "Got the callback",
+		},
+		{
+			name: "Renee",
+			who: "23, Spanish Town",
+			quote:
+				"I stopped waiting to feel ready and messaged one person already doing the work. That single message opened the door.",
+			outcome: "Found a mentor",
+		},
+	],
+	mindset: [
+		{
+			name: "Tiana",
+			who: "22, Montego Bay",
+			quote:
+				"I started writing one honest line each night. The noise got quieter and I could finally hear what I actually wanted.",
+			outcome: "Found her focus",
+		},
+		{
+			name: "Marcus",
+			who: "19, Portmore",
+			quote:
+				"I used to wait for motivation. I tried the two minute version instead, and showing up got easy.",
+			outcome: "Built the habit",
+		},
+	],
+	money: [
+		{
+			name: "Shanice",
+			who: "21, Ocho Rios",
+			quote:
+				"I set aside a little before I could spend it. Small at first, but six months in I had a real cushion.",
+			outcome: "Started saving",
+		},
+		{
+			name: "Dwayne",
+			who: "24, Kingston",
+			quote:
+				"I finally tracked where my money actually went. Seeing it written down changed every choice after that.",
+			outcome: "Cleared a debt",
+		},
+	],
+	skills: [
+		{
+			name: "Keisha",
+			who: "20, May Pen",
+			quote:
+				"I practiced fifteen minutes a day instead of waiting for a free weekend. The progress added up fast.",
+			outcome: "Shipped her first project",
+		},
+		{
+			name: "Tariq",
+			who: "22, Mandeville",
+			quote:
+				"I taught the thing I just learned to a friend. Explaining it once made it finally stick.",
+			outcome: "Landed freelance work",
+		},
+	],
+	health: [
+		{
+			name: "Aaliyah",
+			who: "21, Kingston",
+			quote:
+				"I swapped one habit, not my whole life. Better sleep gave me back the energy I kept saying I didn't have.",
+			outcome: "Feels steadier",
+		},
+		{
+			name: "Jelani",
+			who: "23, Spanish Town",
+			quote:
+				"I started with a ten minute walk. It was never about the walk, it was about proving I keep promises to myself.",
+			outcome: "Found his rhythm",
+		},
+	],
+};
+function pickStory(
+	label: string | null,
+	id: string,
+	byArea: Record<string, Story[]>,
+): Story & { grad: string } {
+	const key = catKey(label);
+	// Real stories for this focus area win; otherwise the illustrative fallback.
+	const arr =
+		(byArea[key]?.length ? byArea[key] : STORIES[key]) ?? STORIES.career;
+	return {
+		...arr[hashId(id) % arr.length],
+		grad: STORY_GRADS[hashId(id) % STORY_GRADS.length],
+	};
+}
+
+function PeerStory({ story }: { story: Story & { grad: string } }) {
+	return (
+		<div
+			className="mt-[10px] max-w-[360px] rounded-[16px] px-4 py-[13px] backdrop-blur-md"
+			style={{
+				background: "rgba(10,8,4,0.42)",
+				border: "1px solid rgba(255,255,255,0.14)",
+			}}
+		>
+			<div className="mb-2 flex items-center gap-2.5">
+				<span
+					className="flex h-[28px] w-[28px] shrink-0 items-center justify-center rounded-full font-black text-[11px] text-white"
+					style={{ background: story.grad }}
+				>
+					{story.name[0]}
+				</span>
+				<div className="min-w-0">
+					<p className="font-bold text-[11px] text-white leading-tight">
+						{story.name}, {story.who}
+					</p>
+					<p
+						className="font-bold text-[8px] uppercase tracking-[0.14em]"
+						style={{ color: "#F5C842" }}
+					>
+						Someone on your path
+					</p>
+				</div>
+			</div>
+			<p
+				className="font-medium text-[12px] leading-[1.55]"
+				style={{ color: "rgba(255,255,255,0.82)" }}
+			>
+				“{story.quote}”
+			</p>
+			<div className="mt-[10px] flex flex-wrap items-center gap-2">
+				<span
+					className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 font-bold text-[10px]"
+					style={{
+						background: "rgba(62,207,191,0.16)",
+						color: "#3ECFBF",
+						border: "1px solid rgba(62,207,191,0.3)",
+					}}
+				>
+					<span aria-hidden="true">→</span>
+					{story.outcome}
+				</span>
+				{story.sourceUrl && (
+					<a
+						href={story.sourceUrl}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="inline-flex cursor-pointer items-center gap-1 font-bold text-[10px] underline decoration-white/30 underline-offset-2 transition-colors hover:text-white"
+						style={{ color: "rgba(255,255,255,0.6)" }}
+					>
+						Read {story.sourceName ? `on ${story.sourceName}` : "the story"}
+						<span aria-hidden="true">→</span>
+					</a>
+				)}
+			</div>
+		</div>
+	);
+}
+
 // ── "Your top pick" micro-card (mandatory) ───────────────────────────────────
 // Identity reinforcement: the focus-area pill names the user's lane, and the
 // explanation (from the identity-aware personalize pass) ties the card to the
 // goal and focus they set in North.
 function WhyThis({
 	why,
-	categoryLabel,
-	accent,
-	ink,
-	bg,
+	aspiration,
+	count,
 }: {
 	why: string | null | undefined;
-	categoryLabel: string | null;
-	accent: string;
-	ink: string;
-	bg: string;
+	aspiration: string | null;
+	count: number;
 }) {
-	const text =
+	// Personal, warm, and dash-free. The AI reason wins when present; otherwise we
+	// reach for the aspiration the member set in onboarding; then a warm default.
+	// Any em/en dashes are swapped for commas so the copy stays clean.
+	const goal = aspiration?.trim();
+	const text = (
 		why ??
-		"Lined up with the direction and focus you set in North — a small step toward where you're heading.";
+		(goal
+			? `You said this matters to you: ${goal}. This is one small step toward it today.`
+			: "You told North where you want to go. This is the one small thing that moves you closer today.")
+	).replace(/\s*[—–]\s*/g, ", ");
 	return (
 		<div
-			className="mt-[14px] max-w-[320px] rounded-[12px] px-4 py-[10px] backdrop-blur-md"
+			className="mt-[16px] max-w-[360px] rounded-[16px] px-4 py-[14px] backdrop-blur-md"
 			style={{
-				background: withAlpha(bg, 0.85),
-				border: `1.5px solid ${withAlpha(accent, 0.25)}`,
+				background: "rgba(10,8,4,0.42)",
+				border: "1px solid rgba(255,255,255,0.14)",
 			}}
 		>
 			<p
-				className="mb-[3px] font-bold text-[8px] uppercase tracking-[0.15em]"
-				style={{ color: withAlpha(darken(accent, 0.3), 0.6) }}
+				className="mb-2 font-bold text-[9px] uppercase tracking-[0.18em]"
+				style={{ color: "#F5C842" }}
 			>
-				Your Top Pick
+				Chosen with you in mind
 			</p>
-			{categoryLabel && (
-				<span
-					className="mb-2 inline-block w-fit rounded-full px-2 py-0.5 font-bold text-[9px] uppercase tracking-wider"
-					style={{ background: withAlpha(accent, 0.1), color: ink }}
-				>
-					{categoryLabel}
-				</span>
-			)}
 			<p
 				className="font-medium text-[12px] leading-[1.55]"
-				style={{ color: withAlpha(TEXT, 0.65) }}
+				style={{ color: "rgba(255,255,255,0.82)" }}
 			>
 				{text}
 			</p>
+			<SocialProof count={count} light />
 		</div>
 	);
 }
 
 // ── Social proof — people on a similar path ──────────────────────────────────
+// Three overlapping avatars in the brand trio (gold · teal · violet); the count
+// reads as light-card ink. (On a dark cinematic card swap the text to
+// rgba(255,255,255,0.65).)
 const PROOF_AVATARS = [
-	{ id: "a", overlap: false },
-	{ id: "b", overlap: true },
-	{ id: "c", overlap: true },
+	{
+		id: "gold",
+		overlap: false,
+		grad: "linear-gradient(135deg, #F5C842, #C47D00)",
+	},
+	{
+		id: "teal",
+		overlap: true,
+		grad: "linear-gradient(135deg, #3ECFBF, #0EA596)",
+	},
+	{
+		id: "violet",
+		overlap: true,
+		grad: "linear-gradient(135deg, #9B7DFF, #7C4DFF)",
+	},
 ];
 
 function SocialProof({
 	count,
-	accent,
-	titleColor,
+	light = false,
 }: {
 	count: number;
-	accent: string;
-	titleColor: string;
+	light?: boolean;
 }) {
 	return (
-		<div className="mt-2 mb-[14px] flex items-center gap-2">
+		<div className="mt-3 flex items-center gap-2">
 			<div className="flex items-center" aria-hidden="true">
 				{PROOF_AVATARS.map((a) => (
 					<span
 						key={a.id}
-						className={`h-5 w-5 rounded-full ${a.overlap ? "-ml-1.5" : ""}`}
-						style={{
-							background: withAlpha(accent, 0.2),
-							border: "1px solid rgba(255,255,255,0.5)",
-						}}
+						className={`h-[20px] w-[20px] flex-shrink-0 rounded-full border-2 ${light ? "border-white/30" : "border-white/20"} ${a.overlap ? "-ml-[6px]" : ""}`}
+						style={{ background: a.grad }}
 					/>
 				))}
 			</div>
 			<span
-				className="font-medium text-[10px]"
-				style={{ color: withAlpha(titleColor, 0.45) }}
+				className="font-semibold text-[11px]"
+				style={{ color: light ? "rgba(255,255,255,0.7)" : "rgba(26,18,8,0.5)" }}
 			>
 				{count} people on a similar path saved this
 			</span>
@@ -1076,21 +1224,50 @@ function SwipeHint() {
 }
 
 // ── Top navigation ───────────────────────────────────────────────────────────
-function TopNav({
-	categories,
-	active,
-	onSelect,
-}: {
-	categories: Category[];
-	active: string | null;
-	onSelect: (id: string | null) => void;
-}) {
+// North compass mark — gold north needle, teal south, ink east/west.
+function CompassLogo() {
+	return (
+		<svg
+			width="24"
+			height="24"
+			viewBox="0 0 32 32"
+			fill="none"
+			aria-hidden="true"
+		>
+			<circle
+				cx="16"
+				cy="16"
+				r="14"
+				stroke={withAlpha(GOLD, 0.6)}
+				strokeWidth="1"
+			/>
+			<circle
+				cx="16"
+				cy="16"
+				r="9"
+				stroke={withAlpha(GOLD, 0.25)}
+				strokeWidth="0.8"
+				strokeDasharray="2 4"
+			/>
+			<polygon points="16,5 13,16 19,16" fill={GOLD} />
+			<polygon points="16,27 13,16 19,16" fill={withAlpha(TEAL, 0.8)} />
+			<polygon points="27,16 16,13 16,19" fill={withAlpha(TEXT, 0.3)} />
+			<polygon points="5,16 16,13 16,19" fill={withAlpha(TEXT, 0.3)} />
+			<circle cx="16" cy="16" r="2.2" fill={GOLD} />
+			<circle cx="16" cy="16" r="0.9" fill={BG} />
+		</svg>
+	);
+}
+
+// Quiet, editorial header — wordmark with the compass mark, plus two soft icons,
+// floating over the image. No filter tags (the feed is already personalised).
+function TopNav() {
 	return (
 		<header
-			className="z-50 flex shrink-0 items-center gap-3 px-5 py-3 backdrop-blur-xl"
+			className="absolute inset-x-0 top-0 z-50 flex items-center px-5 pt-[16px] pb-3"
 			style={{
-				background: "rgba(253,248,239,0.96)",
-				borderBottom: "1px solid rgba(180,140,60,0.15)",
+				background:
+					"linear-gradient(to bottom, rgba(253,248,239,0.6), rgba(253,248,239,0))",
 			}}
 		>
 			<a
@@ -1100,34 +1277,20 @@ function TopNav({
 			>
 				<CompassLogo />
 				<span
-					className="font-black text-[17px] tracking-tight"
-					style={{ color: TEXT }}
+					className="text-[21px] leading-none"
+					style={{
+						color: TEXT,
+						fontFamily:
+							"'Iowan Old Style', Palatino, Georgia, 'Times New Roman', serif",
+						fontWeight: 600,
+						letterSpacing: "0.2px",
+					}}
 				>
-					North<span style={{ color: GOLD }}>.</span>
+					North
 				</span>
 			</a>
 
-			<nav
-				aria-label="Feed filters"
-				className="flex min-w-0 flex-1 gap-2 overflow-x-auto [&::-webkit-scrollbar]:hidden"
-				style={{ scrollbarWidth: "none" }}
-			>
-				<FilterPill
-					label="For You"
-					active={!active}
-					onClick={() => onSelect(null)}
-				/>
-				{categories.map((c) => (
-					<FilterPill
-						key={c.id}
-						label={c.label}
-						active={active === c.id}
-						onClick={() => onSelect(active === c.id ? null : c.id)}
-					/>
-				))}
-			</nav>
-
-			<div className="flex shrink-0 items-center gap-2">
+			<div className="ml-auto flex shrink-0 items-center gap-2">
 				<IconButton label="Search">
 					<SearchIcon />
 				</IconButton>
@@ -1136,42 +1299,6 @@ function TopNav({
 				</IconButton>
 			</div>
 		</header>
-	);
-}
-
-function FilterPill({
-	label,
-	active,
-	onClick,
-}: {
-	label: string;
-	active: boolean;
-	onClick: () => void;
-}) {
-	return (
-		<button
-			type="button"
-			onClick={onClick}
-			aria-pressed={active}
-			className="shrink-0 cursor-pointer whitespace-nowrap rounded-full px-[14px] py-[6px] font-bold text-[11px] transition-all duration-200 hover:bg-[rgba(196,125,0,0.08)] motion-reduce:transition-none"
-			style={
-				active
-					? {
-							background: GOLD,
-							color: "#FFFFFF",
-							border: `1px solid ${GOLD}`,
-							fontWeight: 800,
-							transform: "scale(1.02)",
-						}
-					: {
-							background: "transparent",
-							color: "rgba(26,18,8,0.45)",
-							border: "1px solid rgba(180,140,60,0.2)",
-						}
-			}
-		>
-			{label}
-		</button>
 	);
 }
 
@@ -1209,27 +1336,37 @@ function IconButton({
 function KindPill({
 	type,
 	label,
-	accent,
-	ink,
-	bg,
+	href,
 }: {
 	type: "read" | "watch" | "listen";
 	label: string;
-	accent: string;
-	ink: string;
-	bg: string;
+	href?: string;
 }) {
-	return (
-		<span
-			className="inline-flex w-fit items-center gap-[6px] rounded-full px-3 py-1.5 font-bold text-[10px] uppercase tracking-[0.1em] backdrop-blur-sm"
-			style={{
-				background: withAlpha(bg, 0.9),
-				border: `1.5px solid ${withAlpha(accent, 0.35)}`,
-				color: ink,
-			}}
-		>
-			<KindIcon type={type} color={ink} />
+	const cls =
+		"mb-1 inline-flex w-fit items-center gap-[7px] rounded-full px-[14px] py-[8px] font-bold text-[10px] text-white uppercase tracking-[0.12em] backdrop-blur-md";
+	const style = {
+		background: "rgba(10,8,4,0.55)",
+		border: "1px solid rgba(255,255,255,0.22)",
+	};
+	const inner = (
+		<>
+			<KindIcon type={type} color="#FFFFFF" />
 			{label}
+		</>
+	);
+	return href ? (
+		<a
+			href={href}
+			target="_blank"
+			rel="noopener noreferrer"
+			className={`${cls} cursor-pointer transition-[filter] duration-200 hover:brightness-125 motion-reduce:transition-none`}
+			style={style}
+		>
+			{inner}
+		</a>
+	) : (
+		<span className={cls} style={style}>
+			{inner}
 		</span>
 	);
 }
@@ -1357,45 +1494,6 @@ function EmptyState() {
 // ─────────────────────────────────────────────────────────────────────────────
 // SVG art
 // ─────────────────────────────────────────────────────────────────────────────
-
-function CompassLogo() {
-	return (
-		<svg
-			width="26"
-			height="26"
-			viewBox="0 0 32 32"
-			fill="none"
-			aria-hidden="true"
-		>
-			<circle
-				cx="16"
-				cy="16"
-				r="15"
-				stroke={withAlpha(GOLD, 0.5)}
-				strokeWidth="1"
-			/>
-			<circle
-				cx="16"
-				cy="16"
-				r="11"
-				stroke={withAlpha(GOLD, 0.25)}
-				strokeWidth="0.8"
-				strokeDasharray="2 3"
-			/>
-			<circle
-				cx="16"
-				cy="16"
-				r="7"
-				stroke={withAlpha(TEAL, 0.4)}
-				strokeWidth="0.8"
-			/>
-			<polygon points="16,5 13.4,16 18.6,16" fill={GOLD} />
-			<polygon points="16,27 13.4,16 18.6,16" fill={TEAL} fillOpacity="0.7" />
-			<circle cx="16" cy="16" r="2" fill={GOLD} />
-			<circle cx="16" cy="16" r="0.8" fill={BG} />
-		</svg>
-	);
-}
 
 function KindIcon({
 	type,

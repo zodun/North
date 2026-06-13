@@ -145,10 +145,11 @@ const CTA_LABELS = [
 	"This is my pace",
 	"Got it",
 	"This is my baseline",
+	"That's my aim",
 	"Take me to North",
 ];
 
-const TOTAL_STEPS = 11;
+const TOTAL_STEPS = 12;
 
 // ── Main component ─────────────────────────────────────────────────────────
 
@@ -167,6 +168,7 @@ export default function OnboardingPage() {
 	const [time, setTime] = useState<string | null>(null);
 	const [avoid, setAvoid] = useState("");
 	const [baseline, setBaseline] = useState<number | null>(null);
+	const [aspiration, setAspiration] = useState("");
 	const [consent, setConsent] = useState(false);
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -309,6 +311,13 @@ export default function OnboardingPage() {
 					: Promise.resolve(),
 			]);
 		}
+		if (step === 10) {
+			const { error: err } = await supabase
+				.from("profiles")
+				.update({ aspiration: aspiration.trim() || null })
+				.eq("user_id", userId);
+			if (err) throw new Error(err.message);
+		}
 	}
 
 	async function handleComplete() {
@@ -361,7 +370,8 @@ export default function OnboardingPage() {
 		if (step === 7) return time !== null;
 		if (step === 8) return true;
 		if (step === 9) return baseline !== null;
-		if (step === 10) return focus.length > 0 && baseline !== null && consent;
+		if (step === 10) return true;
+		if (step === 11) return focus.length > 0 && baseline !== null && consent;
 		return false;
 	})();
 
@@ -431,6 +441,9 @@ export default function OnboardingPage() {
 				{step === 8 && <StepAvoid value={avoid} onChange={setAvoid} />}
 				{step === 9 && <StepBaseline value={baseline} onSelect={setBaseline} />}
 				{step === 10 && (
+					<StepAspiration value={aspiration} onChange={setAspiration} />
+				)}
+				{step === 11 && (
 					<StepConsent consent={consent} onConsent={setConsent} />
 				)}
 
@@ -449,7 +462,7 @@ export default function OnboardingPage() {
 					>
 						{CTA_LABELS[step]}
 					</CtaButton>
-					{step === 8 && (
+					{(step === 8 || step === 10) && (
 						<button
 							type="button"
 							onClick={handleNext}
@@ -458,7 +471,7 @@ export default function OnboardingPage() {
 							Skip for now
 						</button>
 					)}
-					{step === 10 && !consent && (
+					{step === 11 && !consent && (
 						<p className="mt-2 text-center text-[#0E1420]/50 text-[11px]">
 							You must agree to continue
 						</p>
@@ -1054,6 +1067,35 @@ function StepAvoid({
 				maxLength={500}
 				placeholder="e.g. I always start exercising but stop after two weeks"
 				className="h-[120px] w-full resize-none rounded-[14px] border border-[#0E1420]/10 bg-white px-4 py-3.5 font-medium text-[#0E1420] text-[14px] outline-none transition-all placeholder:text-[#0E1420]/35 focus:border-[#3ECFBF] focus:bg-[rgba(62,207,191,0.04)]"
+			/>
+		</div>
+	);
+}
+
+function StepAspiration({
+	value,
+	onChange,
+}: {
+	value: string;
+	onChange: (v: string) => void;
+}) {
+	return (
+		<div>
+			<StepHead
+				eyebrow="What you're aiming for"
+				headline="What do you most want to make real this year?"
+				sub="One line is enough. North uses it to choose what to put in front of you."
+			/>
+			<label htmlFor="onb-aspiration" className="sr-only">
+				What you most want to make real this year
+			</label>
+			<textarea
+				id="onb-aspiration"
+				value={value}
+				onChange={(e) => onChange(e.target.value)}
+				maxLength={160}
+				placeholder="e.g. land my first role in design"
+				className="h-[110px] w-full resize-none rounded-[14px] border border-[#0E1420]/10 bg-white px-4 py-3.5 font-medium text-[#0E1420] text-[14px] outline-none transition-all placeholder:text-[#0E1420]/35 focus:border-[#F5C842] focus:bg-[rgba(245,200,66,0.04)]"
 			/>
 		</div>
 	);
