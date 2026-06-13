@@ -10,7 +10,6 @@ import {
 	MAX_FIELDS,
 } from "@/lib/personalization-options";
 
-const GOLD = colors.gold;
 const TEAL = colors.teal;
 
 // Editable "who you are" fields that steer For You + Opportunities. Lives on
@@ -93,12 +92,12 @@ export function PreferencesSection({
 	return (
 		<section className="mb-10">
 			<div className="mb-3 flex items-center justify-between">
-				<p className="font-bold text-[10px] text-white/45 uppercase tracking-[0.14em]">
+				<p className="font-bold text-[#0E1420]/60 text-[10px] uppercase tracking-[0.14em]">
 					Preferences
 				</p>
 				<SaveStatus status={status} />
 			</div>
-			<p className="mb-5 text-[12px] text-white/40 leading-relaxed">
+			<p className="mb-5 text-[#0E1420]/65 text-[12px] leading-relaxed">
 				What North uses to tailor your feed and opportunities. Keep it current
 				as things change.
 			</p>
@@ -126,18 +125,18 @@ export function PreferencesSection({
 									aria-pressed={selected}
 									disabled={atMax}
 									onClick={() => toggleField(label)}
-									className="cursor-pointer rounded-full border px-3.5 py-2 font-bold text-[12px] transition-colors duration-200 hover:bg-white/[0.09] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F5C842] focus-visible:ring-offset-2 focus-visible:ring-offset-[#05050E] disabled:cursor-not-allowed disabled:opacity-35 motion-reduce:transition-none"
+									className="cursor-pointer rounded-full border px-3.5 py-2 font-bold text-[12px] transition-colors duration-200 hover:bg-[#0E1420]/[0.04] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3ECFBF] focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-35 motion-reduce:transition-none"
 									style={
 										selected
 											? {
-													backgroundColor: "rgba(62,207,191,0.1)",
-													borderColor: "rgba(62,207,191,0.35)",
-													color: TEAL,
+													backgroundColor: "rgba(62,207,191,0.14)",
+													borderColor: "rgba(62,207,191,0.45)",
+													color: colors.tealInk,
 												}
 											: {
-													backgroundColor: "rgba(255,255,255,0.05)",
-													borderColor: "rgba(255,255,255,0.10)",
-													color: "rgba(255,255,255,0.5)",
+													backgroundColor: "#FFFFFF",
+													borderColor: "rgba(14,20,32,0.10)",
+													color: "rgba(14,20,32,0.65)",
 												}
 									}
 								>
@@ -182,7 +181,7 @@ function Row({
 }) {
 	return (
 		<div>
-			<p className="mb-2 text-[12px] text-white/45">{label}</p>
+			<p className="mb-2 text-[#0E1420]/65 text-[12px]">{label}</p>
 			{children}
 		</div>
 	);
@@ -207,21 +206,21 @@ function Select({
 				id={id}
 				value={value}
 				onChange={(e) => onChange(e.target.value)}
-				className="w-full appearance-none rounded-[10px] border border-white/10 bg-white/[0.05] px-4 py-3 pr-10 font-semibold text-[14px] outline-none transition-colors duration-200 focus:border-[#F5C842] focus:bg-[rgba(245,200,66,0.03)] motion-reduce:transition-none"
-				style={{ color: value ? "#fff" : "rgba(255,255,255,0.35)" }}
+				className="w-full appearance-none rounded-[10px] border border-[#0E1420]/10 bg-white px-4 py-3 pr-10 font-semibold text-[14px] outline-none transition-colors duration-200 focus:border-[#3ECFBF] focus:bg-[rgba(62,207,191,0.04)] motion-reduce:transition-none"
+				style={{ color: value ? "#0E1420" : "rgba(14,20,32,0.4)" }}
 			>
-				<option value="" disabled className="bg-[#05050E] text-white/40">
+				<option value="" disabled className="bg-white text-[#0E1420]/50">
 					{placeholder}
 				</option>
 				{options.map((o) => (
-					<option key={o} value={o} className="bg-[#05050E] text-white">
+					<option key={o} value={o} className="bg-white text-[#0E1420]">
 						{o}
 					</option>
 				))}
 			</select>
 			<span
 				aria-hidden="true"
-				className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-white/40"
+				className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-[#0E1420]/40"
 			>
 				<svg
 					width="13"
@@ -252,15 +251,15 @@ function Toggle({
 }) {
 	return (
 		<div className="flex items-center justify-between gap-3">
-			<span className="text-[13px] text-white/70">{label}</span>
+			<span className="text-[#0E1420]/80 text-[13px]">{label}</span>
 			<button
 				type="button"
 				role="switch"
 				aria-checked={checked}
 				aria-label={label}
 				onClick={() => onChange(!checked)}
-				className="relative h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F5C842] focus-visible:ring-offset-2 focus-visible:ring-offset-[#05050E] motion-reduce:transition-none"
-				style={{ backgroundColor: checked ? TEAL : "rgba(255,255,255,0.1)" }}
+				className="relative h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3ECFBF] focus-visible:ring-offset-2 focus-visible:ring-offset-white motion-reduce:transition-none"
+				style={{ backgroundColor: checked ? TEAL : "rgba(14,20,32,0.12)" }}
 			>
 				<span
 					className="absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform duration-200 motion-reduce:transition-none"
@@ -283,10 +282,10 @@ function SaveStatus({ status }: { status: Status }) {
 				: "Couldn't save";
 	const color =
 		status === "error"
-			? colors.noiseRed
+			? colors.redInk
 			: status === "saved"
-				? GOLD
-				: "rgba(255,255,255,0.4)";
+				? colors.goldInk
+				: "rgba(14,20,32,0.6)";
 	return (
 		<span
 			aria-live="polite"

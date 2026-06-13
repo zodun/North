@@ -30,6 +30,13 @@ export async function proxy(request: NextRequest) {
 	} = await supabase.auth.getSession();
 
 	const pathname = request.nextUrl.pathname;
+
+	// Public utility endpoint: the For You feed fetches it client-side to pull an
+	// article's Open Graph image. It has its own SSRF guard and never touches
+	// user data, so let it through without the auth/onboarding redirects (which
+	// would otherwise hand the fetch a sign-in HTML page instead of JSON).
+	if (pathname.startsWith("/api/og-image")) return response;
+
 	const isSignIn = pathname === "/sign-in" || pathname === "/sign-up";
 	const isAuthRoute = pathname.startsWith("/auth/");
 	const isOnboarding = pathname.startsWith("/onboarding");

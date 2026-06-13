@@ -2,87 +2,62 @@
 
 import { usePathname } from "next/navigation";
 
+// 5-tab warm bottom nav: For You · Mission · Opportunities · Journal · Community.
+// The old centre video-upload button and the Profile tab are gone — upload now
+// lives in the For You header (see ProductShell) and Profile is reached via the
+// top-right avatar present on every tab page.
+
+const GOLD = "#C47D00";
+const INACTIVE = "rgba(26,18,8,0.3)";
+
 type TabDef = {
 	href: string;
 	label: string;
-	icon: (props: { active: boolean }) => React.ReactElement;
+	icon: (props: { color: string }) => React.ReactElement;
 };
 
-const LEFT_TABS: TabDef[] = [
-	{ href: "/for-you", label: "For You", icon: ForYouIcon },
-	{ href: "/opportunities", label: "Open", icon: OpportunitiesIcon },
+const TABS: TabDef[] = [
+	{ href: "/for-you", label: "For You", icon: CompassIcon },
+	{ href: "/mission", label: "Mission", icon: MissionIcon },
+	{ href: "/opportunities", label: "Opportunities", icon: DocumentIcon },
+	{ href: "/journal", label: "Journal", icon: ChatIcon },
+	{ href: "/community", label: "Community", icon: GridIcon },
 ];
 
-const RIGHT_TABS: TabDef[] = [
-	{ href: "/mission", label: "Task", icon: MissionIcon },
-	{ href: "/profile", label: "You", icon: ProfileIcon },
-];
-
-export function TabBar({ onUpload }: { onUpload: () => void }) {
+export function TabBar() {
 	const pathname = usePathname();
 
 	return (
-		<nav className="fixed right-0 bottom-0 left-0 z-40 flex items-end justify-around border-white/8 border-t bg-[#0a0a0a]/95 px-2 pt-2 pb-safe backdrop-blur-xl">
-			{/* Left two tabs */}
-			{LEFT_TABS.map((tab) => {
+		<nav
+			className="fixed right-0 bottom-0 left-0 z-40 flex items-stretch pt-2 pb-[max(6px,env(safe-area-inset-bottom))] backdrop-blur-xl"
+			style={{
+				background: "rgba(245,240,232,0.97)",
+				borderTop: "1px solid rgba(26,18,8,0.08)",
+			}}
+		>
+			{TABS.map((tab) => {
 				const active = pathname.startsWith(tab.href);
-				const IconComponent = tab.icon;
+				const Icon = tab.icon;
+				const color = active ? GOLD : INACTIVE;
 				return (
 					<a
 						key={tab.href}
 						href={tab.href}
-						className="flex flex-1 flex-col items-center gap-1 py-1"
+						aria-label={tab.label}
+						aria-current={active ? "page" : undefined}
+						className="flex flex-1 cursor-pointer flex-col items-center gap-[2px]"
 					>
-						<IconComponent active={active} />
+						<Icon color={color} />
 						<span
-							className={`font-medium text-[10px] tracking-wide transition-colors ${
-								active ? "text-white" : "text-white/40"
-							}`}
+							className="font-semibold text-[8px] tracking-wide"
+							style={{ color }}
 						>
 							{tab.label}
 						</span>
-					</a>
-				);
-			})}
-
-			{/* Centre upload button */}
-			<div className="relative flex flex-1 items-end justify-center">
-				<button
-					type="button"
-					onClick={onUpload}
-					aria-label="Post content"
-					className="relative -mt-5 flex h-[58px] w-[58px] cursor-pointer items-center justify-center rounded-full shadow-[0_4px_24px_rgba(245,200,66,0.5)] transition-transform active:scale-95"
-					style={{
-						background: "linear-gradient(135deg, #F5C842 0%, #FFD966 100%)",
-					}}
-				>
-					{/* Outer ring */}
-					<span
-						aria-hidden="true"
-						className="pointer-events-none absolute inset-[-3px] rounded-full border border-[#F5C842]/30"
-					/>
-					<UploadIcon />
-				</button>
-			</div>
-
-			{/* Right two tabs */}
-			{RIGHT_TABS.map((tab) => {
-				const active = pathname.startsWith(tab.href);
-				const IconComponent = tab.icon;
-				return (
-					<a
-						key={tab.href}
-						href={tab.href}
-						className="flex flex-1 flex-col items-center gap-1 py-1"
-					>
-						<IconComponent active={active} />
 						<span
-							className={`font-medium text-[10px] tracking-wide transition-colors ${
-								active ? "text-white" : "text-white/40"
-							}`}
-						>
-							{tab.label}
-						</span>
+							className="h-[3px] w-[3px] rounded-full"
+							style={{ background: active ? GOLD : "transparent" }}
+						/>
 					</a>
 				);
 			})}
@@ -90,101 +65,62 @@ export function TabBar({ onUpload }: { onUpload: () => void }) {
 	);
 }
 
-// ── Icons ──────────────────────────────────────────────────────────────────
-
-function ForYouIcon({ active }: { active: boolean }) {
-	return (
-		<svg
-			width="22"
-			height="22"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke={active ? "#fff" : "rgba(255,255,255,0.4)"}
-			strokeWidth={1.6}
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			aria-hidden="true"
-		>
-			<path d="M12 2l1.6 7L21 12l-7.4 3L12 22l-1.6-7L3 12l7.4-3z" />
-		</svg>
-	);
+// ── Icons (stroke driven by `color`) ─────────────────────────────────────────
+function base(color: string) {
+	return {
+		width: 22,
+		height: 22,
+		viewBox: "0 0 24 24",
+		fill: "none",
+		stroke: color,
+		strokeWidth: 1.7,
+		strokeLinecap: "round" as const,
+		strokeLinejoin: "round" as const,
+	};
 }
 
-function OpportunitiesIcon({ active }: { active: boolean }) {
+function CompassIcon({ color }: { color: string }) {
 	return (
-		<svg
-			width="22"
-			height="22"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke={active ? "#fff" : "rgba(255,255,255,0.4)"}
-			strokeWidth={1.6}
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			aria-hidden="true"
-		>
-			<circle cx="11" cy="11" r="8" />
-			<path d="M21 21l-4.35-4.35" />
-		</svg>
-	);
-}
-
-function UploadIcon() {
-	return (
-		<svg
-			width="24"
-			height="24"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="#05050E"
-			strokeWidth={2.4}
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			aria-hidden="true"
-		>
-			<path d="M12 5v14M5 12h14" />
-		</svg>
-	);
-}
-
-function MissionIcon({ active }: { active: boolean }) {
-	return (
-		<svg
-			width="22"
-			height="22"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke={active ? "#fff" : "rgba(255,255,255,0.4)"}
-			strokeWidth={1.6}
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			aria-hidden="true"
-		>
+		<svg {...base(color)} aria-hidden="true">
 			<circle cx="12" cy="12" r="9" />
-			<path
-				d="M15 9l-1.5 4.5L9 15l1.5-4.5L15 9z"
-				fill={active ? "#fff" : "rgba(255,255,255,0.4)"}
-				stroke="none"
-			/>
+			<path d="M15.5 8.5l-2 5-5 2 2-5z" fill={color} stroke="none" />
 		</svg>
 	);
 }
 
-function ProfileIcon({ active }: { active: boolean }) {
+function MissionIcon({ color }: { color: string }) {
 	return (
-		<svg
-			width="22"
-			height="22"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke={active ? "#fff" : "rgba(255,255,255,0.4)"}
-			strokeWidth={1.6}
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			aria-hidden="true"
-		>
-			<circle cx="12" cy="8" r="4" />
-			<path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+		<svg {...base(color)} aria-hidden="true">
+			<circle cx="12" cy="12" r="9" />
+			<path d="M8.5 12.2l2.3 2.3 4.7-4.7" />
+		</svg>
+	);
+}
+
+function DocumentIcon({ color }: { color: string }) {
+	return (
+		<svg {...base(color)} aria-hidden="true">
+			<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+			<path d="M14 3v5h5M9 13h6M9 17h6" />
+		</svg>
+	);
+}
+
+function ChatIcon({ color }: { color: string }) {
+	return (
+		<svg {...base(color)} aria-hidden="true">
+			<path d="M21 11.5a8.4 8.4 0 0 1-8.5 8.5 8.6 8.6 0 0 1-3.9-.9L3 21l1.9-5.6a8.4 8.4 0 0 1-.9-3.9A8.4 8.4 0 0 1 12.5 3 8.4 8.4 0 0 1 21 11.5z" />
+		</svg>
+	);
+}
+
+function GridIcon({ color }: { color: string }) {
+	return (
+		<svg {...base(color)} aria-hidden="true">
+			<circle cx="8" cy="8" r="2.6" />
+			<circle cx="16" cy="8" r="2.6" />
+			<circle cx="8" cy="16" r="2.6" />
+			<circle cx="16" cy="16" r="2.6" />
 		</svg>
 	);
 }

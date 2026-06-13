@@ -22,7 +22,7 @@ const PARTICLE_COLORS = [
 	"rgba(245,200,66,",
 	"rgba(62,207,191,",
 	"rgba(123,97,255,",
-	"rgba(240,240,245,",
+	"rgba(14,20,32,",
 ];
 
 const RINGS: RingDef[] = [
@@ -68,7 +68,7 @@ export function SignInBackground() {
 			dy: (Math.random() - 0.5) * 0.4,
 			baseColor:
 				PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)] ??
-				"rgba(240,240,245,",
+				"rgba(14,20,32,",
 			opacity: 0.12 + Math.random() * 0.35,
 			r: 1.5 + Math.random() * 1.5,
 		}));
@@ -86,7 +86,7 @@ export function SignInBackground() {
 
 			// Grid — vertical + horizontal lines
 			ctx.setLineDash([]);
-			ctx.strokeStyle = "rgba(255,255,255,0.04)";
+			ctx.strokeStyle = "rgba(14,20,32,0.04)";
 			ctx.lineWidth = 0.5;
 			for (let x = 0; x < w; x += 30) {
 				ctx.beginPath();
@@ -186,7 +186,7 @@ export function SignInBackground() {
 			}
 
 			// Particle connections — hairlines between particles < 90px apart
-			ctx.strokeStyle = "rgba(240,240,245,0.03)";
+			ctx.strokeStyle = "rgba(14,20,32,0.05)";
 			ctx.lineWidth = 0.5;
 			for (let i = 0; i < particles.length; i++) {
 				const pa = particles[i];
@@ -219,34 +219,40 @@ export function SignInBackground() {
 
 	return (
 		<>
-			{/* Animated canvas */}
+			{/* Animated canvas (decorative; pointer-events-none, no a11y role) */}
 			<canvas
 				ref={canvasRef}
-				aria-hidden="true"
 				className="pointer-events-none fixed inset-0 z-0 h-full w-full"
 			/>
 
-			{/* Radial light leaks */}
+			{/* Radial light leaks — Soft Sky wash */}
 			<div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0">
+				<div
+					className="absolute inset-0"
+					style={{
+						background:
+							"radial-gradient(150% 85% at 50% -12%, rgba(255,255,255,0.9), transparent 60%)",
+					}}
+				/>
 				<div
 					className="absolute top-0 left-0 h-[55%] w-[65%]"
 					style={{
 						background:
-							"radial-gradient(ellipse at top left, rgba(245,200,66,0.18) 0%, transparent 70%)",
+							"radial-gradient(ellipse at top left, rgba(245,200,66,0.07) 0%, transparent 70%)",
 					}}
 				/>
 				<div
 					className="absolute right-0 bottom-0 h-[50%] w-[55%]"
 					style={{
 						background:
-							"radial-gradient(ellipse at bottom right, rgba(62,207,191,0.15) 0%, transparent 70%)",
+							"radial-gradient(ellipse at bottom right, rgba(62,207,191,0.10) 0%, transparent 70%)",
 					}}
 				/>
 				<div
 					className="absolute top-0 right-0 h-[45%] w-[45%]"
 					style={{
 						background:
-							"radial-gradient(ellipse at top right, rgba(123,97,255,0.12) 0%, transparent 70%)",
+							"radial-gradient(ellipse at top right, rgba(123,97,255,0.07) 0%, transparent 70%)",
 					}}
 				/>
 			</div>

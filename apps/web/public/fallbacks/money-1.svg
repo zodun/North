@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000">
+  <defs>
+    <linearGradient id="bg" x1="762.5231148146601" y1="288.69086912965025" x2="37.476885185340024" y2="711.3091308703498" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#075E54"/><stop offset="0.5" stop-color="#0EA596"/><stop offset="1" stop-color="#34D8C4"/>
+    </linearGradient>
+    <radialGradient id="g0"><stop offset="0" stop-color="#A7F3E8" stop-opacity="0.55"/><stop offset="1" stop-color="#A7F3E8" stop-opacity="0"/></radialGradient>
+    <radialGradient id="g1"><stop offset="0" stop-color="#075E54" stop-opacity="0.6"/><stop offset="1" stop-color="#075E54" stop-opacity="0"/></radialGradient>
+    <pattern id="grid" width="36" height="36" patternUnits="userSpaceOnUse"><path d="M36 0H0V36" fill="none" stroke="#A7F3E8" stroke-opacity="0.05" stroke-width="0.6"/></pattern>
+  </defs>
+  <rect width="800" height="1000" fill="url(#bg)"/>
+  
+      <circle cx="640" cy="180" r="440.00000000000006" fill="url(#g0)" opacity="0.9"/>
+      <circle cx="160" cy="850" r="400" fill="url(#g1)" opacity="0.9"/>
+  <rect width="800" height="1000" fill="url(#grid)"/>
+  <g>
+      <circle cx="624" cy="120" r="240" fill="none" stroke="#A7F3E8" stroke-opacity="0.18" stroke-width="1.5" />
+      <circle cx="624" cy="120" r="180" fill="none" stroke="#A7F3E8" stroke-opacity="0.15" stroke-width="1.5" stroke-dasharray="6 12"/>
+      <circle cx="624" cy="120" r="120" fill="none" stroke="#A7F3E8" stroke-opacity="0.12" stroke-width="1.5" />
+      <circle cx="624" cy="120" r="60" fill="none" stroke="#A7F3E8" stroke-opacity="0.09" stroke-width="1.5" stroke-dasharray="6 12"/>
+    <polygon points="624,-30 608,120 640,120" fill="#A7F3E8" fill-opacity="0.22"/>
+    <circle cx="624" cy="120" r="7" fill="#A7F3E8" fill-opacity="0.3"/>
+  </g>
+</svg>

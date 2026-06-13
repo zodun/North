@@ -34,8 +34,10 @@ function getRecognitionCtor(): RecognitionCtor | null {
 	return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
-const TEAL = colors.teal;
-const RED = "rgba(245,100,100,0.85)";
+// Ink variants: readable as text/icons on the light Soft Sky surface. Using
+// hex (not rgba) also lets the `${RED}66` alpha-suffix below resolve correctly.
+const TEAL = colors.tealInk;
+const RED = colors.redInk;
 
 function Triangle({ up, color }: { up: boolean; color: string }) {
 	return (
@@ -113,9 +115,9 @@ export function JournalCard({
 	}
 
 	return (
-		<div className="mb-2 rounded-[14px] border border-white/[0.07] bg-white/[0.03] p-[14px] font-jakarta">
-			<p className="mb-1 font-bold text-[13px] text-white">Journal</p>
-			<p className="mb-3 text-[11px] text-white/35 leading-relaxed">
+		<div className="mb-2 rounded-[14px] border border-[#0E1420]/10 bg-white p-[14px] font-jakarta">
+			<p className="mb-1 font-bold text-[#0E1420] text-[13px]">Journal</p>
+			<p className="mb-3 text-[#0E1420]/55 text-[11px] leading-relaxed">
 				Type or talk through your day — we'll surface the signal and the noise.
 			</p>
 
@@ -126,7 +128,7 @@ export function JournalCard({
 						<ObsList label="Noise" color={RED} items={analysis.noise} />
 					)}
 					{analysis.read && (
-						<p className="text-[12px] text-white/55 italic leading-relaxed">
+						<p className="text-[#0E1420]/70 text-[12px] italic leading-relaxed">
 							{analysis.read}
 						</p>
 					)}
@@ -142,7 +144,7 @@ export function JournalCard({
 					}
 					maxLength={1000}
 					rows={3}
-					className="w-full resize-none rounded-[10px] border border-white/9 bg-white/5 px-3 py-2.5 pr-11 text-[13px] text-white outline-none transition-colors placeholder:text-white/22 focus:border-[#3ECFBF] motion-reduce:transition-none"
+					className="w-full resize-none rounded-[10px] border border-[#0E1420]/10 bg-white px-3 py-2.5 pr-11 text-[#0E1420] text-[13px] outline-none transition-colors placeholder:text-[#0E1420]/40 focus:border-[#0A8F7F] motion-reduce:transition-none"
 				/>
 				{voiceSupported && (
 					<button
@@ -152,7 +154,7 @@ export function JournalCard({
 						aria-pressed={listening}
 						className="absolute top-2.5 right-2.5 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border transition-colors duration-200 motion-reduce:transition-none"
 						style={{
-							borderColor: listening ? `${RED}66` : "rgba(255,255,255,0.15)",
+							borderColor: listening ? `${RED}66` : "rgba(14,20,32,0.15)",
 							backgroundColor: listening ? `${RED}1f` : "transparent",
 						}}
 					>
@@ -161,7 +163,7 @@ export function JournalCard({
 							height="15"
 							viewBox="0 0 24 24"
 							fill="none"
-							stroke={listening ? RED : "rgba(255,255,255,0.55)"}
+							stroke={listening ? RED : "rgba(14,20,32,0.55)"}
 							strokeWidth={2}
 							strokeLinecap="round"
 							strokeLinejoin="round"
@@ -213,7 +215,7 @@ function ObsList({
 				{items.map((item) => (
 					<li
 						key={item}
-						className="flex items-start gap-2 text-[12px] text-white/70 leading-snug"
+						className="flex items-start gap-2 text-[#0E1420]/80 text-[12px] leading-snug"
 					>
 						<span
 							className="mt-1.5 h-1 w-1 shrink-0 rounded-full"

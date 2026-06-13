@@ -9,16 +9,16 @@ type Mode = "password" | "magic" | "signup";
 // ── Shared styles ──────────────────────────────────────────────────────────
 
 const inputCls =
-	"w-full rounded-[10px] border border-white/12 bg-white/7 px-[13px] py-[10px] text-[13px] text-white placeholder:text-white/22 outline-none transition-all focus:border-[#3ECFBF] focus:bg-[rgba(62,207,191,0.06)]";
+	"w-full rounded-[10px] border border-[#0E1420]/10 bg-white px-[13px] py-[10px] text-[13px] text-[#0E1420] placeholder:text-[#0E1420]/35 outline-none transition-all focus:border-[#3ECFBF] focus:bg-[rgba(62,207,191,0.05)]";
 
 const labelCls =
-	"mb-1 block font-bold text-[9px] text-white/45 uppercase tracking-[0.1em]";
+	"mb-1 block font-bold text-[9px] text-[#0E1420]/60 uppercase tracking-[0.1em]";
 
 const primaryBtnCls =
-	"relative mt-2 mb-3 w-full cursor-pointer overflow-hidden rounded-xl bg-[#F5C842] py-[13px] font-black text-[15px] text-[#05050E] tracking-tight shadow-[0_4px_20px_rgba(245,200,66,0.4)] transition-all active:scale-[0.98] hover:bg-[#FFD966] hover:shadow-[0_4px_28px_rgba(245,200,66,0.6)] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100";
+	"relative mt-2 mb-3 w-full cursor-pointer overflow-hidden rounded-xl bg-[#F5C842] py-[13px] font-black text-[15px] text-[#05050E] tracking-tight shadow-[0_2px_12px_rgba(245,200,66,0.30)] transition-all active:scale-[0.98] hover:bg-[#FFD966] hover:shadow-[0_3px_16px_rgba(245,200,66,0.40)] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100";
 
 const switchLinkCls =
-	"cursor-pointer font-bold text-[12px] text-[#3ECFBF] transition-colors hover:text-white";
+	"cursor-pointer font-bold text-[12px] text-[#0A8F7F] transition-colors hover:text-[#0E1420]";
 
 // ── Trust items ────────────────────────────────────────────────────────────
 
@@ -85,10 +85,10 @@ function CompassLogo() {
 			<polygon points="16,5 13,16 19,16" fill="rgba(245,200,66,1)" />
 			{/* South needle — teal 80% */}
 			<polygon points="16,27 13,16 19,16" fill="rgba(62,207,191,0.8)" />
-			{/* East needle — white 40% */}
-			<polygon points="27,16 16,13 16,19" fill="rgba(255,255,255,0.4)" />
-			{/* West needle — white 40% */}
-			<polygon points="5,16 16,13 16,19" fill="rgba(255,255,255,0.4)" />
+			{/* East needle — ink 35% */}
+			<polygon points="27,16 16,13 16,19" fill="rgba(14,20,32,0.35)" />
+			{/* West needle — ink 35% */}
+			<polygon points="5,16 16,13 16,19" fill="rgba(14,20,32,0.35)" />
 			{/* Center dot — gold */}
 			<circle cx="16" cy="16" r="2.2" fill="rgba(245,200,66,1)" />
 			{/* Center dot — dark inner */}
@@ -131,10 +131,10 @@ function BrandRow() {
 				<CompassLogo />
 			</div>
 			<div className="leading-none">
-				<div className="font-black text-[18px] text-white tracking-tight">
-					North<span style={{ color: "#F5C842" }}>.</span>
+				<div className="font-black text-[#0E1420] text-[18px] tracking-tight">
+					North<span style={{ color: "#8A6A00" }}>.</span>
 				</div>
-				<div className="mt-0.5 font-bold text-[8px] text-white/30 uppercase tracking-[0.18em]">
+				<div className="mt-0.5 font-bold text-[#0E1420]/50 text-[8px] uppercase tracking-[0.18em]">
 					Find your direction
 				</div>
 			</div>
@@ -145,23 +145,25 @@ function BrandRow() {
 function OrDivider({ label = "or email" }: { label?: string }) {
 	return (
 		<div className="my-3 flex items-center gap-2.5">
-			<div className="h-px flex-1 bg-[rgba(255,255,255,0.1)]" />
-			<span className="text-[11px] text-white/30">{label}</span>
-			<div className="h-px flex-1 bg-[rgba(255,255,255,0.1)]" />
+			<div className="h-px flex-1 bg-[rgba(14,20,32,0.12)]" />
+			<span className="text-[#0E1420]/50 text-[11px]">{label}</span>
+			<div className="h-px flex-1 bg-[rgba(14,20,32,0.12)]" />
 		</div>
 	);
 }
 
 function TrustBar() {
 	return (
-		<div className="flex items-center justify-center gap-[14px] border-white/8 border-t pt-3">
+		<div className="flex items-center justify-center gap-[14px] border-[#0E1420]/10 border-t pt-3">
 			{TRUST_ITEMS.map(({ dot, text }) => (
 				<div key={text} className="flex items-center gap-1.5">
 					<div
 						className="h-1.5 w-1.5 rounded-full"
 						style={{ backgroundColor: dot }}
 					/>
-					<span className="font-medium text-[10px] text-white/30">{text}</span>
+					<span className="font-medium text-[#0E1420]/55 text-[10px]">
+						{text}
+					</span>
 				</div>
 			))}
 		</div>
@@ -265,7 +267,7 @@ export function ProductSignIn() {
 								height="24"
 								viewBox="0 0 24 24"
 								fill="none"
-								stroke="#3ECFBF"
+								stroke="#0A8F7F"
 								strokeWidth={1.8}
 								strokeLinecap="round"
 								strokeLinejoin="round"
@@ -276,9 +278,11 @@ export function ProductSignIn() {
 							</svg>
 						</div>
 					</div>
-					<p className="font-bold text-[17px] text-white">Check your email</p>
-					<p className="mt-1.5 text-[13px] text-white/50">
-						Magic link sent to <span className="text-white">{email}</span>
+					<p className="font-bold text-[#0E1420] text-[17px]">
+						Check your email
+					</p>
+					<p className="mt-1.5 text-[#0E1420]/65 text-[13px]">
+						Magic link sent to <span className="text-[#0E1420]">{email}</span>
 					</p>
 					<button
 						type="button"
@@ -286,7 +290,7 @@ export function ProductSignIn() {
 							setSent(false);
 							switchMode("password");
 						}}
-						className="mt-5 cursor-pointer text-[12px] text-white/35 transition-colors hover:text-white/60"
+						className="mt-5 cursor-pointer text-[#0E1420]/55 text-[12px] transition-colors hover:text-[#0E1420]/70"
 					>
 						Back to sign in
 					</button>
@@ -302,7 +306,7 @@ export function ProductSignIn() {
 		return (
 			<>
 				<BrandRow />
-				<p className="mb-3 font-black text-[18px] text-white tracking-tight">
+				<p className="mb-3 font-black text-[#0E1420] text-[18px] tracking-tight">
 					Magic link
 				</p>
 				<form onSubmit={handleMagicLink} className="flex flex-col gap-2.5">
@@ -322,7 +326,7 @@ export function ProductSignIn() {
 						/>
 					</div>
 					{error && (
-						<p className="rounded-lg bg-red-500/10 px-3 py-1.5 text-[12px] text-red-400">
+						<p className="rounded-lg bg-red-500/10 px-3 py-1.5 text-[12px] text-red-600">
 							{error}
 						</p>
 					)}
@@ -334,7 +338,7 @@ export function ProductSignIn() {
 					<button
 						type="button"
 						onClick={() => switchMode("password")}
-						className="cursor-pointer text-center text-[12px] text-white/35 transition-colors hover:text-white/60"
+						className="cursor-pointer text-center text-[#0E1420]/55 text-[12px] transition-colors hover:text-[#0E1420]/70"
 					>
 						Sign in with password instead
 					</button>
@@ -350,13 +354,13 @@ export function ProductSignIn() {
 		return (
 			<>
 				<BrandRow />
-				<p className="mb-3 font-black text-[18px] text-white tracking-tight">
+				<p className="mb-3 font-black text-[#0E1420] text-[18px] tracking-tight">
 					Create account
 				</p>
 				<button
 					type="button"
 					onClick={handleGoogle}
-					className="mb-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-[1.5px] border-white/28 bg-white/13 py-[11px] font-bold text-[14px] text-white transition-colors hover:bg-white/20"
+					className="mb-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-[#0E1420]/12 border-[1.5px] bg-white py-[11px] font-bold text-[#0E1420] text-[14px] transition-colors hover:bg-[#F4F7FC]"
 				>
 					<GoogleIcon />
 					Continue with Google
@@ -409,7 +413,7 @@ export function ProductSignIn() {
 						/>
 					</div>
 					{error && (
-						<p className="rounded-lg bg-red-500/10 px-3 py-1.5 text-[12px] text-red-400">
+						<p className="rounded-lg bg-red-500/10 px-3 py-1.5 text-[12px] text-red-600">
 							{error}
 						</p>
 					)}
@@ -421,7 +425,7 @@ export function ProductSignIn() {
 					<button
 						type="button"
 						onClick={() => switchMode("password")}
-						className="cursor-pointer text-center text-[12px] text-white/35 transition-colors hover:text-white/60"
+						className="cursor-pointer text-center text-[#0E1420]/55 text-[12px] transition-colors hover:text-[#0E1420]/70"
 					>
 						Already have an account? Sign in
 					</button>
@@ -440,7 +444,7 @@ export function ProductSignIn() {
 
 			{/* 2. Hero */}
 			<div className="mb-4">
-				<div className="font-black text-[22px] text-white leading-[1.15] tracking-tight">
+				<div className="font-black text-[#0E1420] text-[22px] leading-[1.15] tracking-tight">
 					Your future
 				</div>
 				<div
@@ -455,7 +459,7 @@ export function ProductSignIn() {
 			<button
 				type="button"
 				onClick={handleGoogle}
-				className="mb-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-[1.5px] border-white/28 bg-white/13 py-[11px] font-bold text-[14px] text-white transition-colors hover:bg-white/20"
+				className="mb-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-[#0E1420]/12 border-[1.5px] bg-white py-[11px] font-bold text-[#0E1420] text-[14px] transition-colors hover:bg-[#F4F7FC]"
 			>
 				<GoogleIcon />
 				Continue with Google
@@ -498,7 +502,7 @@ export function ProductSignIn() {
 				</div>
 
 				{error && (
-					<p className="rounded-lg bg-red-500/10 px-3 py-1.5 text-[12px] text-red-400">
+					<p className="rounded-lg bg-red-500/10 px-3 py-1.5 text-[12px] text-red-600">
 						{error}
 					</p>
 				)}
@@ -522,7 +526,7 @@ export function ProductSignIn() {
 
 			{/* 8. Footer */}
 			<div className="mb-3.5 flex items-center justify-center gap-2 text-[12px]">
-				<span className="text-white/35">New here?</span>
+				<span className="text-[#0E1420]/55">New here?</span>
 				<button
 					type="button"
 					onClick={() => switchMode("signup")}
@@ -530,11 +534,11 @@ export function ProductSignIn() {
 				>
 					Create your account
 				</button>
-				<span className="text-white/20">·</span>
+				<span className="text-[#0E1420]/40">·</span>
 				<button
 					type="button"
 					onClick={() => switchMode("magic")}
-					className="cursor-pointer text-[12px] text-white/25 transition-colors hover:text-white/50"
+					className="cursor-pointer text-[#0E1420]/50 text-[12px] transition-colors hover:text-[#0E1420]/70"
 				>
 					Magic link
 				</button>

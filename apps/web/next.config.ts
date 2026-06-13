@@ -21,6 +21,10 @@ const nextConfig: NextConfig = {
 	},
 };
 
+// In development the dev server uses Turbopack, which errors if a webpack config
+// is present — and Serwist injects one even when "disabled". So in dev we skip
+// withSerwist entirely (no webpack config, and crucially NO service worker, so
+// the browser always loads fresh code). Production builds get the full PWA.
 export default process.env.NODE_ENV === "development"
 	? nextConfig
 	: withSerwist(nextConfig);

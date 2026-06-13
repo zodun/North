@@ -6,7 +6,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-	themeColor: "#05050E",
+	themeColor: "#FDF8EF",
 	width: "device-width",
 	initialScale: 1,
 	// Pinch-zoom intentionally left enabled (WCAG 1.4.4 / 1.4.10) — no

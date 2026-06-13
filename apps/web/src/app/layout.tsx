@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 
 import "../index.css";
+import { DevSwCleanup } from "@/components/dev-sw-cleanup";
 import { InstallPrompt } from "@/components/install-prompt";
 import Providers from "@/components/providers";
 
@@ -27,7 +28,7 @@ export const metadata: Metadata = {
 	applicationName: "North",
 	appleWebApp: {
 		capable: true,
-		statusBarStyle: "black-translucent",
+		statusBarStyle: "default",
 		title: "North",
 	},
 	formatDetection: {
@@ -49,6 +50,7 @@ export default function RootLayout({
 				className={`${geistSans.variable} ${geistMono.variable} ${plusJakarta.variable} antialiased`}
 			>
 				<Providers>
+					<DevSwCleanup />
 					<div className="h-svh">{children}</div>
 					<InstallPrompt />
 				</Providers>

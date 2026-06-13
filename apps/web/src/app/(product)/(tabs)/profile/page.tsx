@@ -24,12 +24,12 @@ export default async function ProfilePage() {
 		return (
 			<div className="flex h-full flex-col items-center justify-center gap-4 p-8 text-center">
 				<div className="text-4xl">🧭</div>
-				<h2 className="font-semibold text-white text-xl">
+				<h2 className="font-semibold text-[#0E1420] text-xl">
 					You're not signed in
 				</h2>
 				<a
 					href="/sign-in"
-					className="rounded-xl bg-white px-6 py-3 font-semibold text-black text-sm"
+					className="rounded-xl bg-[#F5C842] px-6 py-3 font-semibold text-[#05050E] text-sm"
 				>
 					Sign in
 				</a>

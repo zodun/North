@@ -1,19 +1,24 @@
 ---
 name: North
-description: Direction over attention — a calm, cinematic daily-direction app for young people in the Caribbean.
+description: Direction over attention — a calm, airy "Soft Sky" daily-direction app for young professionals.
 colors:
-  night: "#05050E"
-  night-raised: "#0A0A0F"
-  surface: "#111118"
-  signal-gold: "#F5C842"
+  sky: "#EDF1F8" # app base (cool, airy light)
+  sky-raised: "#F4F7FC" # insets / muted surface
+  surface: "#FFFFFF" # cards
+  signal-gold: "#F5C842" # accent fill (next action)
   gold-deep: "#E8B84B"
-  direction-teal: "#3ECFBF"
-  drift-violet: "#7B61FF"
+  gold-ink: "#8A6A00" # gold as text/icon on light (≥4.5:1)
+  direction-teal: "#3ECFBF" # accent fill (on-course)
+  teal-ink: "#0A8F7F" # teal as text/icon on light
+  drift-violet: "#7B61FF" # accent fill (drift)
+  violet-ink: "#5B43E0" # violet as text on light
   signal-green: "#4ECCA3"
+  green-ink: "#0E9E73"
   noise-red: "#F87171"
-  ink: "#F0F0F5"
-  muted: "#F0F0F58C"
-  hairline: "#FFFFFF14"
+  red-ink: "#DC2626"
+  ink: "#0E1420" # primary text
+  muted: "#0E14209E" # ~62% — secondary text (≥4.5:1)
+  hairline: "#0E14201A" # ~10% — borders
 typography:
   display:
     fontFamily: "Plus Jakarta Sans, Geist, system-ui, sans-serif"
@@ -60,37 +65,41 @@ spacing:
 components:
   pill-active:
     backgroundColor: "{colors.signal-gold}"
-    textColor: "{colors.night}"
+    textColor: "#05050E" # dark ink on the gold fill
     rounded: "{rounded.full}"
     padding: "4px 12px"
   pill-inactive:
     backgroundColor: "transparent"
     textColor: "{colors.muted}"
+    border: "1px solid {colors.hairline}"
     rounded: "{rounded.full}"
     padding: "4px 12px"
   button-cta:
-    backgroundColor: "#3ECFBF1A"
-    textColor: "{colors.direction-teal}"
+    backgroundColor: "#3ECFBF24"
+    textColor: "{colors.teal-ink}"
     rounded: "{rounded.md}"
     padding: "10px 16px"
   card:
-    backgroundColor: "#FFFFFF0A"
+    backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
+    border: "1px solid {colors.hairline}"
     rounded: "{rounded.xl}"
     padding: "16px"
   card-small:
-    backgroundColor: "#FFFFFF0A"
+    backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
+    border: "1px solid {colors.hairline}"
     rounded: "{rounded.lg}"
     padding: "13px 14px"
   chip:
-    backgroundColor: "#FFFFFF0D"
+    backgroundColor: "{colors.sky-raised}"
     textColor: "{colors.muted}"
     rounded: "{rounded.full}"
     padding: "2px 10px"
   input:
-    backgroundColor: "#FFFFFF0D"
+    backgroundColor: "{colors.surface}"
     textColor: "{colors.ink}"
+    border: "1px solid {colors.hairline}"
     rounded: "{rounded.md}"
     padding: "10px 12px"
 ---
@@ -99,25 +108,30 @@ components:
 
 ## 1. Overview
 
-**Creative North Star: "The Night Compass"**
+**Creative North Star: "Soft Sky"**
 
-North is a dark, cinematic field where a single gold needle always points somewhere.
-Where mainstream consumer apps engineer a hyperstimulating surface to capture
-attention, North engineers a calm one to give direction. The screen sits on
-near-black (`#05050E`), and color is rationed: **gold is the needle** (the goal, the
+North is a calm, airy light field — daylight, not darkness — where a single gold
+needle always points somewhere. Where mainstream consumer apps engineer a
+hyperstimulating surface to capture attention, North engineers a clear, restful one
+to give direction. The screen sits on a cool light sky (`#EDF1F8`) with white cards,
+and color is still rationed to three meanings: **gold is the needle** (the goal, the
 active pill, the thing to do next), **teal is on-course** (signal, progress, the
-journal CTA), **violet is drift** (the low end of the Signal band). Nothing glows
-for its own sake. A user should feel oriented, not stimulated.
+journal CTA), **violet is drift** (the low end of the Signal band). Because the
+surface is light, those vivid hues carry meaning as *fills*; as text or icons they
+use their readable ink variants (`gold-ink`, `teal-ink`, `violet-ink`) to hold
+≥4.5:1 contrast. Nothing glows for its own sake. A user should feel oriented, not
+stimulated.
 
 This system explicitly rejects the **generic AI-app skin** — purple-gradient-on-glass,
-blur-everywhere, the interchangeable 2025/26 wrapper look — and the **attention-
-optimized social feed** it competes with: no autoplay shimmer, no dopamine reds, no
-infinite-scroll density. It also refuses **gamified-hustle pressure** (neon
-streak-guilt) and **cold corporate-SaaS dashboards** (KPI-card grids). Momentum is
-quiet; honesty is the feature.
+blur-everywhere, the interchangeable 2025/26 wrapper look — and the **muddy AI-cream
+default** light palette (sand/beige/parchment near-whites). North's light is a clean,
+cool sky, not warm paper. It also refuses the **attention-optimized social feed** it
+competes with (no autoplay shimmer, no dopamine reds, no infinite-scroll density),
+**gamified-hustle pressure** (neon streak-guilt), and **cold corporate-SaaS
+dashboards** (KPI-card grids). Momentum is quiet; honesty is the feature.
 
-Density is low and deliberate. Cards are flat, separated by hairline borders and
-translucent fills rather than shadow. Type does the shouting — Plus Jakarta Sans at
+Density is low and deliberate. Cards are flat white, separated by hairline borders
+rather than shadow. Type does the shouting — Plus Jakarta Sans at
 black weight for a score or a goal — while the rest stays composed.
 
 **Key Characteristics:**

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getServerSupabase } from "@/lib/supabase-server";
+import { JournalCard } from "../signal/journal-card";
 import { loadSignalData } from "../signal/load-signal-data";
-import { SignalView } from "../signal/signal-view";
 import { MonthlyMissionView } from "./monthly-mission-view";
 
 export const metadata: Metadata = { title: "Mission" };
@@ -18,7 +18,9 @@ export default async function MissionPage() {
 	if (!user) {
 		return (
 			<div className="flex h-full items-center justify-center p-8 text-center">
-				<p className="text-sm text-white/40">Sign in to see your mission.</p>
+				<p className="text-[#0E1420]/55 text-sm">
+					Sign in to see your mission.
+				</p>
 			</div>
 		);
 	}
@@ -87,11 +89,13 @@ export default async function MissionPage() {
 		mission.generated_by === "template" &&
 		profileRes.data?.goal_prompt_dismissed_month !== mission.month_start;
 
-	// Signal lives on the same tab, below this month's plan.
+	// The Signal / Direction Score now lives on Profile; Mission keeps only the
+	// daily Signal-and-Noise journal. The signal data is still loaded (unchanged)
+	// and we use its latest reflection to seed the journal.
 	const signal = await loadSignalData(supabase, user.id);
 
 	return (
-		<div className="min-h-full bg-[#05050E] pb-24 font-jakarta">
+		<div className="min-h-full pb-24 font-jakarta">
 			<MonthlyMissionView
 				mission={mission}
 				steps={steps ?? []}
@@ -100,8 +104,15 @@ export default async function MissionPage() {
 				currentWeekIndex={currentWeekIndex}
 				streakState={streakRes.data?.state ?? null}
 				promptGoal={promptGoal}
+				journalSlot={
+					<>
+						<p className="mt-2 mb-3 font-bold text-[#1A1208]/50 text-[10px] uppercase tracking-[0.12em]">
+							Signal &amp; Noise
+						</p>
+						<JournalCard entryDate={today} initialEntry={signal.lastJournal} />
+					</>
+				}
 			/>
-			<SignalView {...signal} embedded />
 		</div>
 	);
 }

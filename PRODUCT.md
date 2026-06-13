@@ -41,10 +41,10 @@ lift in self-reported life alignment from onboarding to week 4.
 
 ## Brand Personality
 
-**Cinematic · Premium · Directional.** Dark, filmic, and considered; crafted rather
-than cheap; always pointing somewhere. The voice is composed and honest — it builds
-momentum without hype or pressure, and the Signal layer tells the truth rather than
-flattering. Calm and warmth are the undertone (North is the antidote to
+**Clear · Premium · Directional.** Light, airy ("Soft Sky"), and considered; crafted
+rather than cheap; always pointing somewhere. The voice is composed and honest — it
+builds momentum without hype or pressure, and the Signal layer tells the truth rather
+than flattering. Calm and clarity are the undertone (North is the antidote to
 hyperstimulating feeds), but the surface reads premium and deliberate, never loud.
 
 ## Anti-references

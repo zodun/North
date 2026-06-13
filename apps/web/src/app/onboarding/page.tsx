@@ -113,19 +113,19 @@ const TIME_OPTIONS = [
 ];
 
 const BASELINE_COLORS = [
-	{ bg: "rgba(123,97,255,0.15)", border: VIOLET, text: VIOLET },
+	{ bg: "rgba(123,97,255,0.15)", border: VIOLET, text: "#5B43E0" },
 	{
 		bg: "rgba(62,130,200,0.15)",
 		border: "rgba(62,130,200,0.8)",
-		text: "rgba(62,130,200,0.95)",
+		text: "#2A5E96",
 	},
-	{ bg: "rgba(62,207,191,0.15)", border: TEAL, text: TEAL },
+	{ bg: "rgba(62,207,191,0.15)", border: TEAL, text: "#0A8F7F" },
 	{
 		bg: "rgba(180,220,80,0.15)",
 		border: "rgba(180,220,80,0.8)",
-		text: "rgba(180,220,80,0.95)",
+		text: "#5C7016",
 	},
-	{ bg: "rgba(245,200,66,0.15)", border: GOLD, text: GOLD },
+	{ bg: "rgba(245,200,66,0.15)", border: GOLD, text: "#8A6A00" },
 ];
 
 const CONSENT_ROWS = [
@@ -366,7 +366,7 @@ export default function OnboardingPage() {
 	})();
 
 	return (
-		<div className="fixed inset-0 z-40 overflow-y-auto bg-[#05050E] font-jakarta">
+		<div className="fixed inset-0 z-40 overflow-y-auto bg-[#EDF1F8] font-jakarta">
 			<style>{ANIM}</style>
 
 			{/* Light leaks */}
@@ -375,18 +375,18 @@ export default function OnboardingPage() {
 				className="pointer-events-none absolute inset-0 z-0"
 				style={{
 					background:
-						"radial-gradient(circle at 12% 8%, rgba(245,200,66,0.09), transparent 38%), radial-gradient(circle at 88% 92%, rgba(62,207,191,0.07), transparent 40%), radial-gradient(circle at 92% 6%, rgba(123,97,255,0.07), transparent 38%)",
+						"radial-gradient(150% 85% at 50% -12%, rgba(255,255,255,0.9), transparent 60%), radial-gradient(120% 90% at 100% 102%, rgba(62,207,191,0.10), transparent 55%), radial-gradient(110% 70% at 2% -4%, rgba(245,200,66,0.07), transparent 50%)",
 				}}
 			/>
 
 			{/* Progress bar */}
-			<div className="fixed top-0 right-0 left-0 z-50 h-[3px] bg-white/[0.06]">
+			<div className="fixed top-0 right-0 left-0 z-50 h-[3px] bg-[#0E1420]/10">
 				<div
 					className="h-full bg-gradient-to-r from-[#F5C842] to-[#3ECFBF] transition-[width] duration-[400ms] ease-out motion-reduce:transition-none"
 					style={{ width: `${progress}%` }}
 				/>
 			</div>
-			<p className="fixed top-3 right-4 z-50 font-bold text-[10px] text-white/35 uppercase tracking-[0.1em]">
+			<p className="fixed top-3 right-4 z-50 font-bold text-[#0E1420]/55 text-[10px] uppercase tracking-[0.1em]">
 				Step {step + 1} of {TOTAL_STEPS}
 			</p>
 
@@ -396,9 +396,9 @@ export default function OnboardingPage() {
 					type="button"
 					onClick={() => setStep((s) => s - 1)}
 					aria-label="Go back"
-					className="absolute top-5 left-5 z-20 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-white/10 bg-white/[0.06] transition-colors hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F5C842] motion-reduce:transition-none"
+					className="absolute top-5 left-5 z-20 flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-[#0E1420]/10 bg-white transition-colors hover:bg-[#F4F7FC] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F5C842] motion-reduce:transition-none"
 				>
-					<Icon name="back" />
+					<Icon name="back" color="#0E1420" />
 				</button>
 			)}
 
@@ -435,7 +435,7 @@ export default function OnboardingPage() {
 				)}
 
 				{error && (
-					<p className="mt-5 text-[13px] text-red-400" role="alert">
+					<p className="mt-5 text-[13px] text-red-600" role="alert">
 						{error}
 					</p>
 				)}
@@ -453,13 +453,13 @@ export default function OnboardingPage() {
 						<button
 							type="button"
 							onClick={handleNext}
-							className="mt-3 w-full cursor-pointer text-center font-medium text-[12px] text-white/30 transition-colors hover:text-white/50 motion-reduce:transition-none"
+							className="mt-3 w-full cursor-pointer text-center font-medium text-[#0E1420]/50 text-[12px] transition-colors hover:text-[#0E1420]/65 motion-reduce:transition-none"
 						>
 							Skip for now
 						</button>
 					)}
 					{step === 10 && !consent && (
-						<p className="mt-2 text-center text-[11px] text-white/30">
+						<p className="mt-2 text-center text-[#0E1420]/50 text-[11px]">
 							You must agree to continue
 						</p>
 					)}
@@ -484,15 +484,15 @@ function StepHead({
 		<div className="mb-8">
 			<p
 				className="mb-3 font-bold text-[10px] uppercase tracking-[0.15em]"
-				style={{ color: "rgba(245,200,66,0.6)" }}
+				style={{ color: "#8A6A00" }}
 			>
 				{eyebrow}
 			</p>
-			<h1 className="mb-2 font-black text-[26px] text-white leading-[1.15] tracking-tight">
+			<h1 className="mb-2 font-black text-[#0E1420] text-[26px] leading-[1.15] tracking-tight">
 				{headline}
 			</h1>
 			{sub && (
-				<p className="text-[13px] text-white/50 leading-relaxed">{sub}</p>
+				<p className="text-[#0E1420]/65 text-[13px] leading-relaxed">{sub}</p>
 			)}
 		</div>
 	);
@@ -514,10 +514,10 @@ function CtaButton({
 			type="button"
 			onClick={onClick}
 			disabled={disabled}
-			className="relative w-full cursor-pointer overflow-hidden rounded-[14px] py-[15px] font-black text-[#05050E] text-[15px] tracking-tight transition-all hover:bg-[#FFD966] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F5C842] focus-visible:ring-offset-2 focus-visible:ring-offset-[#05050E] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none motion-reduce:transition-none motion-reduce:active:scale-100"
+			className="relative w-full cursor-pointer overflow-hidden rounded-[14px] py-[15px] font-black text-[#05050E] text-[15px] tracking-tight transition-all hover:bg-[#FFD966] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F5C842] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EDF1F8] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none motion-reduce:transition-none motion-reduce:active:scale-100"
 			style={{
 				backgroundColor: GOLD,
-				boxShadow: disabled ? "none" : "0 4px 20px rgba(245,200,66,0.35)",
+				boxShadow: disabled ? "none" : "0 2px 12px rgba(245,200,66,0.30)",
 			}}
 		>
 			<span className="relative z-10">{saving ? "Saving…" : children} →</span>
@@ -536,7 +536,7 @@ function CtaButton({
 }
 
 function selectableRing(): string {
-	return "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F5C842] focus-visible:ring-offset-2 focus-visible:ring-offset-[#05050E]";
+	return "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#F5C842] focus-visible:ring-offset-2 focus-visible:ring-offset-[#EDF1F8]";
 }
 
 function CheckBadge({ color, size = 24 }: { color: string; size?: number }) {
@@ -591,7 +591,7 @@ function StepName({
 				placeholder="Your first name"
 				value={value}
 				onChange={(e) => onChange(e.target.value)}
-				className="w-full rounded-[14px] border border-white/10 bg-white/5 px-5 py-4 font-bold text-[18px] text-white outline-none transition-all placeholder:text-white/[0.18] focus:border-[#F5C842] focus:bg-[rgba(245,200,66,0.03)]"
+				className="w-full rounded-[14px] border border-[#0E1420]/10 bg-white px-5 py-4 font-bold text-[#0E1420] text-[18px] outline-none transition-all placeholder:text-[#0E1420]/35 focus:border-[#F5C842] focus:bg-[rgba(245,200,66,0.04)]"
 			/>
 		</div>
 	);
@@ -620,26 +620,24 @@ function StepCareerStage({
 							type="button"
 							aria-pressed={selected}
 							onClick={() => onSelect(opt.value)}
-							className={`relative flex items-center gap-4 rounded-[16px] border-[1.5px] p-4 text-left transition-all hover:bg-white/[0.07] ${selectableRing()} motion-reduce:transition-none`}
+							className={`relative flex items-center gap-4 rounded-[16px] border-[1.5px] p-4 text-left transition-all hover:bg-[#F4F7FC] ${selectableRing()} motion-reduce:transition-none`}
 							style={{
-								backgroundColor: selected
-									? "rgba(245,200,66,0.08)"
-									: "rgba(255,255,255,0.04)",
-								borderColor: selected ? GOLD : "rgba(255,255,255,0.08)",
+								backgroundColor: selected ? "rgba(245,200,66,0.10)" : "#ffffff",
+								borderColor: selected ? GOLD : "rgba(14,20,32,0.12)",
 							}}
 						>
-							<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-white/[0.06]">
+							<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#F4F7FC]">
 								<Icon
 									name={CAREER_STAGE_ICONS[opt.value] ?? "compass"}
-									color="rgba(255,255,255,0.5)"
+									color="rgba(14,20,32,0.55)"
 									size={18}
 								/>
 							</span>
 							<span className="flex-1">
-								<span className="block font-black text-[14px] text-white">
+								<span className="block font-black text-[#0E1420] text-[14px]">
 									{opt.value}
 								</span>
-								<span className="mt-0.5 block text-[11px] text-white/40">
+								<span className="mt-0.5 block text-[#0E1420]/55 text-[11px]">
 									{opt.sub}
 								</span>
 							</span>
@@ -675,18 +673,18 @@ function StepFields({
 							type="button"
 							aria-pressed={selected}
 							onClick={() => onToggle(label)}
-							className={`cursor-pointer rounded-full border px-4 py-2.5 font-bold text-[12px] transition-all hover:bg-white/[0.09] ${selectableRing()} motion-reduce:transition-none`}
+							className={`cursor-pointer rounded-full border px-4 py-2.5 font-bold text-[12px] transition-all hover:bg-[#F4F7FC] ${selectableRing()} motion-reduce:transition-none`}
 							style={
 								selected
 									? {
-											backgroundColor: "rgba(62,207,191,0.1)",
-											borderColor: "rgba(62,207,191,0.35)",
-											color: TEAL,
+											backgroundColor: "rgba(62,207,191,0.14)",
+											borderColor: "rgba(62,207,191,0.55)",
+											color: "#0A8F7F",
 										}
 									: {
-											backgroundColor: "rgba(255,255,255,0.05)",
-											borderColor: "rgba(255,255,255,0.10)",
-											color: "rgba(255,255,255,0.5)",
+											backgroundColor: "#ffffff",
+											borderColor: "rgba(14,20,32,0.12)",
+											color: "rgba(14,20,32,0.55)",
 										}
 							}
 						>
@@ -695,8 +693,8 @@ function StepFields({
 					);
 				})}
 			</div>
-			<p className="mt-4 text-center text-[11px] text-white/35">
-				<span style={{ color: value.length > 0 ? TEAL : undefined }}>
+			<p className="mt-4 text-center text-[#0E1420]/55 text-[11px]">
+				<span style={{ color: value.length > 0 ? "#0A8F7F" : undefined }}>
 					{value.length}
 				</span>{" "}
 				of {MAX_FIELDS} selected
@@ -735,21 +733,21 @@ function StepLocation({
 					id="onb-country"
 					value={country}
 					onChange={(e) => onCountry(e.target.value)}
-					className="w-full appearance-none rounded-[14px] border border-white/10 bg-white/5 px-5 py-4 font-bold text-[16px] text-white outline-none transition-all focus:border-[#F5C842] focus:bg-[rgba(245,200,66,0.03)]"
-					style={{ color: country ? "#fff" : "rgba(255,255,255,0.3)" }}
+					className="w-full appearance-none rounded-[14px] border border-[#0E1420]/10 bg-white px-5 py-4 font-bold text-[#0E1420] text-[16px] outline-none transition-all focus:border-[#F5C842] focus:bg-[rgba(245,200,66,0.04)]"
+					style={{ color: country ? "#0E1420" : "rgba(14,20,32,0.55)" }}
 				>
-					<option value="" disabled className="bg-[#05050E] text-white/40">
+					<option value="" disabled className="bg-white text-[#0E1420]/55">
 						Select your country
 					</option>
 					{COUNTRIES.map((c) => (
-						<option key={c} value={c} className="bg-[#05050E] text-white">
+						<option key={c} value={c} className="bg-white text-[#0E1420]">
 							{c}
 						</option>
 					))}
 				</select>
 				<span
 					aria-hidden="true"
-					className="pointer-events-none absolute top-1/2 right-5 -translate-y-1/2 text-white/40"
+					className="pointer-events-none absolute top-1/2 right-5 -translate-y-1/2 text-[#0E1420]/55"
 				>
 					<svg
 						width="14"
@@ -793,8 +791,8 @@ function ToggleRow({
 	onChange: (v: boolean) => void;
 }) {
 	return (
-		<div className="flex items-center justify-between rounded-[16px] border border-white/8 bg-white/4 px-4 py-3.5">
-			<span className="font-bold text-[13px] text-white">{label}</span>
+		<div className="flex items-center justify-between rounded-[16px] border border-[#0E1420]/10 bg-white px-4 py-3.5">
+			<span className="font-bold text-[#0E1420] text-[13px]">{label}</span>
 			<button
 				type="button"
 				role="switch"
@@ -803,7 +801,7 @@ function ToggleRow({
 				onClick={() => onChange(!checked)}
 				className={`relative h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors ${selectableRing()} motion-reduce:transition-none`}
 				style={{
-					backgroundColor: checked ? TEAL : "rgba(255,255,255,0.1)",
+					backgroundColor: checked ? TEAL : "rgba(14,20,32,0.12)",
 				}}
 			>
 				<span
@@ -840,12 +838,10 @@ function StepPurpose({
 							type="button"
 							aria-pressed={selected}
 							onClick={() => onSelect(c.value)}
-							className={`relative rounded-[18px] border-[1.5px] p-5 text-left transition-all hover:bg-white/[0.07] ${selectableRing()} motion-reduce:transition-none`}
+							className={`relative rounded-[18px] border-[1.5px] p-5 text-left transition-all hover:bg-[#F4F7FC] ${selectableRing()} motion-reduce:transition-none`}
 							style={{
-								backgroundColor: selected
-									? `${c.color}14`
-									: "rgba(255,255,255,0.04)",
-								borderColor: selected ? c.color : "rgba(255,255,255,0.08)",
+								backgroundColor: selected ? `${c.color}14` : "#ffffff",
+								borderColor: selected ? c.color : "rgba(14,20,32,0.12)",
 							}}
 						>
 							{selected && (
@@ -859,10 +855,10 @@ function StepPurpose({
 							>
 								<Icon name={c.icon} color={c.color} size={20} />
 							</span>
-							<p className="mb-1 font-black text-[15px] text-white">
+							<p className="mb-1 font-black text-[#0E1420] text-[15px]">
 								{c.label}
 							</p>
-							<p className="text-[12px] text-white/45 leading-relaxed">
+							<p className="text-[#0E1420]/60 text-[12px] leading-relaxed">
 								{c.sub}
 							</p>
 						</button>
@@ -897,12 +893,10 @@ function StepFocus({
 							type="button"
 							aria-pressed={selected}
 							onClick={() => onToggle(area.id)}
-							className={`relative flex flex-col items-start gap-2 rounded-[18px] border-[1.5px] p-4 transition-all hover:bg-white/[0.07] ${selectableRing()} motion-reduce:transition-none`}
+							className={`relative flex flex-col items-start gap-2 rounded-[18px] border-[1.5px] p-4 transition-all hover:bg-[#F4F7FC] ${selectableRing()} motion-reduce:transition-none`}
 							style={{
-								backgroundColor: selected
-									? `${m.color}14`
-									: "rgba(255,255,255,0.04)",
-								borderColor: selected ? m.color : "rgba(255,255,255,0.08)",
+								backgroundColor: selected ? `${m.color}14` : "#ffffff",
+								borderColor: selected ? m.color : "rgba(14,20,32,0.12)",
 							}}
 						>
 							{selected && (
@@ -916,16 +910,16 @@ function StepFocus({
 							>
 								<Icon name={m.icon} color={m.color} size={18} />
 							</span>
-							<span className="font-black text-[13px] text-white">
+							<span className="font-black text-[#0E1420] text-[13px]">
 								{m.name}
 							</span>
-							<span className="text-[10px] text-white/40">{m.desc}</span>
+							<span className="text-[#0E1420]/55 text-[10px]">{m.desc}</span>
 						</button>
 					);
 				})}
 			</div>
-			<p className="mt-3 text-center text-[11px] text-white/35">
-				<span style={{ color: value.length > 0 ? GOLD : undefined }}>
+			<p className="mt-3 text-center text-[#0E1420]/55 text-[11px]">
+				<span style={{ color: value.length > 0 ? "#8A6A00" : undefined }}>
 					{value.length}
 				</span>{" "}
 				of 3 selected
@@ -957,18 +951,18 @@ function StepOpportunityTypes({
 							type="button"
 							aria-pressed={selected}
 							onClick={() => onToggle(opt.id)}
-							className={`cursor-pointer rounded-full border px-4 py-2.5 font-bold text-[12px] transition-all hover:bg-white/[0.09] ${selectableRing()} motion-reduce:transition-none`}
+							className={`cursor-pointer rounded-full border px-4 py-2.5 font-bold text-[12px] transition-all hover:bg-[#F4F7FC] ${selectableRing()} motion-reduce:transition-none`}
 							style={
 								selected
 									? {
-											backgroundColor: "rgba(62,207,191,0.1)",
-											borderColor: "rgba(62,207,191,0.35)",
-											color: TEAL,
+											backgroundColor: "rgba(62,207,191,0.14)",
+											borderColor: "rgba(62,207,191,0.55)",
+											color: "#0A8F7F",
 										}
 									: {
-											backgroundColor: "rgba(255,255,255,0.05)",
-											borderColor: "rgba(255,255,255,0.10)",
-											color: "rgba(255,255,255,0.5)",
+											backgroundColor: "#ffffff",
+											borderColor: "rgba(14,20,32,0.12)",
+											color: "rgba(14,20,32,0.55)",
 										}
 							}
 						>
@@ -977,8 +971,8 @@ function StepOpportunityTypes({
 					);
 				})}
 			</div>
-			<p className="mt-4 text-center text-[11px] text-white/35">
-				<span style={{ color: value.length > 0 ? TEAL : undefined }}>
+			<p className="mt-4 text-center text-[#0E1420]/55 text-[11px]">
+				<span style={{ color: value.length > 0 ? "#0A8F7F" : undefined }}>
 					{value.length}
 				</span>{" "}
 				of 4 selected
@@ -1010,22 +1004,20 @@ function StepTime({
 							type="button"
 							aria-pressed={selected}
 							onClick={() => onSelect(opt.value)}
-							className={`relative flex items-center gap-4 rounded-[16px] border-[1.5px] p-4 text-left transition-all hover:bg-white/[0.07] ${selectableRing()} motion-reduce:transition-none`}
+							className={`relative flex items-center gap-4 rounded-[16px] border-[1.5px] p-4 text-left transition-all hover:bg-[#F4F7FC] ${selectableRing()} motion-reduce:transition-none`}
 							style={{
-								backgroundColor: selected
-									? "rgba(245,200,66,0.08)"
-									: "rgba(255,255,255,0.04)",
-								borderColor: selected ? GOLD : "rgba(255,255,255,0.08)",
+								backgroundColor: selected ? "rgba(245,200,66,0.10)" : "#ffffff",
+								borderColor: selected ? GOLD : "rgba(14,20,32,0.12)",
 							}}
 						>
-							<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-white/[0.06]">
-								<Icon name="clock" color="rgba(255,255,255,0.5)" size={18} />
+							<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#F4F7FC]">
+								<Icon name="clock" color="rgba(14,20,32,0.55)" size={18} />
 							</span>
 							<span className="flex-1">
-								<span className="block font-black text-[14px] text-white">
+								<span className="block font-black text-[#0E1420] text-[14px]">
 									{opt.value}
 								</span>
-								<span className="mt-0.5 block text-[11px] text-white/40">
+								<span className="mt-0.5 block text-[#0E1420]/55 text-[11px]">
 									{opt.sub}
 								</span>
 							</span>
@@ -1061,7 +1053,7 @@ function StepAvoid({
 				onChange={(e) => onChange(e.target.value)}
 				maxLength={500}
 				placeholder="e.g. I always start exercising but stop after two weeks"
-				className="h-[120px] w-full resize-none rounded-[14px] border border-white/10 bg-white/5 px-4 py-3.5 font-medium text-[14px] text-white outline-none transition-all placeholder:text-white/20 focus:border-[#3ECFBF] focus:bg-[rgba(62,207,191,0.03)]"
+				className="h-[120px] w-full resize-none rounded-[14px] border border-[#0E1420]/10 bg-white px-4 py-3.5 font-medium text-[#0E1420] text-[14px] outline-none transition-all placeholder:text-[#0E1420]/35 focus:border-[#3ECFBF] focus:bg-[rgba(62,207,191,0.04)]"
 			/>
 		</div>
 	);
@@ -1101,9 +1093,9 @@ function StepBaseline({
 											color: c.text,
 										}
 									: {
-											backgroundColor: "rgba(255,255,255,0.04)",
-											borderColor: "rgba(255,255,255,0.15)",
-											color: "rgba(255,255,255,0.4)",
+											backgroundColor: "#ffffff",
+											borderColor: "rgba(14,20,32,0.12)",
+											color: "rgba(14,20,32,0.55)",
 										}
 							}
 						>
@@ -1112,7 +1104,7 @@ function StepBaseline({
 					);
 				})}
 			</div>
-			<div className="mt-2 flex justify-between text-[10px] text-white/35">
+			<div className="mt-2 flex justify-between text-[#0E1420]/55 text-[10px]">
 				<span>Almost none</span>
 				<span>Most of it</span>
 			</div>
@@ -1134,7 +1126,7 @@ function StepConsent({
 				headline="North learns from how you show up."
 				sub="To personalise your Signal score and surface better opportunities, North tracks your in-app behaviour — tasks completed, content engaged with, and time patterns. This data never leaves North and is never sold."
 			/>
-			<div className="mb-6 rounded-[16px] border border-white/8 bg-white/4 p-4">
+			<div className="mb-6 rounded-[16px] border border-[#0E1420]/10 bg-white p-4">
 				<div className="flex flex-col gap-3">
 					{CONSENT_ROWS.map((row) => (
 						<div key={row} className="flex items-start gap-3">
@@ -1143,7 +1135,7 @@ function StepConsent({
 								height="16"
 								viewBox="0 0 24 24"
 								fill="none"
-								stroke={TEAL}
+								stroke="#0A8F7F"
 								strokeWidth={2.5}
 								strokeLinecap="round"
 								strokeLinejoin="round"
@@ -1153,14 +1145,16 @@ function StepConsent({
 								<circle cx="12" cy="12" r="10" />
 								<path d="m9 12 2 2 4-4" />
 							</svg>
-							<p className="text-[12px] text-white/60 leading-relaxed">{row}</p>
+							<p className="text-[#0E1420]/70 text-[12px] leading-relaxed">
+								{row}
+							</p>
 						</div>
 					))}
 				</div>
 			</div>
 
-			<div className="flex items-center justify-between rounded-[16px] border border-white/8 bg-white/4 px-4 py-3.5">
-				<span className="font-bold text-[13px] text-white">
+			<div className="flex items-center justify-between rounded-[16px] border border-[#0E1420]/10 bg-white px-4 py-3.5">
+				<span className="font-bold text-[#0E1420] text-[13px]">
 					I agree to behavioural data collection
 				</span>
 				<button
@@ -1171,7 +1165,7 @@ function StepConsent({
 					onClick={() => onConsent(!consent)}
 					className={`relative h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors ${selectableRing()} motion-reduce:transition-none`}
 					style={{
-						backgroundColor: consent ? TEAL : "rgba(255,255,255,0.1)",
+						backgroundColor: consent ? TEAL : "rgba(14,20,32,0.12)",
 					}}
 				>
 					<span
@@ -1182,7 +1176,7 @@ function StepConsent({
 					/>
 				</button>
 			</div>
-			<p className="mt-4 text-[10px] text-white/25 leading-relaxed">
+			<p className="mt-4 text-[#0E1420]/50 text-[10px] leading-relaxed">
 				Governed by the Jamaica Data Protection Act 2020. Withdraw by deleting
 				your account, which erases all behavioural data.
 			</p>

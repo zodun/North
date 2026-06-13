@@ -15,7 +15,7 @@ export default async function SignalPage() {
 	if (!user) {
 		return (
 			<div className="flex h-full items-center justify-center p-8 text-center">
-				<p className="text-sm text-white/40">Sign in to see your signal.</p>
+				<p className="text-[#0E1420]/55 text-sm">Sign in to see your signal.</p>
 			</div>
 		);
 	}

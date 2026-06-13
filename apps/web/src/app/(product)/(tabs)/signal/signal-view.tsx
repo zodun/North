@@ -22,9 +22,13 @@ type Inputs = {
 const GOLD = colors.gold;
 const TEAL = colors.teal;
 const VIOLET = colors.violet;
-const RED = "rgba(245,100,100,0.85)";
+// Ink variants for accent used as text/icon on the light surface.
+const GOLD_INK = colors.goldInk;
+const TEAL_INK = colors.tealInk;
+const RED_INK = colors.redInk;
 
 // Left→right band: drifting (violet) · finding (teal) · aligned (gold).
+// Segment FILLS keep their vivid hues; only the cap is a neutral inset.
 const SEGMENTS = [
 	{ id: "d1", color: VIOLET },
 	{ id: "d2", color: VIOLET },
@@ -32,7 +36,7 @@ const SEGMENTS = [
 	{ id: "f2", color: TEAL },
 	{ id: "a1", color: GOLD },
 	{ id: "a2", color: GOLD },
-	{ id: "cap", color: "rgba(255,255,255,0.06)" },
+	{ id: "cap", color: "rgba(14,20,32,0.06)" },
 ];
 
 function ThumbsUp({ size = 13 }: { size?: number }) {
@@ -145,7 +149,7 @@ export function SignalView({
 		<div
 			className={`font-jakarta ${embedded ? "px-[18px]" : "px-[18px] pt-14"}`}
 		>
-			<p className="mt-2 mb-3 font-bold text-[10px] text-white/30 uppercase tracking-[0.12em]">
+			<p className="mt-2 mb-3 font-bold text-[#0E1420]/50 text-[10px] uppercase tracking-[0.12em]">
 				Your Signal
 			</p>
 
@@ -154,27 +158,27 @@ export function SignalView({
 				<section
 					className="mb-3 rounded-[18px] border p-4"
 					style={{
-						borderColor: "rgba(62,207,191,0.18)",
+						borderColor: "rgba(62,207,191,0.28)",
 						background:
-							"linear-gradient(135deg, rgba(62,207,191,0.07), rgba(62,207,191,0.02))",
+							"linear-gradient(135deg, rgba(62,207,191,0.10), rgba(255,255,255,1))",
 					}}
 				>
 					<p
 						className="mb-2 font-bold text-[9px] uppercase tracking-[0.15em]"
-						style={{ color: "rgba(62,207,191,0.6)" }}
+						style={{ color: TEAL_INK }}
 					>
 						Direction Score · This Week
 					</p>
 					<div className="mb-3 flex items-center justify-between">
-						<span className="font-black text-[48px] text-white leading-none tracking-[-2px]">
+						<span className="font-black text-[#0E1420] text-[48px] leading-none tracking-[-2px]">
 							{latest.raw_score}
 						</span>
 						<span
 							className="rounded-full border px-3 py-1 font-bold text-[11px]"
 							style={{
-								backgroundColor: "rgba(245,200,66,0.1)",
-								borderColor: "rgba(245,200,66,0.2)",
-								color: GOLD,
+								backgroundColor: "rgba(245,200,66,0.14)",
+								borderColor: "rgba(245,200,66,0.35)",
+								color: GOLD_INK,
 							}}
 						>
 							{latest.band}
@@ -194,7 +198,7 @@ export function SignalView({
 							/>
 						))}
 					</div>
-					<div className="mt-1 mb-3 flex justify-between text-[8px] text-white/25">
+					<div className="mt-1 mb-3 flex justify-between text-[#0E1420]/50 text-[8px]">
 						<span>Drifting</span>
 						<span>Finding</span>
 						<span>Aligned</span>
@@ -216,12 +220,12 @@ export function SignalView({
 							].map((stat) => (
 								<div
 									key={stat.label}
-									className="flex-1 rounded-[12px] border border-white/[0.07] bg-white/[0.04] p-[10px] text-center"
+									className="flex-1 rounded-[12px] border border-[#0E1420]/8 bg-[#F4F7FC] p-[10px] text-center"
 								>
-									<div className="font-black text-[16px] text-white">
+									<div className="font-black text-[#0E1420] text-[16px]">
 										{stat.value}
 									</div>
-									<div className="mt-0.5 text-[9px] text-white/35 uppercase tracking-[0.05em]">
+									<div className="mt-0.5 text-[#0E1420]/55 text-[9px] uppercase tracking-[0.05em]">
 										{stat.label}
 									</div>
 								</div>
@@ -230,8 +234,8 @@ export function SignalView({
 					)}
 				</section>
 			) : (
-				<div className="mb-3 rounded-[18px] border border-white/[0.07] bg-white/[0.04] p-4 text-center">
-					<p className="text-[13px] text-white/40">
+				<div className="mb-3 rounded-[18px] border border-[#0E1420]/10 bg-white p-4 text-center">
+					<p className="text-[#0E1420]/65 text-[13px]">
 						Your Direction Score appears after your first full week.
 					</p>
 				</div>
@@ -240,27 +244,27 @@ export function SignalView({
 			{/* Signal / Noise observation cards */}
 			{observations.map((o) => {
 				const isSignal = o.type === "signal";
-				const accent = isSignal ? TEAL : RED;
+				const accentInk = isSignal ? TEAL_INK : RED_INK;
 				const current = ratings[o.idx];
 				return (
 					<div
 						key={`obs-${o.idx}`}
-						className="mb-2 rounded-[14px] border border-white/[0.07] bg-white/[0.04] px-[14px] py-[13px]"
+						className="mb-2 rounded-[14px] border border-[#0E1420]/10 bg-white px-[14px] py-[13px]"
 					>
 						<div
 							className="mb-1.5 flex items-center gap-1.5 font-bold text-[9px] uppercase tracking-[0.12em]"
-							style={{ color: accent }}
+							style={{ color: accentInk }}
 						>
 							{isSignal ? <ThumbsUp size={11} /> : <ThumbsDown size={11} />}
 							<span>{isSignal ? "Signal" : "Noise"}</span>
 						</div>
-						<p className="mb-3 font-medium text-[12px] text-white/70 leading-[1.5]">
+						<p className="mb-3 font-medium text-[#0E1420]/80 text-[12px] leading-[1.5]">
 							{o.body}
 						</p>
 						<div className="flex gap-2">
 							<FeedbackButton
 								active={current === "up"}
-								activeColor={TEAL}
+								activeColor={TEAL_INK}
 								onClick={() => void rate(o.idx, "up")}
 								label="Helpful"
 								ariaLabel="Helpful"
@@ -268,7 +272,7 @@ export function SignalView({
 							/>
 							<FeedbackButton
 								active={current === "down"}
-								activeColor={RED}
+								activeColor={RED_INK}
 								onClick={() => void rate(o.idx, "down")}
 								label="Not quite"
 								ariaLabel="Not helpful"
@@ -309,11 +313,11 @@ function FeedbackButton({
 			onClick={onClick}
 			aria-label={ariaLabel}
 			aria-pressed={active}
-			className="flex cursor-pointer items-center gap-1.5 rounded-[8px] border px-3 py-1.5 font-semibold text-[11px] transition-colors duration-200 hover:bg-white/[0.09] motion-reduce:transition-none"
+			className="flex cursor-pointer items-center gap-1.5 rounded-[8px] border px-3 py-1.5 font-semibold text-[11px] transition-colors duration-200 hover:bg-[#0E1420]/[0.05] motion-reduce:transition-none"
 			style={{
-				borderColor: active ? `${activeColor}66` : "rgba(255,255,255,0.10)",
-				backgroundColor: active ? `${activeColor}1f` : "rgba(255,255,255,0.05)",
-				color: active ? activeColor : "rgba(255,255,255,0.45)",
+				borderColor: active ? `${activeColor}66` : "rgba(14,20,32,0.12)",
+				backgroundColor: active ? `${activeColor}1f` : "rgba(14,20,32,0.03)",
+				color: active ? activeColor : "rgba(14,20,32,0.60)",
 			}}
 		>
 			{icon}

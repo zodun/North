@@ -6,6 +6,7 @@ import { PreferencesSection } from "./preferences-section";
 const GOLD = colors.gold;
 const TEAL = colors.teal;
 const VIOLET = colors.violet;
+const GOLD_INK = colors.goldInk;
 
 // 7-segment band: drifting (violet) · finding (teal) · aligned (gold).
 const SEGMENTS = [
@@ -15,7 +16,7 @@ const SEGMENTS = [
 	{ id: "f2", color: TEAL },
 	{ id: "a1", color: GOLD },
 	{ id: "a2", color: GOLD },
-	{ id: "cap", color: "rgba(255,255,255,0.06)" },
+	{ id: "cap", color: "rgba(14,20,32,0.06)" },
 ];
 
 type Props = {
@@ -52,7 +53,7 @@ type Props = {
 // Calm section label — readable (WCAG AA) rather than the faint /30.
 function Label({ children }: { children: React.ReactNode }) {
 	return (
-		<p className="mb-3 font-bold text-[10px] text-white/45 uppercase tracking-[0.14em]">
+		<p className="mb-3 font-bold text-[#0E1420]/60 text-[10px] uppercase tracking-[0.14em]">
 			{children}
 		</p>
 	);
@@ -100,7 +101,7 @@ export function ProfileView({
 	}));
 
 	return (
-		<div className="bg-[#05050E] font-jakarta">
+		<div className="font-jakarta">
 			<div className="px-[18px] pt-16 pb-24">
 				{/* ── Person ── */}
 				<div className="mb-6 flex items-center gap-4">
@@ -112,16 +113,19 @@ export function ProfileView({
 							border: "1.5px solid rgba(245,200,66,0.28)",
 						}}
 					>
-						<span className="font-black text-[22px]" style={{ color: GOLD }}>
+						<span
+							className="font-black text-[22px]"
+							style={{ color: GOLD_INK }}
+						>
 							{displayName[0]?.toUpperCase()}
 						</span>
 					</div>
 					<div className="min-w-0">
-						<h1 className="font-black text-[22px] text-white tracking-tight">
+						<h1 className="font-black text-[#0E1420] text-[22px] tracking-tight">
 							{displayName}
 						</h1>
 						{timeBudgetLabel && (
-							<p className="mt-0.5 text-[12px] text-white/45">
+							<p className="mt-0.5 text-[#0E1420]/60 text-[12px]">
 								{timeBudgetLabel} a day
 							</p>
 						)}
@@ -129,7 +133,7 @@ export function ProfileView({
 				</div>
 
 				{statement && (
-					<p className="mb-7 text-[14px] text-white/60 italic leading-relaxed">
+					<p className="mb-7 text-[#0E1420]/70 text-[14px] italic leading-relaxed">
 						“{statement}”
 					</p>
 				)}
@@ -141,9 +145,9 @@ export function ProfileView({
 								key={fa.id}
 								className="rounded-full border px-3 py-1.5 font-bold text-[11px]"
 								style={{
-									color: fa.hue,
-									backgroundColor: `${fa.hue}14`,
-									borderColor: `${fa.hue}40`,
+									color: "#0E1420",
+									backgroundColor: `${fa.hue}24`,
+									borderColor: `${fa.hue}55`,
 								}}
 							>
 								{fa.label}
@@ -156,11 +160,11 @@ export function ProfileView({
 				<section className="mb-10">
 					<Label>Where you are</Label>
 					<div className="mb-3 flex items-baseline justify-between">
-						<span className="font-bold text-[16px] text-white">
+						<span className="font-bold text-[#0E1420] text-[16px]">
 							{signalBand ?? "Building your signal"}
 						</span>
 						{signalScore != null && (
-							<span className="text-[13px] text-white/45">
+							<span className="text-[#0E1420]/60 text-[13px]">
 								Score {signalScore}
 							</span>
 						)}
@@ -196,18 +200,21 @@ export function ProfileView({
 								className="absolute top-0 bottom-0 left-0 w-[3px] rounded-r-[3px]"
 								style={{ backgroundColor: GOLD }}
 							/>
-							<p className="mb-4 font-bold text-[16px] text-white leading-[1.4]">
+							<p className="mb-4 font-bold text-[#0E1420] text-[16px] leading-[1.4]">
 								{goalTitle}
 							</p>
 							<div className="mb-2 flex items-center justify-between">
-								<span className="text-[12px] text-white/50">
+								<span className="text-[#0E1420]/65 text-[12px]">
 									{goalDone} of {goalTotal} {goalUnit}
 								</span>
-								<span className="font-bold text-[12px]" style={{ color: GOLD }}>
+								<span
+									className="font-bold text-[12px]"
+									style={{ color: GOLD_INK }}
+								>
 									{goalPct}%
 								</span>
 							</div>
-							<div className="h-[5px] overflow-hidden rounded-full bg-white/10">
+							<div className="h-[5px] overflow-hidden rounded-full bg-[#0E1420]/10">
 								<div
 									className="h-full rounded-full transition-[width] duration-300 motion-reduce:transition-none"
 									style={{
@@ -234,19 +241,19 @@ export function ProfileView({
 						>
 							<div className="flex items-center justify-between gap-3">
 								<div className="min-w-0">
-									<p className="font-bold text-[15px] text-white">
+									<p className="font-bold text-[#0E1420] text-[15px]">
 										North Premium
 									</p>
-									<p className="mt-0.5 text-[12px] text-white/50">
+									<p className="mt-0.5 text-[#0E1420]/65 text-[12px]">
 										AI tailors your feed and opportunities to you.
 									</p>
 								</div>
 								<span
 									className="shrink-0 rounded-full border px-3 py-1 font-bold text-[10px]"
 									style={{
-										color: VIOLET,
+										color: colors.violetInk,
 										borderColor: "rgba(123,97,255,0.4)",
-										backgroundColor: "rgba(123,97,255,0.12)",
+										backgroundColor: "rgba(123,97,255,0.14)",
 									}}
 								>
 									Active
@@ -254,7 +261,7 @@ export function ProfileView({
 							</div>
 							<a
 								href="/api/billing/portal"
-								className="mt-4 inline-block cursor-pointer font-semibold text-[12px] text-white/45 underline-offset-2 transition-colors hover:text-white/70 hover:underline motion-reduce:transition-none"
+								className="mt-4 inline-block cursor-pointer font-semibold text-[#0E1420]/60 text-[12px] underline-offset-2 transition-colors hover:text-[#0E1420]/80 hover:underline motion-reduce:transition-none"
 							>
 								Manage subscription
 							</a>
@@ -273,10 +280,10 @@ export function ProfileView({
 								className="absolute top-0 bottom-0 left-0 w-[3px] rounded-r-[3px]"
 								style={{ backgroundColor: VIOLET }}
 							/>
-							<p className="font-bold text-[16px] text-white leading-[1.4]">
+							<p className="font-bold text-[#0E1420] text-[16px] leading-[1.4]">
 								Make North truly yours
 							</p>
-							<p className="mt-1.5 text-[13px] text-white/55 leading-relaxed">
+							<p className="mt-1.5 text-[#0E1420]/70 text-[13px] leading-relaxed">
 								Premium uses AI to rank your feed and opportunities around your
 								focus, goal, and interests — with a reason for every pick.
 							</p>
@@ -295,10 +302,10 @@ export function ProfileView({
 				<section className="mb-10">
 					<Label>Rhythm</Label>
 					<div className="mb-4 flex items-baseline gap-2">
-						<span className="font-black text-[30px] text-white tracking-tight">
+						<span className="font-black text-[#0E1420] text-[30px] tracking-tight">
 							{rhythmStreak}
 						</span>
-						<span className="text-[13px] text-white/50">
+						<span className="text-[#0E1420]/65 text-[13px]">
 							{rhythmStreak === 1 ? "day" : "days"} in rhythm
 						</span>
 					</div>
@@ -312,15 +319,15 @@ export function ProfileView({
 									className="h-2.5 w-2.5 rounded-full"
 									style={{
 										backgroundColor:
-											d.state >= 1 ? GOLD : "rgba(255,255,255,0.08)",
+											d.state >= 1 ? GOLD : "rgba(14,20,32,0.08)",
 									}}
 								/>
-								<span className="text-[10px] text-white/30">{d.label}</span>
+								<span className="text-[#0E1420]/50 text-[10px]">{d.label}</span>
 							</div>
 						))}
 					</div>
 					{tasksTotal > 0 && (
-						<p className="mt-4 text-[12px] text-white/45">
+						<p className="mt-4 text-[#0E1420]/60 text-[12px]">
 							{tasksCompleted} of {tasksTotal} tasks done this week
 						</p>
 					)}
@@ -330,7 +337,7 @@ export function ProfileView({
 				<section className="mb-10">
 					<Label>Saved</Label>
 					{savedCount === 0 ? (
-						<p className="text-[13px] text-white/40 leading-relaxed">
+						<p className="text-[#0E1420]/65 text-[13px] leading-relaxed">
 							Nothing saved yet — tap the bookmark on an opportunity to keep it
 							here.
 						</p>
@@ -343,10 +350,10 @@ export function ProfileView({
 									className="flex cursor-pointer items-center justify-between gap-3 text-left"
 								>
 									<div className="min-w-0">
-										<p className="truncate font-semibold text-[14px] text-white">
+										<p className="truncate font-semibold text-[#0E1420] text-[14px]">
 											{opp.title}
 										</p>
-										<p className="text-[11px] text-white/40">{opp.org}</p>
+										<p className="text-[#0E1420]/60 text-[11px]">{opp.org}</p>
 									</div>
 									<ChevronIcon />
 								</button>
@@ -369,7 +376,7 @@ export function ProfileView({
 				<form action="/auth/signout" method="POST" className="text-center">
 					<button
 						type="submit"
-						className="cursor-pointer font-semibold text-[12px] text-white/30 transition-colors duration-200 hover:text-white/55 motion-reduce:transition-none"
+						className="cursor-pointer font-semibold text-[#0E1420]/50 text-[12px] transition-colors duration-200 hover:text-[#0E1420]/70 motion-reduce:transition-none"
 					>
 						Sign out
 					</button>
@@ -386,7 +393,7 @@ function ChevronIcon() {
 			height="16"
 			viewBox="0 0 24 24"
 			fill="none"
-			stroke="rgba(255,255,255,0.3)"
+			stroke="rgba(14,20,32,0.35)"
 			strokeWidth={2}
 			strokeLinecap="round"
 			strokeLinejoin="round"

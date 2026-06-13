@@ -23,7 +23,6 @@ type Item = {
 
 const GOLD = "#F5C842";
 const TEAL = "#3ECFBF";
-const VIOLET = "#7B61FF";
 
 // Per-category accent. Drives every coloured element on a card: the gradient,
 // the badge, the accent rail, the apply button and the compass-rose art.
@@ -38,7 +37,7 @@ const CAT_COLOR: Record<string, string> = {
 	"creator-programme": "rgba(123,97,255,0.85)",
 };
 const catColor = (id: string | null) =>
-	(id && CAT_COLOR[id]) || "rgba(255,255,255,0.3)";
+	(id && CAT_COLOR[id]) || "rgba(14,20,32,0.3)";
 
 // Categories that read as fast-moving roles — surfaced in a horizontal rail.
 const COMPACT_CATEGORIES = new Set(["job", "internship"]);
@@ -90,25 +89,38 @@ function channels(color: string): [number, number, number] {
 	}
 	const m = color.match(/[\d.]+/g);
 	if (m && m.length >= 3) return [Number(m[0]), Number(m[1]), Number(m[2])];
-	return [255, 255, 255];
+	return [14, 20, 32];
 }
 function withAlpha(color: string, a: number): string {
 	const [r, g, b] = channels(color);
 	return `rgba(${r}, ${g}, ${b}, ${a})`;
 }
-function darken(color: string, f: number): string {
-	const [r, g, b] = channels(color);
-	return `rgb(${Math.round(r * f)}, ${Math.round(g * f)}, ${Math.round(b * f)})`;
-}
 // Light accents (gold, teal, green) need ink-dark text; deep ones take white.
+// Used only for text that sits ON a solid accent fill (apply CTA).
 function inkOn(color: string): string {
 	const [r, g, b] = channels(color);
-	return 0.299 * r + 0.587 * g + 0.114 * b > 150 ? "#05050E" : "#FFFFFF";
+	return 0.299 * r + 0.587 * g + 0.114 * b > 150 ? "#0E1420" : "#FFFFFF";
 }
+// Readable ink for an accent used as TEXT/stroke/icon on a light surface:
+// darken the channels until they clear the contrast bar, then return as a solid.
+function accentInk(color: string): string {
+	let [r, g, b] = channels(color);
+	let lum = 0.299 * r + 0.587 * g + 0.114 * b;
+	// Pull bright accents (gold/teal/green) down to a legible ink tone.
+	while (lum > 120) {
+		r *= 0.82;
+		g *= 0.82;
+		b *= 0.82;
+		lum = 0.299 * r + 0.587 * g + 0.114 * b;
+	}
+	return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+}
+// Soft Sky cards: white surface with a whisper of the category accent so each
+// card still reads to its meaning, no dark gradient or scrim.
 const heroGradient = (accent: string) =>
-	`linear-gradient(135deg, ${darken(accent, 0.2)} 0%, ${darken(accent, 0.08)} 48%, #05050E 100%)`;
+	`linear-gradient(135deg, ${withAlpha(accent, 0.1)} 0%, ${withAlpha(accent, 0.04)} 48%, #FFFFFF 100%)`;
 const cardGradient = (accent: string) =>
-	`linear-gradient(135deg, ${darken(accent, 0.13)} 0%, #0a0a0f 70%)`;
+	`linear-gradient(135deg, ${withAlpha(accent, 0.07)} 0%, #FFFFFF 70%)`;
 
 function daysLeft(deadline: string | null): number | null {
 	if (!deadline) return null;
@@ -246,24 +258,24 @@ export function OpportunitiesList({
 	const restBase = heroOffset + compact.length;
 
 	return (
-		<div className="h-full overflow-y-auto overflow-x-hidden bg-[#05050E] pb-24 font-jakarta">
+		<div className="h-full overflow-y-auto overflow-x-hidden pb-24 font-jakarta">
 			<style>{ANIM}</style>
 
 			{/* Header */}
 			<header className="px-[18px] pt-[18px]">
-				<p className="mb-1 font-bold text-[9px] text-white/30 uppercase tracking-[0.15em]">
+				<p className="mb-1 font-bold text-[#0E1420]/50 text-[9px] uppercase tracking-[0.15em]">
 					Discover
 				</p>
-				<h1 className="mb-1 font-black text-[24px] text-white tracking-[-0.8px]">
+				<h1 className="mb-1 font-black text-[#0E1420] text-[24px] tracking-[-0.8px]">
 					Opportunities
 				</h1>
-				<p className="mb-4 text-[12px] text-white/35">
+				<p className="mb-4 text-[#0E1420]/55 text-[12px]">
 					Built for where you are headed.
 				</p>
 			</header>
 
 			{/* Search */}
-			<div className="mx-[18px] mb-3 flex items-center gap-3 rounded-[14px] border border-white/10 bg-white/5 px-4 py-[10px]">
+			<div className="mx-[18px] mb-3 flex items-center gap-3 rounded-[14px] border border-[#0E1420]/12 bg-white px-4 py-[10px]">
 				<SearchIcon />
 				<label htmlFor="opp-search" className="sr-only">
 					Search opportunities
@@ -275,7 +287,7 @@ export function OpportunitiesList({
 					placeholder="Search opportunities"
 					value={search}
 					onChange={(e) => setSearch(e.target.value)}
-					className="min-w-0 flex-1 border-none bg-transparent font-medium text-[13px] text-white outline-none placeholder:text-white/20"
+					className="min-w-0 flex-1 border-none bg-transparent font-medium text-[#0E1420] text-[13px] outline-none placeholder:text-[#0E1420]/40"
 				/>
 			</div>
 
@@ -312,7 +324,7 @@ export function OpportunitiesList({
 
 					{compact.length > 0 && (
 						<section>
-							<h2 className="px-[18px] pt-0.5 pb-[10px] font-bold text-[10px] text-white/25 uppercase tracking-[0.12em]">
+							<h2 className="px-[18px] pt-0.5 pb-[10px] font-bold text-[#0E1420]/50 text-[10px] uppercase tracking-[0.12em]">
 								Roles &amp; internships
 							</h2>
 							<div
@@ -334,7 +346,7 @@ export function OpportunitiesList({
 					{rest.length > 0 && (
 						<section>
 							{(hero || compact.length > 0) && (
-								<h2 className="px-[18px] pt-0.5 pb-[10px] font-bold text-[10px] text-white/25 uppercase tracking-[0.12em]">
+								<h2 className="px-[18px] pt-0.5 pb-[10px] font-bold text-[#0E1420]/50 text-[10px] uppercase tracking-[0.12em]">
 									More to explore
 								</h2>
 							)}
@@ -355,16 +367,16 @@ export function OpportunitiesList({
 			<button
 				type="button"
 				onClick={() => setShowSubmit(true)}
-				className="mx-[18px] mt-1 mb-4 flex w-[calc(100%-36px)] cursor-pointer items-center gap-3 rounded-[16px] border border-white/10 border-dashed p-[14px] transition-all hover:border-white/20 hover:bg-white/[0.02] motion-reduce:transition-none"
+				className="mx-[18px] mt-1 mb-4 flex w-[calc(100%-36px)] cursor-pointer items-center gap-3 rounded-[16px] border border-[#0E1420]/12 border-dashed p-[14px] transition-all hover:border-[#0E1420]/20 hover:bg-[#0E1420]/[0.02] motion-reduce:transition-none"
 			>
-				<span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-white/5">
+				<span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-[#F4F7FC]">
 					<PlusCircleIcon />
 				</span>
 				<span className="text-left">
-					<span className="block font-bold text-[12px] text-white/30">
+					<span className="block font-bold text-[#0E1420]/55 text-[12px]">
 						Submit an opportunity
 					</span>
-					<span className="mt-0.5 block text-[10px] text-white/[0.18]">
+					<span className="mt-0.5 block text-[#0E1420]/50 text-[10px]">
 						Know something worth sharing?
 					</span>
 				</span>
@@ -404,6 +416,7 @@ function HeroCard({
 }: CardCommon) {
 	const accent = catColor(item.category_id);
 	const ink = inkOn(accent);
+	const accInk = accentInk(accent);
 	const catLabel = catLabelFor(item.category_id);
 	const urgent = daysRemaining != null && daysRemaining < 7;
 
@@ -424,9 +437,9 @@ function HeroCard({
 				<span
 					className="absolute top-[14px] left-[14px] z-10 rounded-full px-[11px] py-1 font-bold text-[9px] uppercase tracking-[0.12em] backdrop-blur-sm"
 					style={{
-						color: accent,
-						backgroundColor: withAlpha(accent, 0.25),
-						border: `1px solid ${withAlpha(accent, 0.5)}`,
+						color: accInk,
+						backgroundColor: withAlpha(accent, 0.14),
+						border: `1px solid ${withAlpha(accent, 0.35)}`,
 					}}
 				>
 					{catLabel}
@@ -440,12 +453,10 @@ function HeroCard({
 				disabled={isSaving}
 				aria-label={isSaved ? "Remove from saved" : "Save opportunity"}
 				aria-pressed={isSaved}
-				className="absolute top-[12px] right-[12px] z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-white/15 disabled:opacity-50 motion-reduce:transition-none"
+				className="absolute top-[12px] right-[12px] z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-[#0E1420]/[0.06] disabled:opacity-50 motion-reduce:transition-none"
 				style={{
-					backgroundColor: isSaved
-						? withAlpha(accent, 0.2)
-						: "rgba(255,255,255,0.1)",
-					border: `1px solid ${isSaved ? withAlpha(accent, 0.4) : "rgba(255,255,255,0.15)"}`,
+					backgroundColor: isSaved ? withAlpha(accent, 0.16) : "#FFFFFF",
+					border: `1px solid ${isSaved ? withAlpha(accent, 0.4) : "rgba(14,20,32,0.12)"}`,
 				}}
 			>
 				<BookmarkIcon active={isSaved} accent={accent} />
@@ -453,23 +464,23 @@ function HeroCard({
 
 			{/* Content */}
 			<div className="relative z-10 flex min-h-[195px] flex-col justify-end p-5">
-				<p className="mb-1.5 font-semibold text-[10px] text-white/40">
+				<p className="mb-1.5 font-semibold text-[#0E1420]/55 text-[10px]">
 					{item.org}
 				</p>
-				<h2 className="mb-2 line-clamp-2 font-black text-[19px] text-white leading-[1.2] tracking-[-0.5px]">
+				<h2 className="mb-2 line-clamp-2 font-black text-[#0E1420] text-[19px] leading-[1.2] tracking-[-0.5px]">
 					{item.title}
 				</h2>
 
 				{(item.location || item.opportunity_type) && (
 					<div className="mb-3 flex flex-wrap items-center gap-2">
 						{item.opportunity_type && (
-							<span className="font-medium text-[10px] text-white/50">
+							<span className="font-medium text-[#0E1420]/65 text-[10px]">
 								{item.opportunity_type}
 							</span>
 						)}
 						{item.location && item.opportunity_type && <Dot />}
 						{item.location && (
-							<span className="font-medium text-[10px] text-white/50">
+							<span className="font-medium text-[#0E1420]/65 text-[10px]">
 								{item.location}
 							</span>
 						)}
@@ -483,11 +494,8 @@ function HeroCard({
 							onClick={onApply}
 							className="flex cursor-pointer items-center gap-1.5 rounded-[11px] border-none px-[18px] py-[9px] font-extrabold text-[13px] transition-transform active:scale-95 motion-reduce:transition-none"
 							style={{
-								backgroundColor: isApplied ? withAlpha(accent, 0.15) : accent,
-								color: isApplied ? accent : ink,
-								boxShadow: isApplied
-									? "none"
-									: `0 4px 14px ${withAlpha(accent, 0.4)}`,
+								backgroundColor: isApplied ? withAlpha(accent, 0.14) : accent,
+								color: isApplied ? accInk : ink,
 							}}
 						>
 							{isApplied && <CheckIcon />}
@@ -513,6 +521,7 @@ function CompactCard({
 	onApply,
 }: CardCommon) {
 	const accent = catColor(item.category_id);
+	const accInk = accentInk(accent);
 	const typeLabel = item.opportunity_type ?? catLabelFor(item.category_id);
 
 	return (
@@ -536,20 +545,20 @@ function CompactCard({
 				{typeLabel && (
 					<p
 						className="mb-1.5 font-bold text-[8px] uppercase tracking-[0.12em]"
-						style={{ color: withAlpha(accent, 0.7) }}
+						style={{ color: accInk }}
 					>
 						{typeLabel}
 					</p>
 				)}
-				<h3 className="mb-1 line-clamp-2 font-black text-[13px] text-white leading-[1.3]">
+				<h3 className="mb-1 line-clamp-2 font-black text-[#0E1420] text-[13px] leading-[1.3]">
 					{item.title}
 				</h3>
-				<p className="mb-3 line-clamp-1 text-[10px] text-white/40">
+				<p className="mb-3 line-clamp-1 text-[#0E1420]/65 text-[10px]">
 					{item.org}
 				</p>
 				<div className="mt-auto flex items-center justify-between gap-2">
 					{daysRemaining != null ? (
-						<span className="font-medium text-[9px] text-white/50">
+						<span className="font-medium text-[#0E1420]/65 text-[9px]">
 							{daysRemaining === 0 ? "Closes today" : `${daysRemaining}d left`}
 						</span>
 					) : (
@@ -561,8 +570,8 @@ function CompactCard({
 							onClick={onApply}
 							className="cursor-pointer rounded-[8px] px-[11px] py-[5px] font-black text-[10px] transition-colors motion-reduce:transition-none"
 							style={{
-								color: accent,
-								backgroundColor: withAlpha(accent, 0.15),
+								color: accInk,
+								backgroundColor: withAlpha(accent, 0.14),
 								border: `1px solid ${withAlpha(accent, 0.3)}`,
 							}}
 						>
@@ -589,6 +598,7 @@ function FullCard({
 	onApply,
 }: CardCommon) {
 	const accent = catColor(item.category_id);
+	const accInk = accentInk(accent);
 	const catLabel = catLabelFor(item.category_id);
 	const tags = item.focus_area_tags.slice(0, 4);
 	const urgent = daysRemaining != null && daysRemaining < 7;
@@ -616,18 +626,18 @@ function FullCard({
 						<span
 							className="mb-1.5 inline-block rounded-full px-2 py-1 font-bold text-[8px] uppercase tracking-[0.1em]"
 							style={{
-								color: accent,
-								backgroundColor: withAlpha(accent, 0.1),
+								color: accInk,
+								backgroundColor: withAlpha(accent, 0.14),
 								border: `1px solid ${withAlpha(accent, 0.25)}`,
 							}}
 						>
 							{catLabel}
 						</span>
 					)}
-					<h3 className="mb-1 font-black text-[15px] text-white leading-[1.3]">
+					<h3 className="mb-1 font-black text-[#0E1420] text-[15px] leading-[1.3]">
 						{item.title}
 					</h3>
-					<p className="text-[11px] text-white/50">{item.org}</p>
+					<p className="text-[#0E1420]/65 text-[11px]">{item.org}</p>
 				</div>
 				<button
 					type="button"
@@ -635,12 +645,10 @@ function FullCard({
 					disabled={isSaving}
 					aria-label={isSaved ? "Remove from saved" : "Save opportunity"}
 					aria-pressed={isSaved}
-					className="flex h-[30px] w-[30px] shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-white/12 disabled:opacity-50 motion-reduce:transition-none"
+					className="flex h-[30px] w-[30px] shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-[#0E1420]/[0.06] disabled:opacity-50 motion-reduce:transition-none"
 					style={{
-						backgroundColor: isSaved
-							? withAlpha(accent, 0.18)
-							: "rgba(255,255,255,0.06)",
-						border: `1px solid ${isSaved ? withAlpha(accent, 0.35) : "rgba(255,255,255,0.10)"}`,
+						backgroundColor: isSaved ? withAlpha(accent, 0.16) : "#FFFFFF",
+						border: `1px solid ${isSaved ? withAlpha(accent, 0.35) : "rgba(14,20,32,0.10)"}`,
 					}}
 				>
 					<BookmarkIcon active={isSaved} accent={accent} />
@@ -650,13 +658,15 @@ function FullCard({
 			{/* Why this */}
 			{item.why && (
 				<div
-					className="mx-[14px] mb-3 rounded-[10px] bg-white/[0.03] px-3 py-[9px]"
+					className="mx-[14px] mb-3 rounded-[10px] bg-[#F4F7FC] px-3 py-[9px]"
 					style={{ borderLeft: `2px solid ${withAlpha(accent, 0.4)}` }}
 				>
-					<p className="mb-1 font-bold text-[8px] text-white/25 uppercase tracking-[0.12em]">
+					<p className="mb-1 font-bold text-[#0E1420]/55 text-[8px] uppercase tracking-[0.12em]">
 						Why this
 					</p>
-					<p className="text-[11px] text-white/55 leading-[1.5]">{item.why}</p>
+					<p className="text-[#0E1420]/70 text-[11px] leading-[1.5]">
+						{item.why}
+					</p>
 				</div>
 			)}
 
@@ -672,14 +682,14 @@ function FullCard({
 								style={
 									matched
 										? {
-												color: TEAL,
-												backgroundColor: "rgba(62,207,191,0.08)",
-												borderColor: "rgba(62,207,191,0.25)",
+												color: "#0A8F7F",
+												backgroundColor: "rgba(62,207,191,0.14)",
+												borderColor: "rgba(62,207,191,0.3)",
 											}
 										: {
-												color: "rgba(255,255,255,0.4)",
-												backgroundColor: "rgba(255,255,255,0.05)",
-												borderColor: "rgba(255,255,255,0.08)",
+												color: "rgba(14,20,32,0.65)",
+												backgroundColor: "#F4F7FC",
+												borderColor: "rgba(14,20,32,0.10)",
 											}
 								}
 							>
@@ -688,7 +698,7 @@ function FullCard({
 						);
 					})}
 					{item.source && SOURCE_LABELS[item.source] && (
-						<span className="rounded-full border border-white/8 bg-white/5 px-2.5 py-1 font-semibold text-[10px] text-white/40">
+						<span className="rounded-full border border-[#0E1420]/10 bg-[#F4F7FC] px-2.5 py-1 font-semibold text-[#0E1420]/65 text-[10px]">
 							{SOURCE_LABELS[item.source]}
 						</span>
 					)}
@@ -697,7 +707,7 @@ function FullCard({
 
 			{/* Bottom row */}
 			<div className="flex items-center justify-between gap-3 px-[14px] pt-1 pb-[14px]">
-				<div className="flex min-w-0 flex-wrap items-center gap-2 text-[10px] text-white/50">
+				<div className="flex min-w-0 flex-wrap items-center gap-2 text-[#0E1420]/65 text-[10px]">
 					{item.location && (
 						<span className="flex items-center gap-1">
 							<PinIcon />
@@ -714,8 +724,8 @@ function FullCard({
 						onClick={onApply}
 						className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-[10px] px-[15px] py-[7px] font-black text-[11px] transition-colors motion-reduce:transition-none"
 						style={{
-							color: accent,
-							backgroundColor: withAlpha(accent, 0.15),
+							color: accInk,
+							backgroundColor: withAlpha(accent, 0.14),
 							border: `1px solid ${withAlpha(accent, 0.3)}`,
 						}}
 					>
@@ -737,14 +747,14 @@ function DaysPill({ days, urgent }: { days: number; urgent: boolean }) {
 			style={
 				urgent
 					? {
-							color: "rgba(245,130,130,0.95)",
-							backgroundColor: "rgba(245,100,100,0.1)",
-							border: "1px solid rgba(245,100,100,0.25)",
+							color: "#DC2626",
+							backgroundColor: "rgba(248,113,113,0.14)",
+							border: "1px solid rgba(248,113,113,0.3)",
 						}
 					: {
-							color: "rgba(255,255,255,0.5)",
-							backgroundColor: "rgba(255,255,255,0.08)",
-							border: "1px solid rgba(255,255,255,0.12)",
+							color: "rgba(14,20,32,0.65)",
+							backgroundColor: "#F4F7FC",
+							border: "1px solid rgba(14,20,32,0.10)",
 						}
 			}
 		>
@@ -758,7 +768,7 @@ function Dot() {
 		<span
 			aria-hidden="true"
 			className="inline-block h-[3px] w-[3px] rounded-full"
-			style={{ backgroundColor: "rgba(240,240,245,0.2)" }}
+			style={{ backgroundColor: "rgba(14,20,32,0.25)" }}
 		/>
 	);
 }
@@ -855,20 +865,20 @@ function CategoryPill({
 			onClick={onClick}
 			aria-pressed={active}
 			className={`shrink-0 cursor-pointer whitespace-nowrap rounded-full px-[14px] py-[7px] text-[11px] transition-all motion-reduce:transition-none ${
-				active ? "font-extrabold" : "font-bold hover:bg-white/[0.09]"
+				active ? "font-extrabold" : "font-bold hover:bg-[#0E1420]/[0.04]"
 			}`}
 			style={
 				active
 					? {
 							backgroundColor: GOLD,
-							color: "#05050E",
+							color: "#0E1420",
 							border: `1px solid ${GOLD}`,
 							transform: "scale(1.02)",
 						}
 					: {
-							backgroundColor: "rgba(255,255,255,0.05)",
-							border: "1px solid rgba(255,255,255,0.10)",
-							color: "rgba(255,255,255,0.45)",
+							backgroundColor: "#FFFFFF",
+							border: "1px solid rgba(14,20,32,0.12)",
+							color: "rgba(14,20,32,0.65)",
 						}
 			}
 		>
@@ -886,24 +896,24 @@ function UpsellCard() {
 			style={{
 				borderColor: "rgba(123,97,255,0.3)",
 				background:
-					"linear-gradient(135deg, rgba(123,97,255,0.14), rgba(123,97,255,0.03))",
+					"linear-gradient(135deg, rgba(123,97,255,0.12), rgba(123,97,255,0.04))",
 			}}
 		>
 			<p
 				className="mb-1 font-bold text-[9px] uppercase tracking-[0.15em]"
-				style={{ color: VIOLET }}
+				style={{ color: "#5B43E0" }}
 			>
 				Premium
 			</p>
-			<p className="font-black text-[15px] text-white leading-[1.35]">
+			<p className="font-black text-[#0E1420] text-[15px] leading-[1.35]">
 				That's your top match. Unlock the rest.
 			</p>
-			<p className="mt-1 text-[12px] text-white/55 leading-relaxed">
+			<p className="mt-1 text-[#0E1420]/70 text-[12px] leading-relaxed">
 				Premium ranks every opportunity to your goal — with a reason for each
 				pick.
 			</p>
 			<span
-				className="mt-3 inline-flex items-center rounded-[11px] px-[18px] py-[9px] font-extrabold text-[#05050E] text-[13px]"
+				className="mt-3 inline-flex items-center rounded-[11px] px-[18px] py-[9px] font-extrabold text-[#0E1420] text-[13px]"
 				style={{ backgroundColor: GOLD }}
 			>
 				Upgrade to Premium
@@ -916,8 +926,10 @@ function EmptyState() {
 	return (
 		<div className="mt-16 px-8 text-center">
 			<CompassMark />
-			<p className="font-bold text-[16px] text-white/35">Nothing here yet</p>
-			<p className="mt-1 text-[13px] text-white/[0.22]">
+			<p className="font-bold text-[#0E1420]/55 text-[16px]">
+				Nothing here yet
+			</p>
+			<p className="mt-1 text-[#0E1420]/50 text-[13px]">
 				Try a different filter or check back soon
 			</p>
 		</div>
@@ -941,7 +953,7 @@ function SearchIcon() {
 			height="16"
 			viewBox="0 0 24 24"
 			{...svgBase}
-			className="shrink-0 text-white/25"
+			className="shrink-0 text-[#0E1420]/50"
 			aria-hidden="true"
 		>
 			<circle cx="11" cy="11" r="8" />
@@ -957,7 +969,7 @@ function BookmarkIcon({ active, accent }: { active: boolean; accent: string }) {
 			height="16"
 			viewBox="0 0 24 24"
 			fill={active ? accent : "none"}
-			stroke={active ? accent : "rgba(240,240,245,0.5)"}
+			stroke={active ? accent : "rgba(14,20,32,0.45)"}
 			strokeWidth={1.2}
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -975,7 +987,7 @@ function PinIcon() {
 			height="11"
 			viewBox="0 0 24 24"
 			{...svgBase}
-			className="shrink-0 text-white/40"
+			className="shrink-0 text-[#0E1420]/55"
 			aria-hidden="true"
 		>
 			<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
@@ -1007,7 +1019,7 @@ function PlusCircleIcon() {
 			{...svgBase}
 			strokeWidth={1.6}
 			className="shrink-0"
-			style={{ color: "rgba(240,240,245,0.25)" }}
+			style={{ color: "rgba(14,20,32,0.45)" }}
 			aria-hidden="true"
 		>
 			<circle cx="12" cy="12" r="10" />
@@ -1023,15 +1035,19 @@ function CompassMark() {
 			height="48"
 			viewBox="0 0 32 32"
 			fill="none"
-			stroke="white"
+			stroke="#0E1420"
 			aria-hidden="true"
 			className="mx-auto mb-4 opacity-20"
 		>
 			<circle cx="16" cy="16" r="14" strokeWidth="0.8" />
 			<circle cx="16" cy="16" r="9" strokeWidth="0.6" strokeDasharray="1.5 3" />
-			<polygon points="16,4 13.5,16 18.5,16" fill="white" />
-			<polygon points="16,28 13.5,16 18.5,16" fill="white" fillOpacity="0.5" />
-			<circle cx="16" cy="16" r="1.8" fill="white" />
+			<polygon points="16,4 13.5,16 18.5,16" fill="#0E1420" />
+			<polygon
+				points="16,28 13.5,16 18.5,16"
+				fill="#0E1420"
+				fillOpacity="0.5"
+			/>
+			<circle cx="16" cy="16" r="1.8" fill="#0E1420" />
 		</svg>
 	);
 }

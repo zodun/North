@@ -126,9 +126,9 @@ export function SetGoalModal({
 	}
 
 	const inputCls =
-		"w-full rounded-xl border border-white/8 bg-white/5 px-4 py-3 text-[14px] text-white placeholder:text-white/25 focus:outline-none focus:ring-1 focus:ring-[#F5C842]/40";
+		"w-full rounded-xl border border-[#0E1420]/10 bg-[#F4F7FC] px-4 py-3 text-[14px] text-[#0E1420] placeholder:text-[#0E1420]/40 focus:outline-none focus:ring-1 focus:ring-[#F5C842]/50";
 	const labelCls =
-		"mb-1.5 block font-semibold text-[11px] text-white/35 uppercase tracking-widest";
+		"mb-1.5 block font-semibold text-[11px] text-[#0E1420]/55 uppercase tracking-widest";
 
 	return (
 		// biome-ignore lint/a11y/useKeyWithClickEvents lint/a11y/noStaticElementInteractions: backdrop dismiss — keyboard users can use the close button
@@ -138,28 +138,28 @@ export function SetGoalModal({
 		>
 			{/* biome-ignore lint/a11y/useKeyWithClickEvents lint/a11y/noStaticElementInteractions: inner sheet stops backdrop click from propagating */}
 			<div
-				className="max-h-[90svh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-[#131313] pb-safe font-jakarta"
+				className="max-h-[90svh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-[#0E1420]/10 bg-white pb-safe font-jakarta"
 				onClick={(e) => e.stopPropagation()}
 			>
-				<div className="sticky top-0 flex justify-center bg-[#131313] pt-3 pb-1">
-					<div className="h-1 w-9 rounded-full bg-white/20" />
+				<div className="sticky top-0 flex justify-center bg-white pt-3 pb-1">
+					<div className="h-1 w-9 rounded-full bg-[#0E1420]/15" />
 				</div>
-				<div className="sticky top-5 flex items-center justify-between border-white/8 border-b bg-[#131313] px-5 py-3">
+				<div className="sticky top-5 flex items-center justify-between border-[#0E1420]/10 border-b bg-white px-5 py-3">
 					<div>
 						<p
 							className="font-bold text-[9px] uppercase tracking-[0.15em]"
-							style={{ color: "rgba(245,200,66,0.6)" }}
+							style={{ color: colors.goldInk }}
 						>
 							{monthName}
 						</p>
-						<h2 className="font-bold text-[16px] text-white">
+						<h2 className="font-bold text-[#0E1420] text-[16px]">
 							Set your goal for the month
 						</h2>
 					</div>
 					<button
 						type="button"
 						onClick={dismiss}
-						className="text-white/40 hover:text-white"
+						className="text-[#0E1420]/55 hover:text-[#0E1420]"
 						aria-label="Close"
 					>
 						<svg
@@ -179,7 +179,7 @@ export function SetGoalModal({
 				</div>
 
 				<form onSubmit={submit} className="flex flex-col gap-4 p-5">
-					<p className="text-[13px] text-white/45 leading-relaxed">
+					<p className="text-[#0E1420]/65 text-[13px] leading-relaxed">
 						Name one thing you want to make happen this month. We'll break it
 						into a weekly and daily plan you can actually follow.
 					</p>
@@ -190,9 +190,9 @@ export function SetGoalModal({
 								Your goal
 							</label>
 							{suggesting ? (
-								<span className="flex items-center gap-1.5 font-semibold text-[10px] text-white/35">
+								<span className="flex items-center gap-1.5 font-semibold text-[#0E1420]/55 text-[10px]">
 									<span
-										className="inline-block h-2.5 w-2.5 animate-spin rounded-full border border-white/20 border-t-white/60 motion-reduce:animate-none"
+										className="inline-block h-2.5 w-2.5 animate-spin rounded-full border border-[#0E1420]/15 border-t-[#0E1420]/55 motion-reduce:animate-none"
 										aria-hidden="true"
 									/>
 									Finding a goal that fits you…
@@ -201,7 +201,7 @@ export function SetGoalModal({
 								autosuggest && (
 									<span
 										className="font-semibold text-[10px]"
-										style={{ color: "rgba(245,200,66,0.6)" }}
+										style={{ color: colors.goldInk }}
 									>
 										Suggested · edit freely
 									</span>
@@ -252,14 +252,14 @@ export function SetGoalModal({
 								</Pill>
 							))}
 						</div>
-						<p className="mt-1.5 text-[11px] text-white/30">
+						<p className="mt-1.5 text-[#0E1420]/55 text-[11px]">
 							{cadence === "daily"
 								? "One small step each day."
 								: "One focus to reach each week."}
 						</p>
 					</div>
 
-					{error && <p className="text-[12px] text-red-400">{error}</p>}
+					{error && <p className="text-[#DC2626] text-[12px]">{error}</p>}
 
 					<button
 						type="submit"
@@ -273,7 +273,7 @@ export function SetGoalModal({
 						type="button"
 						onClick={dismiss}
 						disabled={submitting}
-						className="cursor-pointer py-1 font-semibold text-[13px] text-white/40 transition-colors hover:text-white/70 disabled:opacity-40"
+						className="cursor-pointer py-1 font-semibold text-[#0E1420]/55 text-[13px] transition-colors hover:text-[#0E1420]/80 disabled:opacity-40"
 					>
 						Maybe later
 					</button>
