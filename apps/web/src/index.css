@@ -1,1 +1,14 @@
 @import "@north/ui/globals.css";
+
+/* Radius tokens used by the shadcn-style ui primitives (community block). */
+:root {
+	--radius: 8px;
+	--card-radius: 18px;
+}
+
+.rounded-card {
+	border-radius: var(--card-radius);
+}
+.rounded-ele {
+	border-radius: calc(var(--radius) - 2px);
+}

@@ -3,7 +3,7 @@
 //
 // Triggered weekly by pg_cron via net.http_post (Sunday 09:00 UTC = 05:00 AST).
 // For each user with a current-week signal_scores row and no signal_summaries
-// row yet, builds a prompt from their inputs, calls OpenAI, UPSERTs into
+// row yet, builds a prompt from their inputs, calls Claude, UPSERTs into
 // signal_summaries.
 //
 // Idempotent — re-running mid-week is a no-op.
@@ -14,13 +14,14 @@ import { captureServer } from "../_shared/posthog.ts";
 import {
 	buildUserPrompt,
 	PROMPT_VERSION,
-	RESPONSE_SCHEMA,
+	SUMMARY_TOOL,
 	type SummaryPayload,
 	SYSTEM_PROMPT,
 } from "./prompt.ts";
 
-const MODEL_NAME = "gpt-4o-mini";
-const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+const MODEL_NAME = "claude-haiku-4-5";
+const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
+const ANTHROPIC_VERSION = "2023-06-01";
 
 type ScoreRow = {
 	user_id: string;
@@ -54,7 +55,7 @@ type SummaryResult = {
 
 type RunDeps = {
 	supabase: SupabaseClient;
-	openaiKey: string;
+	anthropicKey: string;
 	fetcher?: typeof fetch;
 };
 
@@ -106,7 +107,7 @@ export async function runSummaryJob(deps: RunDeps): Promise<RunResult> {
 			}
 
 			const payload = await buildPayload(deps.supabase, score);
-			const summary = await callOpenAI(payload, deps.openaiKey, fetcher);
+			const summary = await callClaude(payload, deps.anthropicKey, fetcher);
 
 			const { error: upErr } = await deps.supabase
 				.from("signal_summaries")
@@ -192,41 +193,40 @@ async function buildPayload(
 	};
 }
 
-async function callOpenAI(
+async function callClaude(
 	payload: SummaryPayload,
-	openaiKey: string,
+	anthropicKey: string,
 	fetcher: typeof fetch,
 ): Promise<SummaryResult> {
 	const body = {
 		model: MODEL_NAME,
-		messages: [
-			{ role: "system", content: SYSTEM_PROMPT },
-			{ role: "user", content: buildUserPrompt(payload) },
-		],
-		response_format: { type: "json_schema", json_schema: RESPONSE_SCHEMA },
-		temperature: 0.5,
-		max_tokens: 400,
+		max_tokens: 600,
+		system: SYSTEM_PROMPT,
+		messages: [{ role: "user", content: buildUserPrompt(payload) }],
+		tools: [SUMMARY_TOOL],
+		tool_choice: { type: "tool", name: SUMMARY_TOOL.name },
 	};
-	const res = await fetcher(OPENAI_URL, {
+	const res = await fetcher(ANTHROPIC_URL, {
 		method: "POST",
 		headers: {
 			"content-type": "application/json",
-			authorization: `Bearer ${openaiKey}`,
+			"x-api-key": anthropicKey,
+			"anthropic-version": ANTHROPIC_VERSION,
 		},
 		body: JSON.stringify(body),
 	});
 	if (!res.ok) {
 		const text = await res.text();
-		throw new Error(`OpenAI ${res.status}: ${text.slice(0, 200)}`);
+		throw new Error(`Anthropic ${res.status}: ${text.slice(0, 200)}`);
 	}
 	const json = (await res.json()) as {
-		choices?: { message?: { content?: string } }[];
+		content?: { type: string; input?: unknown }[];
 	};
-	const content = json.choices?.[0]?.message?.content;
-	if (!content) throw new Error("OpenAI returned empty content");
-	const parsed = JSON.parse(content) as SummaryResult;
+	const block = (json.content ?? []).find((b) => b.type === "tool_use");
+	if (!block?.input) throw new Error("Claude returned no tool_use block");
+	const parsed = block.input as SummaryResult;
 	if (typeof parsed.summary !== "string" || !Array.isArray(parsed.callouts)) {
-		throw new Error("OpenAI response missing summary/callouts");
+		throw new Error("Claude response missing summary/callouts");
 	}
 	return parsed;
 }
@@ -239,17 +239,17 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 		if (!expectedSecret || presented !== expectedSecret) {
 			return new Response("forbidden", { status: 403 });
 		}
-		const openaiKey = Deno.env.get("OPENAI_API_KEY");
+		const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
 		const supabaseUrl = Deno.env.get("SUPABASE_URL");
 		const serviceRole = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-		if (!openaiKey || !supabaseUrl || !serviceRole) {
+		if (!anthropicKey || !supabaseUrl || !serviceRole) {
 			return new Response("missing env", { status: 500 });
 		}
 		const supabase = createClient(supabaseUrl, serviceRole, {
 			auth: { persistSession: false, autoRefreshToken: false },
 		});
 		try {
-			const result = await runSummaryJob({ supabase, openaiKey });
+			const result = await runSummaryJob({ supabase, anthropicKey });
 			return new Response(JSON.stringify(result), {
 				status: 200,
 				headers: { "content-type": "application/json" },

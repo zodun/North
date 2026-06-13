@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 
 import "../index.css";
-import Header from "@/components/header";
+import { DevSwCleanup } from "@/components/dev-sw-cleanup";
 import { InstallPrompt } from "@/components/install-prompt";
 import Providers from "@/components/providers";
 
@@ -16,13 +16,19 @@ const geistMono = Geist_Mono({
 	subsets: ["latin"],
 });
 
+const plusJakarta = Plus_Jakarta_Sans({
+	variable: "--font-jakarta",
+	subsets: ["latin"],
+	weight: ["400", "500", "600", "700", "800"],
+});
+
 export const metadata: Metadata = {
 	title: "North",
 	description: "Convert inspiration into consistent, aligned action.",
 	applicationName: "North",
 	appleWebApp: {
 		capable: true,
-		statusBarStyle: "black-translucent",
+		statusBarStyle: "default",
 		title: "North",
 	},
 	formatDetection: {
@@ -41,13 +47,11 @@ export default function RootLayout({
 	return (
 		<html lang="en" suppressHydrationWarning>
 			<body
-				className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+				className={`${geistSans.variable} ${geistMono.variable} ${plusJakarta.variable} antialiased`}
 			>
 				<Providers>
-					<div className="grid h-svh grid-rows-[auto_1fr]">
-						<Header />
-						{children}
-					</div>
+					<DevSwCleanup />
+					<div className="h-svh">{children}</div>
 					<InstallPrompt />
 				</Providers>
 			</body>

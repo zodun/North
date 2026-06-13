@@ -366,7 +366,7 @@ insert into public.content_items (
  'The First 20 Hours — How to Learn Anything',
  'productivity', 'TED',
  'Josh Kaufman, TEDx Talks, 2013',
- 'https://www.ted.com/talks/josh_kaufman_the_first_20_hours_how_to_learn_anything',
+ 'https://www.youtube.com/watch?v=5MgBikgcWnY',
  'link-out', 'cleared', now(), 10),
 
 (gen_random_uuid(), 'voice',
@@ -409,7 +409,7 @@ insert into public.content_items (
  'How Mindfulness Changes the Emotional Life of Our Brains',
  'mental-clarity', 'TED',
  'Richard Davidson, TED Talks, 2019',
- 'https://www.ted.com/talks/richard_davidson_how_mindfulness_changes_the_emotional_life_of_our_brains',
+ 'https://www.youtube.com/watch?v=7CBfCW67xT8',
  'link-out', 'cleared', now(), 10),
 
 (gen_random_uuid(), 'essay',
@@ -430,7 +430,7 @@ insert into public.content_items (
  'Why Sleep Is Your Superpower',
  'mental-clarity', 'TED',
  'Matt Walker, TED Talks, 2019',
- 'https://www.ted.com/talks/matt_walker_why_sleep_is_your_superpower',
+ 'https://www.ted.com/talks/matt_walker_sleep_is_your_superpower',
  'link-out', 'cleared', now(), 40),
 
 (gen_random_uuid(), 'essay',
@@ -444,7 +444,7 @@ insert into public.content_items (
  'Breathing — The Little-Known Secret to Peace of Mind',
  'mental-clarity', 'TED',
  'Max Strom, TEDx Talks, 2013',
- 'https://www.youtube.com/watch?v=jm2gGOsB4kU',
+ 'https://www.youtube.com/watch?v=4Lb5L-VEm34',
  'link-out', 'cleared', now(), 60)
 
 on conflict (id) do nothing;

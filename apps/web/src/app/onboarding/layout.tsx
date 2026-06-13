@@ -5,5 +5,5 @@ export default function OnboardingLayout({
 }: {
 	children: ReactNode;
 }) {
-	return <div className="flex min-h-svh flex-col bg-[#0a0a0a]">{children}</div>;
+	return <div className="flex min-h-svh flex-col bg-[#EDF1F8]">{children}</div>;
 }

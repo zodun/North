@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000">
+  <defs>
+    <linearGradient id="bg" x1="599.9999999999999" y1="66.98729810778065" x2="200.00000000000009" y2="933.0127018922194" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7A4E00"/><stop offset="0.5" stop-color="#C47D00"/><stop offset="1" stop-color="#F0B429"/>
+    </linearGradient>
+    <radialGradient id="g0"><stop offset="0" stop-color="#FFE08A" stop-opacity="0.55"/><stop offset="1" stop-color="#FFE08A" stop-opacity="0"/></radialGradient>
+    <radialGradient id="g1"><stop offset="0" stop-color="#7A4E00" stop-opacity="0.6"/><stop offset="1" stop-color="#7A4E00" stop-opacity="0"/></radialGradient>
+    <pattern id="grid" width="36" height="36" patternUnits="userSpaceOnUse"><path d="M36 0H0V36" fill="none" stroke="#FFE08A" stroke-opacity="0.05" stroke-width="0.6"/></pattern>
+  </defs>
+  <rect width="800" height="1000" fill="url(#bg)"/>
+  
+      <circle cx="200" cy="220" r="480" fill="url(#g0)" opacity="0.9"/>
+      <circle cx="680" cy="700" r="360" fill="url(#g1)" opacity="0.9"/>
+  <rect width="800" height="1000" fill="url(#grid)"/>
+  <g>
+      <circle cx="560" cy="50" r="240" fill="none" stroke="#FFE08A" stroke-opacity="0.18" stroke-width="1.5" />
+      <circle cx="560" cy="50" r="180" fill="none" stroke="#FFE08A" stroke-opacity="0.15" stroke-width="1.5" stroke-dasharray="6 12"/>
+      <circle cx="560" cy="50" r="120" fill="none" stroke="#FFE08A" stroke-opacity="0.12" stroke-width="1.5" />
+      <circle cx="560" cy="50" r="60" fill="none" stroke="#FFE08A" stroke-opacity="0.09" stroke-width="1.5" stroke-dasharray="6 12"/>
+    <polygon points="560,-100 544,50 576,50" fill="#FFE08A" fill-opacity="0.22"/>
+    <circle cx="560" cy="50" r="7" fill="#FFE08A" fill-opacity="0.3"/>
+  </g>
+</svg>

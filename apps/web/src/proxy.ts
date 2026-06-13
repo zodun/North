@@ -5,8 +5,12 @@ export async function proxy(request: NextRequest) {
 	const response = NextResponse.next({ request });
 
 	const supabase = createServerClient(
-		process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-		process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "",
+		// Server-side: talk to Supabase directly (local), not the public browser
+		// URL — which may be a tunnel proxy (see next.config.ts /sb rewrite).
+		process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
+		process.env.SUPABASE_ANON_KEY ??
+			process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
+			"",
 		{
 			cookies: {
 				getAll() {
@@ -26,6 +30,13 @@ export async function proxy(request: NextRequest) {
 	} = await supabase.auth.getSession();
 
 	const pathname = request.nextUrl.pathname;
+
+	// Public utility endpoint: the For You feed fetches it client-side to pull an
+	// article's Open Graph image. It has its own SSRF guard and never touches
+	// user data, so let it through without the auth/onboarding redirects (which
+	// would otherwise hand the fetch a sign-in HTML page instead of JSON).
+	if (pathname.startsWith("/api/og-image")) return response;
+
 	const isSignIn = pathname === "/sign-in" || pathname === "/sign-up";
 	const isAuthRoute = pathname.startsWith("/auth/");
 	const isOnboarding = pathname.startsWith("/onboarding");
@@ -75,6 +86,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
 	matcher: [
-		"/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|webmanifest|js|css)$).*)",
+		"/((?!sb/|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|webmanifest|js|css)$).*)",
 	],
 };

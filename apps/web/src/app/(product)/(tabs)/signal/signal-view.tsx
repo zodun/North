@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { colors } from "@/components/product/north-ui";
 import { supabase } from "@/lib/auth-client";
-import { PeopleSection } from "./people-section";
-import { ReflectionCard } from "./reflection-card";
+import { JournalCard } from "./journal-card";
 
 type Score = { week_ending: string; band: string; raw_score: number };
 type Summary = {
@@ -19,86 +19,65 @@ type Inputs = {
 	meaningfulInFocus: number;
 };
 
-const BAND_SEGS: Record<string, string[]> = {
-	Drifting: [
-		"#E8B84B",
-		"#E8B84B",
-		"#E8B84B55",
-		"#E8B84B33",
-		"#1C2537",
-		"#1C2537",
-		"#1C2537",
-	],
-	Finding: [
-		"#1C2537",
-		"#1C2537",
-		"#E8B84B33",
-		"#E8B84B55",
-		"#E8B84B",
-		"#E8B84B",
-		"#1C2537",
-	],
-	Aligned: [
-		"#1C2537",
-		"#1C2537",
-		"#1C2537",
-		"#E8B84B33",
-		"#E8B84B55",
-		"#E8B84B",
-		"#E8B84B",
-	],
-};
+const GOLD = colors.gold;
+const TEAL = colors.teal;
+const VIOLET = colors.violet;
+// Ink variants for accent used as text/icon on the light surface.
+const GOLD_INK = colors.goldInk;
+const TEAL_INK = colors.tealInk;
+const RED_INK = colors.redInk;
 
-const BAND_ORDER = ["Drifting", "Finding", "Aligned"];
+// Left→right band: drifting (violet) · finding (teal) · aligned (gold).
+// Segment FILLS keep their vivid hues; only the cap is a neutral inset.
+const SEGMENTS = [
+	{ id: "d1", color: VIOLET },
+	{ id: "d2", color: VIOLET },
+	{ id: "f1", color: TEAL },
+	{ id: "f2", color: TEAL },
+	{ id: "a1", color: GOLD },
+	{ id: "a2", color: GOLD },
+	{ id: "cap", color: "rgba(14,20,32,0.06)" },
+];
 
-const BAND_ACCENT = "#E8B84B";
-
-function BandBar({
-	band,
-	provisional,
-}: {
-	band: string;
-	provisional?: boolean;
-}) {
-	const segs = BAND_SEGS[band] ?? BAND_SEGS.Finding;
+function ThumbsUp({ size = 13 }: { size?: number }) {
 	return (
-		<div className="mb-5 rounded-2xl border border-white/10 bg-white/5 p-5">
-			<p className="mb-3 font-semibold text-[10px] text-white/40 uppercase tracking-widest">
-				Your Signal
-			</p>
-			<div className="mb-2.5 flex gap-1.5">
-				{[...segs.entries()].map(([pos, color]) => (
-					<div
-						key={pos}
-						className="h-2 flex-1 rounded-full"
-						style={{ backgroundColor: color }}
-					/>
-				))}
-			</div>
-			<div className="flex items-baseline justify-between">
-				{BAND_ORDER.map((label) => {
-					const isActive = label === band;
-					return (
-						<span
-							key={label}
-							className={isActive ? "font-semibold text-[18px]" : "text-[11px]"}
-							style={{
-								color: isActive ? BAND_ACCENT : "rgba(255,255,255,0.3)",
-							}}
-						>
-							{label}
-						</span>
-					);
-				})}
-			</div>
-			{provisional && (
-				<p className="mt-1.5 text-[11px] text-white/30 italic">
-					Provisional, building signal
-				</p>
-			)}
-		</div>
+		<svg
+			width={size}
+			height={size}
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth={2}
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			aria-hidden="true"
+		>
+			<path d="M7 10v12" />
+			<path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" />
+		</svg>
 	);
 }
+
+function ThumbsDown({ size = 13 }: { size?: number }) {
+	return (
+		<svg
+			width={size}
+			height={size}
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth={2}
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			aria-hidden="true"
+		>
+			<path d="M17 14V2" />
+			<path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z" />
+		</svg>
+	);
+}
+
+type Observation = { idx: number; type: "signal" | "noise"; body: string };
 
 export function SignalView({
 	scores,
@@ -106,24 +85,21 @@ export function SignalView({
 	weekEnding,
 	ratings: initialRatings,
 	inputs,
-	lastReflection,
+	lastJournal,
+	embedded = false,
 }: {
 	scores: Score[];
 	summary: Summary | null;
 	weekEnding: string | null;
 	ratings: Record<number, "up" | "down">;
 	inputs: Inputs | null;
-	lastReflection: {
+	lastJournal: {
 		body: string;
-		analysis: { themes: string[]; nudge: string } | null;
+		analysis: { signal: string[]; noise: string[]; read: string } | null;
 	} | null;
+	embedded?: boolean;
 }) {
 	const latest = scores[0];
-	const callouts =
-		(summary?.callouts as
-			| { label: string; body: string }[]
-			| string[]
-			| null) ?? [];
 	const [ratings, setRatings] =
 		useState<Record<number, "up" | "down">>(initialRatings);
 	const [ratingSaving, setRatingSaving] = useState<Record<number, boolean>>({});
@@ -146,187 +122,206 @@ export function SignalView({
 			? Math.round((inputs.meaningfulInFocus / inputs.meaningfulTotal) * 100)
 			: null;
 
-	return (
-		<div className="px-5 pt-14 pb-8">
-			<h1 className="mb-6 font-semibold text-2xl text-white tracking-tight">
-				How it's going
-			</h1>
+	// Normalise callouts into typed observations; fall back to the narrative.
+	const rawCallouts =
+		(summary?.callouts as
+			| { label?: string; body?: string }[]
+			| string[]
+			| null) ?? [];
+	let observations: Observation[] = rawCallouts.map((c, i) => {
+		const body = typeof c === "string" ? c : (c.body ?? "");
+		const label = typeof c === "string" ? "" : (c.label ?? "");
+		const type: "signal" | "noise" =
+			label.toLowerCase().includes("noise") || (label === "" && i % 2 === 1)
+				? "noise"
+				: "signal";
+		return { idx: i, type, body };
+	});
+	if (observations.length === 0 && summary?.summary_text) {
+		observations = [{ idx: 0, type: "signal", body: summary.summary_text }];
+	}
 
-			{/* Band bar */}
-			{latest && <BandBar band={latest.band} />}
+	const litCount = latest
+		? Math.min(7, Math.max(1, Math.round((latest.raw_score / 100) * 7)))
+		: 0;
+
+	return (
+		<div
+			className={`font-jakarta ${embedded ? "px-[18px]" : "px-[18px] pt-14"}`}
+		>
+			<p className="mt-2 mb-3 font-bold text-[#0E1420]/50 text-[10px] uppercase tracking-[0.12em]">
+				Your Signal
+			</p>
 
 			{/* Score card */}
 			{latest ? (
-				<div className="mb-5 rounded-2xl border border-white/10 bg-white/5 p-5">
+				<section
+					className="mb-3 rounded-[18px] border p-4"
+					style={{
+						borderColor: "rgba(62,207,191,0.28)",
+						background:
+							"linear-gradient(135deg, rgba(62,207,191,0.10), rgba(255,255,255,1))",
+					}}
+				>
+					<p
+						className="mb-2 font-bold text-[9px] uppercase tracking-[0.15em]"
+						style={{ color: TEAL_INK }}
+					>
+						Direction Score · This Week
+					</p>
 					<div className="mb-3 flex items-center justify-between">
-						<span className="text-[12px] text-white/50">This week</span>
+						<span className="font-black text-[#0E1420] text-[48px] leading-none tracking-[-2px]">
+							{latest.raw_score}
+						</span>
 						<span
-							className="rounded-full px-3 py-1 font-semibold text-[11px]"
+							className="rounded-full border px-3 py-1 font-bold text-[11px]"
 							style={{
-								backgroundColor: `${BAND_ACCENT}22`,
-								color: BAND_ACCENT,
+								backgroundColor: "rgba(245,200,66,0.14)",
+								borderColor: "rgba(245,200,66,0.35)",
+								color: GOLD_INK,
 							}}
 						>
 							{latest.band}
 						</span>
 					</div>
-					<div className="mb-4 font-bold text-5xl text-white tracking-tight">
-						{latest.raw_score}
-						<span className="ml-1 text-white/30 text-xl">/100</span>
+
+					{/* 7-segment band bar */}
+					<div className="flex h-[5px] gap-1 overflow-hidden rounded-lg">
+						{SEGMENTS.map((seg, i) => (
+							<div
+								key={seg.id}
+								className="h-full flex-1 rounded-sm"
+								style={{
+									backgroundColor: seg.color,
+									opacity: i === 6 ? 1 : i < litCount ? 1 : 0.22,
+								}}
+							/>
+						))}
 					</div>
-					{scores.length > 1 && (
-						<div className="flex h-10 items-end gap-1.5">
-							{[...scores].reverse().map((s, i) => (
+					<div className="mt-1 mb-3 flex justify-between text-[#0E1420]/50 text-[8px]">
+						<span>Drifting</span>
+						<span>Finding</span>
+						<span>Aligned</span>
+					</div>
+
+					{/* Breakdown */}
+					{inputs && (
+						<div className="flex gap-2">
+							{[
+								{ value: `${inputs.activeDays}/7`, label: "Active days" },
+								{
+									value: `${inputs.completedTasks}/${inputs.assignedTasks}`,
+									label: "Tasks done",
+								},
+								{
+									value: coherencePct !== null ? `${coherencePct}%` : "N/A",
+									label: "In focus",
+								},
+							].map((stat) => (
 								<div
-									key={s.week_ending}
-									className="flex-1 rounded-sm transition-all"
-									style={{
-										height: `${Math.max(20, s.raw_score)}%`,
-										backgroundColor:
-											i === scores.length - 1
-												? BAND_ACCENT
-												: "rgba(255,255,255,0.15)",
-									}}
-								/>
+									key={stat.label}
+									className="flex-1 rounded-[12px] border border-[#0E1420]/8 bg-[#F4F7FC] p-[10px] text-center"
+								>
+									<div className="font-black text-[#0E1420] text-[16px]">
+										{stat.value}
+									</div>
+									<div className="mt-0.5 text-[#0E1420]/55 text-[9px] uppercase tracking-[0.05em]">
+										{stat.label}
+									</div>
+								</div>
 							))}
 						</div>
 					)}
-				</div>
+				</section>
 			) : (
-				<div className="mb-5 rounded-2xl border border-white/8 bg-white/4 p-5 text-center">
-					<p className="text-sm text-white/40">
-						Your signal score will appear after your first week.
+				<div className="mb-3 rounded-[18px] border border-[#0E1420]/10 bg-white p-4 text-center">
+					<p className="text-[#0E1420]/65 text-[13px]">
+						Your Direction Score appears after your first full week.
 					</p>
 				</div>
 			)}
 
-			{/* Activity breakdown */}
-			{inputs && (
-				<div className="mb-5 rounded-2xl border border-white/8 bg-white/4 p-5">
-					<h2 className="mb-3 font-semibold text-[11px] text-white/40 uppercase tracking-widest">
-						How it broke down
-					</h2>
-					<div className="grid grid-cols-3 gap-3 text-center">
-						<div>
-							<div className="font-bold text-2xl text-white">
-								{inputs.activeDays}/7
-							</div>
-							<div className="mt-0.5 text-[11px] text-white/40">
-								active days
-							</div>
+			{/* Signal / Noise observation cards */}
+			{observations.map((o) => {
+				const isSignal = o.type === "signal";
+				const accentInk = isSignal ? TEAL_INK : RED_INK;
+				const current = ratings[o.idx];
+				return (
+					<div
+						key={`obs-${o.idx}`}
+						className="mb-2 rounded-[14px] border border-[#0E1420]/10 bg-white px-[14px] py-[13px]"
+					>
+						<div
+							className="mb-1.5 flex items-center gap-1.5 font-bold text-[9px] uppercase tracking-[0.12em]"
+							style={{ color: accentInk }}
+						>
+							{isSignal ? <ThumbsUp size={11} /> : <ThumbsDown size={11} />}
+							<span>{isSignal ? "Signal" : "Noise"}</span>
 						</div>
-						<div>
-							<div className="font-bold text-2xl text-white">
-								{inputs.completedTasks}/{inputs.assignedTasks}
-							</div>
-							<div className="mt-0.5 text-[11px] text-white/40">tasks done</div>
-						</div>
-						<div>
-							<div className="font-bold text-2xl text-white">
-								{coherencePct !== null ? `${coherencePct}%` : "N/A"}
-							</div>
-							<div className="mt-0.5 text-[11px] text-white/40">in focus</div>
+						<p className="mb-3 font-medium text-[#0E1420]/80 text-[12px] leading-[1.5]">
+							{o.body}
+						</p>
+						<div className="flex gap-2">
+							<FeedbackButton
+								active={current === "up"}
+								activeColor={TEAL_INK}
+								onClick={() => void rate(o.idx, "up")}
+								label="Helpful"
+								ariaLabel="Helpful"
+								icon={<ThumbsUp size={12} />}
+							/>
+							<FeedbackButton
+								active={current === "down"}
+								activeColor={RED_INK}
+								onClick={() => void rate(o.idx, "down")}
+								label="Not quite"
+								ariaLabel="Not helpful"
+								icon={<ThumbsDown size={12} />}
+							/>
 						</div>
 					</div>
-				</div>
-			)}
+				);
+			})}
 
-			{/* Summary narrative */}
-			{summary?.summary_text && (
-				<div className="mb-5 rounded-2xl border border-white/8 bg-white/4 p-5">
-					<h2 className="mb-2 font-semibold text-[11px] text-white/40 uppercase tracking-widest">
-						This Week
-					</h2>
-					<p className="text-[13px] text-white/70 leading-relaxed">
-						{summary.summary_text}
-					</p>
-				</div>
-			)}
-
-			{/* Signal / Noise callouts */}
-			{callouts.length > 0 && (
-				<div className="mb-5 rounded-2xl border border-white/8 bg-white/4 p-5">
-					<h2 className="mb-3 font-semibold text-[11px] text-white/40 uppercase tracking-widest">
-						Signal · Noise
-					</h2>
-					<div className="flex flex-col gap-4">
-						{callouts.map((callout, i) => {
-							const body = typeof callout === "string" ? callout : callout.body;
-							const currentRating = ratings[i];
-							return (
-								<div key={body}>
-									<div className="mb-2 flex items-start gap-3">
-										<span
-											className="mt-1.5 h-2 w-2 shrink-0 rounded-full"
-											style={{
-												backgroundColor: [
-													"#4ECCA3",
-													"#E8B84B",
-													"#C084FC",
-													"#4ECCA3",
-												][i % 4],
-											}}
-										/>
-										<p className="text-[13px] text-white/70 leading-relaxed">
-											{body}
-										</p>
-									</div>
-									<div className="ml-5 flex gap-3">
-										<button
-											type="button"
-											onClick={() => void rate(i, "up")}
-											className="font-semibold text-[12px] transition-opacity"
-											style={{
-												color: "#4ECCA3",
-												opacity:
-													currentRating === "up" ? 1 : currentRating ? 0.4 : 1,
-											}}
-										>
-											▲ Helpful
-										</button>
-										<button
-											type="button"
-											onClick={() => void rate(i, "down")}
-											className="font-semibold text-[12px] transition-opacity"
-											style={{
-												color: "#f87171",
-												opacity:
-													currentRating === "down"
-														? 1
-														: currentRating
-															? 0.4
-															: 1,
-											}}
-										>
-											▼ Not quite
-										</button>
-									</div>
-								</div>
-							);
-						})}
-					</div>
-				</div>
-			)}
-
-			{scores.length === 0 && !summary && (
-				<div className="flex flex-col items-center gap-3 py-12 text-center">
-					<div className="text-4xl">📡</div>
-					<p className="text-[13px] text-white/40">
-						Complete your first few missions to start building your signal.
-					</p>
-				</div>
-			)}
-
-			{/* People section */}
-			<PeopleSection />
-
-			{/* Reflection */}
-			{weekEnding && (
-				<ReflectionCard
-					weekEnding={weekEnding}
-					initialReflection={lastReflection}
-				/>
-			)}
+			{/* Daily journal */}
+			<JournalCard
+				entryDate={new Date().toISOString().slice(0, 10)}
+				initialEntry={lastJournal}
+			/>
 		</div>
+	);
+}
+
+function FeedbackButton({
+	active,
+	activeColor,
+	onClick,
+	label,
+	ariaLabel,
+	icon,
+}: {
+	active: boolean;
+	activeColor: string;
+	onClick: () => void;
+	label: string;
+	ariaLabel: string;
+	icon: React.ReactNode;
+}) {
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			aria-label={ariaLabel}
+			aria-pressed={active}
+			className="flex cursor-pointer items-center gap-1.5 rounded-[8px] border px-3 py-1.5 font-semibold text-[11px] transition-colors duration-200 hover:bg-[#0E1420]/[0.05] motion-reduce:transition-none"
+			style={{
+				borderColor: active ? `${activeColor}66` : "rgba(14,20,32,0.12)",
+				backgroundColor: active ? `${activeColor}1f` : "rgba(14,20,32,0.03)",
+				color: active ? activeColor : "rgba(14,20,32,0.60)",
+			}}
+		>
+			{icon}
+			{label}
+		</button>
 	);
 }

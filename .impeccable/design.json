@@ -1,0 +1,214 @@
+{
+	"schemaVersion": 2,
+	"generatedAt": "2026-06-11T00:00:00.000Z",
+	"title": "Design System: North",
+	"extensions": {
+		"colorMeta": {
+			"night": {
+				"role": "neutral",
+				"displayName": "Night",
+				"canonical": "#05050E",
+				"tonalRamp": [
+					"#05050E",
+					"#0A0A0F",
+					"#111118",
+					"#16161F",
+					"#1E1E2A",
+					"#2A2A38",
+					"#3A3A4A",
+					"#4A4A5C"
+				]
+			},
+			"signal-gold": {
+				"role": "primary",
+				"displayName": "Signal Gold",
+				"canonical": "#F5C842",
+				"tonalRamp": [
+					"#3A2E08",
+					"#5C481A",
+					"#856A1F",
+					"#B8922B",
+					"#E8B84B",
+					"#F5C842",
+					"#F8D873",
+					"#FCEBB0"
+				]
+			},
+			"direction-teal": {
+				"role": "secondary",
+				"displayName": "Direction Teal",
+				"canonical": "#3ECFBF",
+				"tonalRamp": [
+					"#0C2522",
+					"#123F3A",
+					"#1A5A53",
+					"#22817A",
+					"#2EA89D",
+					"#3ECFBF",
+					"#7FE0D5",
+					"#BFF0EA"
+				]
+			},
+			"drift-violet": {
+				"role": "tertiary",
+				"displayName": "Drift Violet",
+				"canonical": "#7B61FF",
+				"tonalRamp": [
+					"#1E1840",
+					"#2C2360",
+					"#3D3088",
+					"#5546B8",
+					"#6A55E0",
+					"#7B61FF",
+					"#A893FF",
+					"#D2C8FF"
+				]
+			},
+			"ink": {
+				"role": "neutral",
+				"displayName": "Ink",
+				"canonical": "#F0F0F5",
+				"tonalRamp": [
+					"#26262B",
+					"#3A3A40",
+					"#55555C",
+					"#7A7A82",
+					"#A0A0A8",
+					"#C8C8CE",
+					"#E0E0E5",
+					"#F0F0F5"
+				]
+			}
+		},
+		"typographyMeta": {
+			"display": {
+				"displayName": "Display",
+				"purpose": "Direction Score numeral, page titles, big goal numbers. Plus Jakarta Sans at black/extrabold."
+			},
+			"body": {
+				"displayName": "Body",
+				"purpose": "Descriptions, journal prose, observations. Geist regular, measure 65–75ch."
+			},
+			"label": {
+				"displayName": "Label",
+				"purpose": "Section eyebrows and badges. Plus Jakarta Sans, uppercase, 0.14em tracking."
+			}
+		},
+		"shadows": [],
+		"motion": [
+			{
+				"name": "ease-out-standard",
+				"value": "cubic-bezier(0.22, 1, 0.36, 1)",
+				"purpose": "Default ease-out for state transitions; no bounce."
+			},
+			{
+				"name": "duration-micro",
+				"value": "200ms",
+				"purpose": "Color/opacity micro-interactions. prefers-reduced-motion → none."
+			}
+		],
+		"breakpoints": [
+			{ "name": "mobile", "value": "390px" },
+			{ "name": "sm", "value": "640px" }
+		]
+	},
+	"components": [
+		{
+			"name": "Cadence Pill",
+			"kind": "chip",
+			"refersTo": "pill-active",
+			"description": "Daily/Weekly toggle on the goal card. Active = gold needle; inactive = ghost.",
+			"html": "<div style=\"display:flex;gap:8px\"><button class=\"ds-pill ds-pill-on\">Daily</button><button class=\"ds-pill ds-pill-off\">Weekly</button></div>",
+			"css": ".ds-pill{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:10px;text-transform:capitalize;border-radius:9999px;padding:4px 12px;cursor:pointer;border:1px solid transparent;transition:background .2s,color .2s} .ds-pill-on{background:#F5C842;color:#05050E} .ds-pill-off{background:transparent;color:rgba(255,255,255,.35);border-color:rgba(255,255,255,.10)} @media(prefers-reduced-motion:reduce){.ds-pill{transition:none}}"
+		},
+		{
+			"name": "Teal CTA Button",
+			"kind": "button",
+			"refersTo": "button-cta",
+			"description": "Block call-to-action (e.g. 'Find the signal' in the journal).",
+			"html": "<button class=\"ds-cta\">Find the signal</button>",
+			"css": ".ds-cta{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px;width:100%;padding:10px;border-radius:10px;color:#3ECFBF;background:rgba(62,207,191,.10);border:1px solid rgba(62,207,191,.25);cursor:pointer;transition:background .2s} .ds-cta:hover{background:rgba(62,207,191,.15)} .ds-cta:focus-visible{outline:2px solid #3ECFBF;outline-offset:2px} @media(prefers-reduced-motion:reduce){.ds-cta{transition:none}}"
+		},
+		{
+			"name": "Goal Card",
+			"kind": "card",
+			"refersTo": "card",
+			"description": "The active monthly goal — gold gradient, 3px gold left rail, progress bar.",
+			"html": "<div class=\"ds-goal\"><span class=\"ds-goal-rail\"></span><p class=\"ds-goal-ey\">This Month's Goal</p><p class=\"ds-goal-t\">Level up one craft skill this month.</p><div class=\"ds-goal-row\"><span>1 of 4 weeks</span><span class=\"ds-goal-pct\">25%</span></div><div class=\"ds-goal-track\"><div class=\"ds-goal-fill\"></div></div></div>",
+			"css": ".ds-goal{position:relative;overflow:hidden;border-radius:18px;padding:16px;border:1px solid rgba(245,200,66,.22);background:linear-gradient(135deg,rgba(245,200,66,.10),rgba(245,200,66,.03));font-family:'Plus Jakarta Sans',sans-serif} .ds-goal-rail{position:absolute;top:0;bottom:0;left:0;width:3px;border-radius:0 3px 3px 0;background:#F5C842} .ds-goal-ey{font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(245,200,66,.6);margin:0 0 8px} .ds-goal-t{font-size:15px;font-weight:700;color:#F0F0F5;line-height:1.4;margin:0 0 12px} .ds-goal-row{display:flex;justify-content:space-between;font-size:11px;color:rgba(240,240,245,.4);margin-bottom:8px} .ds-goal-pct{color:#F5C842;font-weight:700} .ds-goal-track{height:5px;border-radius:9999px;background:rgba(255,255,255,.08);overflow:hidden} .ds-goal-fill{height:100%;width:25%;border-radius:9999px;background:linear-gradient(90deg,#F5C842,#3ECFBF)}"
+		},
+		{
+			"name": "Task Card",
+			"kind": "card",
+			"refersTo": "card-small",
+			"description": "A checkable micro-step. Teal check on done; goal link below.",
+			"html": "<button class=\"ds-task\" aria-pressed=\"false\"><span class=\"ds-check\"></span><span><span class=\"ds-task-t\">Practice one fundamental for 15 minutes.</span><span class=\"ds-task-g\">&rarr; Level up one craft skill</span></span></button>",
+			"css": ".ds-task{display:flex;align-items:flex-start;gap:12px;width:100%;text-align:left;border-radius:14px;padding:13px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);cursor:pointer;transition:background .2s;font-family:'Plus Jakarta Sans',sans-serif} .ds-task:hover{background:rgba(255,255,255,.07)} .ds-check{flex-shrink:0;width:20px;height:20px;margin-top:2px;border-radius:9999px;border:1.5px solid rgba(255,255,255,.2)} .ds-task[aria-pressed=true] .ds-check{background:#3ECFBF;border-color:#3ECFBF} .ds-task-t{display:block;font-size:13px;font-weight:600;color:#F0F0F5} .ds-task-g{display:block;font-size:10px;font-weight:500;color:rgba(245,200,66,.55);margin-top:2px} @media(prefers-reduced-motion:reduce){.ds-task{transition:none}}"
+		},
+		{
+			"name": "Status Badge",
+			"kind": "chip",
+			"refersTo": "chip",
+			"description": "Week-plan status: In progress (teal) / Done (gold) / Upcoming (muted).",
+			"html": "<div style=\"display:flex;gap:6px\"><span class=\"ds-badge ds-b-cur\">In progress</span><span class=\"ds-badge ds-b-done\">Done</span><span class=\"ds-badge ds-b-up\">Upcoming</span></div>",
+			"css": ".ds-badge{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:9px;text-transform:uppercase;border-radius:9999px;padding:2px 8px;border:1px solid} .ds-b-cur{color:#3ECFBF;background:rgba(62,207,191,.1);border-color:rgba(62,207,191,.2)} .ds-b-done{color:#F5C842;background:rgba(245,200,66,.1);border-color:rgba(245,200,66,.2)} .ds-b-up{color:rgba(255,255,255,.3);background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.08)}"
+		},
+		{
+			"name": "Direction Score",
+			"kind": "custom",
+			"refersTo": "card",
+			"description": "Signature Signal card: 48px numeral, gold band pill, 7-segment band bar, stat tiles.",
+			"html": "<div class=\"ds-score\"><p class=\"ds-score-ey\">Direction Score &middot; This Week</p><div class=\"ds-score-row\"><span class=\"ds-score-n\">35</span><span class=\"ds-score-band\">Drifting</span></div><div class=\"ds-seg\"><i style=\"background:#7B61FF\"></i><i style=\"background:#7B61FF\"></i><i style=\"background:#3ECFBF;opacity:.22\"></i><i style=\"background:#3ECFBF;opacity:.22\"></i><i style=\"background:#F5C842;opacity:.22\"></i><i style=\"background:#F5C842;opacity:.22\"></i><i style=\"background:rgba(255,255,255,.06)\"></i></div><div class=\"ds-score-labels\"><span>Drifting</span><span>Finding</span><span>Aligned</span></div></div>",
+			"css": ".ds-score{border-radius:18px;padding:16px;border:1px solid rgba(62,207,191,.18);background:linear-gradient(135deg,rgba(62,207,191,.07),rgba(62,207,191,.02));font-family:'Plus Jakarta Sans',sans-serif} .ds-score-ey{font-size:9px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:rgba(62,207,191,.6);margin:0 0 8px} .ds-score-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px} .ds-score-n{font-size:48px;font-weight:800;color:#F0F0F5;line-height:1;letter-spacing:-2px} .ds-score-band{font-size:11px;font-weight:700;color:#F5C842;border-radius:9999px;padding:4px 12px;background:rgba(245,200,66,.1);border:1px solid rgba(245,200,66,.2)} .ds-seg{display:flex;gap:4px;height:5px;border-radius:8px;overflow:hidden} .ds-seg i{flex:1;border-radius:2px} .ds-score-labels{display:flex;justify-content:space-between;font-size:8px;color:rgba(255,255,255,.25);margin-top:4px}"
+		},
+		{
+			"name": "Signal / Noise Card",
+			"kind": "card",
+			"refersTo": "card-small",
+			"description": "Honest observation card with SVG thumb icon and feedback buttons.",
+			"html": "<div class=\"ds-obs\"><div class=\"ds-obs-h\"><svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#3ECFBF\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M7 10v12\"/><path d=\"M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z\"/></svg><span>Signal</span></div><p class=\"ds-obs-b\">You showed up five days this week and most of your meaningful time landed inside your focus areas.</p></div>",
+			"css": ".ds-obs{border-radius:14px;padding:13px 14px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);font-family:'Plus Jakarta Sans',sans-serif} .ds-obs-h{display:flex;align-items:center;gap:6px;font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#3ECFBF;margin-bottom:6px} .ds-obs-b{font-size:12px;font-weight:500;color:rgba(240,240,245,.7);line-height:1.5;margin:0}"
+		}
+	],
+	"narrative": {
+		"northStar": "The Night Compass",
+		"overview": "North is a dark, cinematic field where a single gold needle always points somewhere. Where mainstream consumer apps engineer a hyperstimulating surface to capture attention, North engineers a calm one to give direction. Color is rationed to three meanings: gold is the needle, teal is on-course, violet is drift. Density is low and deliberate; cards are flat, separated by hairline borders and translucent fills rather than shadow. Type does the shouting — Plus Jakarta Sans at black weight — while the rest stays composed.",
+		"keyCharacteristics": [
+			"Near-black cinematic ground; color rationed to three meanings (gold/teal/violet).",
+			"Flat surfaces, hairline borders, translucent-white fills — depth without shadow.",
+			"Display type carries hierarchy; muted body stays calm.",
+			"Mobile-first PWA, tuned for mid-range Android on variable networks."
+		],
+		"rules": [
+			{
+				"name": "The Three-Meaning Rule",
+				"body": "Gold = the needle (next action / goal). Teal = on-course (progress / signal). Violet = drift. A color used outside its meaning is a bug. No fourth accent earns the surface.",
+				"section": "colors"
+			},
+			{
+				"name": "The Weight-Not-Family Rule",
+				"body": "Contrast comes from weight (black vs. regular) and size, never from pairing two similar sans. Never set body in Plus Jakarta black or a display number in Geist regular.",
+				"section": "typography"
+			},
+			{
+				"name": "The No-Shadow Rule",
+				"body": "Surfaces never cast shadow. To feel raised, raise fill opacity (3% → 7%) and tighten the border, never add box-shadow.",
+				"section": "elevation"
+			}
+		],
+		"dos": [
+			"Do keep color rationed to three meanings: gold = next action, teal = on-course, violet = drift.",
+			"Do build depth with translucent white fills (3–7%) and hairline borders (#FFFFFF14), never shadow.",
+			"Do carry hierarchy with weight — Plus Jakarta black for display, Geist regular for body.",
+			"Do ship a prefers-reduced-motion alternative for every transition; keep micro-interactions 150–300ms, color/opacity only.",
+			"Do keep body text ≥4.5:1 on Night; bump muted toward ink when it's close."
+		],
+		"donts": [
+			"Don't reach for the generic AI-app skin — purple gradients, glassmorphism, blur-everywhere.",
+			"Don't make North feel like an attention-optimized social feed: no autoplay shimmer, dopamine reds, or infinite-scroll density.",
+			"Don't add gamified-hustle neon streak-guilt or corporate-SaaS KPI-card grids.",
+			"Don't use box-shadow on cards, or a border-left/right greater than 1px as a colored stripe (the goal card's 3px full-height rail is the only exception).",
+			"Don't set a fourth accent color, gradient text, or a tiny tracked uppercase eyebrow on every section."
+		]
+	}
+}

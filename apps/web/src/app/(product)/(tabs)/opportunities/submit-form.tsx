@@ -68,32 +68,32 @@ export function SubmitOpportunityForm({ onClose }: { onClose: () => void }) {
 	}
 
 	const inputCls =
-		"w-full rounded-xl border border-white/8 bg-white/5 px-4 py-3 text-[14px] text-white placeholder:text-white/25 focus:outline-none focus:ring-1 focus:ring-white/20";
+		"w-full rounded-xl border border-[#0E1420]/10 bg-white px-4 py-3 text-[14px] text-[#0E1420] placeholder:text-[#0E1420]/40 focus:outline-none focus:ring-1 focus:ring-[#0A8F7F]/40 focus:border-[#0A8F7F]";
 	const labelCls =
-		"mb-1 block font-semibold text-[11px] text-white/35 uppercase tracking-widest";
+		"mb-1 block font-semibold text-[11px] text-[#0E1420]/55 uppercase tracking-widest";
 
 	return (
 		// biome-ignore lint/a11y/useKeyWithClickEvents lint/a11y/noStaticElementInteractions: backdrop dismiss — keyboard users can press Escape or use the close button
 		<div
-			className="fixed inset-0 z-50 flex items-end justify-center bg-black/60"
+			className="fixed inset-0 z-50 flex items-end justify-center bg-[#0E1420]/40"
 			onClick={onClose}
 		>
 			{/* biome-ignore lint/a11y/useKeyWithClickEvents lint/a11y/noStaticElementInteractions: inner sheet stops backdrop click from propagating */}
 			<div
-				className="max-h-[90svh] w-full max-w-lg overflow-y-auto rounded-t-3xl bg-[#131313] pb-safe"
+				className="max-h-[90svh] w-full max-w-lg overflow-y-auto rounded-t-3xl border border-[#0E1420]/10 bg-white pb-safe"
 				onClick={(e) => e.stopPropagation()}
 			>
-				<div className="sticky top-0 flex justify-center bg-[#131313] pt-3 pb-1">
-					<div className="h-1 w-9 rounded-full bg-white/20" />
+				<div className="sticky top-0 flex justify-center bg-white pt-3 pb-1">
+					<div className="h-1 w-9 rounded-full bg-[#0E1420]/15" />
 				</div>
-				<div className="sticky top-5 flex items-center justify-between border-white/8 border-b bg-[#131313] px-5 py-3">
-					<h2 className="font-semibold text-[16px] text-white">
+				<div className="sticky top-5 flex items-center justify-between border-[#0E1420]/10 border-b bg-white px-5 py-3">
+					<h2 className="font-semibold text-[#0E1420] text-[16px]">
 						Submit an opportunity
 					</h2>
 					<button
 						type="button"
 						onClick={onClose}
-						className="text-white/40 hover:text-white"
+						className="text-[#0E1420]/55 hover:text-[#0E1420]"
 						aria-label="Close"
 					>
 						<svg
@@ -129,8 +129,10 @@ export function SubmitOpportunityForm({ onClose }: { onClose: () => void }) {
 								<path d="M20 6L9 17l-5-5" />
 							</svg>
 						</div>
-						<p className="font-semibold text-[18px] text-white">Submitted!</p>
-						<p className="text-[13px] text-white/40">
+						<p className="font-semibold text-[#0E1420] text-[18px]">
+							Submitted!
+						</p>
+						<p className="text-[#0E1420]/55 text-[13px]">
 							We'll review it and add it to the feed.
 						</p>
 					</div>
@@ -223,7 +225,7 @@ export function SubmitOpportunityForm({ onClose }: { onClose: () => void }) {
 								rows={3}
 								className={`${inputCls} resize-none`}
 							/>
-							<p className="mt-1 text-right text-[11px] text-white/25">
+							<p className="mt-1 text-right text-[#0E1420]/45 text-[11px]">
 								{form.description.length}/500
 							</p>
 						</div>
@@ -241,13 +243,13 @@ export function SubmitOpportunityForm({ onClose }: { onClose: () => void }) {
 								className={inputCls}
 							/>
 						</div>
-						{error && <p className="text-[12px] text-red-400">{error}</p>}
+						{error && <p className="text-[#DC2626] text-[12px]">{error}</p>}
 						<button
 							type="submit"
 							disabled={
 								submitting || !form.title || !form.org || !form.external_url
 							}
-							className="h-13 w-full rounded-xl bg-white font-bold text-[15px] text-black transition-opacity disabled:opacity-40"
+							className="h-13 w-full rounded-xl bg-[#F5C842] font-bold text-[#05050E] text-[15px] transition-opacity disabled:opacity-40"
 						>
 							{submitting ? "Submitting…" : "Submit"}
 						</button>

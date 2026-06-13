@@ -125,7 +125,7 @@ function makeStubSupabase() {
 	};
 }
 
-function makeOpenAIStub(): typeof fetch {
+function makeClaudeStub(): typeof fetch {
 	return ((
 		_url: string | URL | Request,
 		init?: RequestInit,
@@ -143,19 +143,19 @@ function makeOpenAIStub(): typeof fetch {
 		return Promise.resolve(
 			new Response(
 				JSON.stringify({
-					choices: [
+					content: [
 						{
-							message: {
-								content: JSON.stringify({
-									summary:
-										"You moved on craft this week — three saves and a finish in your focus area. Tasks held in rhythm.",
-									callouts: [
-										{
-											label: "Held the deep-work block",
-											body: "Two of three days last week, including Thursday.",
-										},
-									],
-								}),
+							type: "tool_use",
+							name: "weekly_summary",
+							input: {
+								summary:
+									"You moved on craft this week — three saves and a finish in your focus area. Tasks held in rhythm.",
+								callouts: [
+									{
+										label: "Held the deep-work block",
+										body: "Two of three days last week, including Thursday.",
+									},
+								],
 							},
 						},
 					],
@@ -168,12 +168,12 @@ function makeOpenAIStub(): typeof fetch {
 
 Deno.test("runSummaryJob writes one summary per scored user", async () => {
 	const stub = makeStubSupabase();
-	const fetcher = makeOpenAIStub();
+	const fetcher = makeClaudeStub();
 
 	// biome-ignore lint/suspicious/noExplicitAny: stub supabase client shape
 	const result = await runSummaryJob({
 		supabase: stub.supabase as any,
-		openaiKey: "sk-test",
+		anthropicKey: "sk-ant-test",
 		fetcher,
 	});
 
@@ -185,7 +185,7 @@ Deno.test("runSummaryJob writes one summary per scored user", async () => {
 	const row = stub.upserts[0]?.rows as Record<string, unknown>;
 	assertEquals(row.user_id, "user-abc");
 	assertEquals(row.prompt_version, PROMPT_VERSION);
-	assertEquals(row.model_name, "gpt-4o-mini");
+	assertEquals(row.model_name, "claude-haiku-4-5");
 	assertEquals(
 		typeof row.summary_text === "string" &&
 			(row.summary_text as string).length > 0,
