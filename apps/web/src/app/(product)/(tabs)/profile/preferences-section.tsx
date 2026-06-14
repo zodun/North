@@ -113,7 +113,7 @@ export function PreferencesSection({
 					/>
 				</Row>
 
-				<Row label={`Field — up to ${MAX_FIELDS}`}>
+				<Row label={`Field, up to ${MAX_FIELDS}`}>
 					<div className="flex flex-wrap gap-2">
 						{FIELDS.map((label) => {
 							const selected = fields.includes(label);

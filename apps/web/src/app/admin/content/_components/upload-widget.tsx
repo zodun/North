@@ -156,7 +156,7 @@ export function ContentUploadWidget({ cloudName }: Props) {
 							if ("error" in res && res.error) {
 								toast.error(`Upload saved but DB row failed: ${res.error}`);
 							} else {
-								toast.success("Uploaded as draft — review below, then clear.");
+								toast.success("Uploaded as draft. Review below, then clear.");
 								setMeta(BLANK);
 								setOpen(false);
 							}

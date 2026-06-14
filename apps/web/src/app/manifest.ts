@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
 	return {
-		name: "North — Find Your Direction",
+		name: "North: Find Your Direction",
 		short_name: "North",
 		description: "Convert inspiration into consistent, aligned action.",
 		start_url: "/",

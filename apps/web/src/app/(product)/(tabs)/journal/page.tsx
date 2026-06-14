@@ -16,7 +16,7 @@ export default async function JournalPage() {
 	if (!user) {
 		return (
 			<div className="flex h-full items-center justify-center p-8 text-center">
-				<p className="text-[#1A1208]/55 text-sm">Sign in to journal.</p>
+				<p className="text-[#0E1420]/55 text-sm">Sign in to journal.</p>
 			</div>
 		);
 	}
@@ -27,17 +27,17 @@ export default async function JournalPage() {
 	return (
 		<div
 			className="min-h-full px-[18px] pt-16 pb-24 font-jakarta"
-			style={{ background: "#F5F0E8" }}
+			style={{ background: "#EDF1F8" }}
 		>
 			<header className="mb-4">
-				<p className="font-bold text-[#1A1208]/50 text-[10px] uppercase tracking-[0.12em]">
+				<p className="font-bold text-[#0E1420]/50 text-[10px] uppercase tracking-[0.12em]">
 					Signal &amp; Noise
 				</p>
-				<h1 className="font-black text-[#1A1208] text-[22px] tracking-tight">
+				<h1 className="font-black text-[#0E1420] text-[22px] tracking-tight">
 					Journal
 				</h1>
-				<p className="text-[#1A1208]/55 text-[12px]">
-					Talk through your day — we'll surface what mattered and what didn't.
+				<p className="text-[#0E1420]/55 text-[12px]">
+					Talk through your day. We'll surface what mattered and what didn't.
 				</p>
 			</header>
 			<JournalCard entryDate={today} initialEntry={signal.lastJournal} />

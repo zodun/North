@@ -78,54 +78,16 @@ const OPPORTUNITY_TYPES = [
 const CAREER_STAGE_ICONS: Record<string, keyof typeof ICONS> = {
 	Student: "book",
 	"About to graduate": "rocket",
-	"0–2 years in": "compass",
-	"3–5 years in": "chart",
+	"0 to 2 years in": "compass",
+	"3 to 5 years in": "chart",
 	"Building my own thing": "pencil",
 };
 
-// Stored season_label values — unchanged. Card copy is presentational.
-const SEASON_OPTIONS = [
-	"I know my purpose — I need help finding opportunities.",
-	"I don't know my purpose yet.",
-];
-const PURPOSE_CARDS = [
-	{
-		value: SEASON_OPTIONS[0],
-		label: "I know my purpose",
-		sub: "I have a clear direction and want to move faster",
-		color: GOLD,
-		icon: "compass" as const,
-	},
-	{
-		value: SEASON_OPTIONS[1],
-		label: "I'm still figuring it out",
-		sub: "I want North to help me find what matters to me",
-		color: TEAL,
-		icon: "explore" as const,
-	},
-];
-
 const TIME_OPTIONS = [
-	{ value: "10–20 minutes", sub: "A quick daily check-in" },
-	{ value: "30–45 minutes", sub: "Focused and consistent" },
-	{ value: "1–2 hours", sub: "Deep work sessions" },
+	{ value: "10 to 20 minutes", sub: "A quick daily check-in" },
+	{ value: "30 to 45 minutes", sub: "Focused and consistent" },
+	{ value: "1 to 2 hours", sub: "Deep work sessions" },
 	{ value: "Whatever the day allows", sub: "Flexible, no pressure" },
-];
-
-const BASELINE_COLORS = [
-	{ bg: "rgba(123,97,255,0.15)", border: VIOLET, text: "#5B43E0" },
-	{
-		bg: "rgba(62,130,200,0.15)",
-		border: "rgba(62,130,200,0.8)",
-		text: "#2A5E96",
-	},
-	{ bg: "rgba(62,207,191,0.15)", border: TEAL, text: "#0A8F7F" },
-	{
-		bg: "rgba(180,220,80,0.15)",
-		border: "rgba(180,220,80,0.8)",
-		text: "#5C7016",
-	},
-	{ bg: "rgba(245,200,66,0.15)", border: GOLD, text: "#8A6A00" },
 ];
 
 const CONSENT_ROWS = [
@@ -138,18 +100,34 @@ const CTA_LABELS = [
 	"That's me",
 	"This is my stage",
 	"These are my fields",
-	"That's where I am",
-	"This is me",
 	"These are my focus areas",
-	"Show me these",
-	"This is my pace",
-	"Got it",
-	"This is my baseline",
+	"That's how I learn",
 	"That's my aim",
+	"Show me these",
+	"That's where I am",
+	"That's my level",
+	"This is my pace",
 	"Take me to North",
 ];
 
-const TOTAL_STEPS = 12;
+const TOTAL_STEPS = 11;
+
+// How the user likes to consume content → For You can favour matching kinds.
+const CONTENT_FORMATS = [
+	{ id: "read", label: "Read" },
+	{ id: "watch", label: "Watch" },
+	{ id: "listen", label: "Listen" },
+];
+
+// Highest education completed or in progress → Opportunities eligibility.
+const EDUCATION_LEVELS = [
+	{ value: "In high school", sub: "Secondary school or equivalent" },
+	{ value: "High school graduate", sub: "Finished secondary, not in college" },
+	{ value: "In university", sub: "Currently pursuing a degree" },
+	{ value: "Undergraduate degree", sub: "Bachelor's or equivalent" },
+	{ value: "Postgraduate degree", sub: "Master's, doctorate, or higher" },
+	{ value: "Self-taught or bootcamp", sub: "Skills outside a formal degree" },
+];
 
 // ── Main component ─────────────────────────────────────────────────────────
 
@@ -162,12 +140,11 @@ export default function OnboardingPage() {
 	const [country, setCountry] = useState<string>("");
 	const [openToRemote, setOpenToRemote] = useState(false);
 	const [openToRelocate, setOpenToRelocate] = useState(false);
-	const [season, setSeason] = useState<string | null>(null);
 	const [focus, setFocus] = useState<string[]>([]);
+	const [contentFormats, setContentFormats] = useState<string[]>([]);
 	const [oppTypes, setOppTypes] = useState<string[]>([]);
 	const [time, setTime] = useState<string | null>(null);
-	const [avoid, setAvoid] = useState("");
-	const [baseline, setBaseline] = useState<number | null>(null);
+	const [educationLevel, setEducationLevel] = useState<string | null>(null);
 	const [aspiration, setAspiration] = useState("");
 	const [consent, setConsent] = useState(false);
 	const [saving, setSaving] = useState(false);
@@ -225,10 +202,18 @@ export default function OnboardingPage() {
 		);
 	}
 
+	function toggleContentFormat(id: string) {
+		setContentFormats((prev) =>
+			prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id],
+		);
+	}
+
 	async function saveCurrentStep() {
 		if (!userId) return;
 		setError(null);
 
+		// 0 name · 1 career · 2 fields · 3 focus · 4 learn-format · 5 goal ·
+		// 6 opportunity types · 7 location · 8 education · 9 time
 		if (step === 0) {
 			const { error: err } = await supabase
 				.from("profiles")
@@ -250,7 +235,34 @@ export default function OnboardingPage() {
 				.eq("user_id", userId);
 			if (err) throw new Error(err.message);
 		}
-		if (step === 3) {
+		if (step === 3 && focus.length > 0) {
+			await supabase.from("user_focus_areas").delete().eq("user_id", userId);
+			await supabase
+				.from("user_focus_areas")
+				.insert(focus.map((id) => ({ user_id: userId, focus_area_id: id })));
+		}
+		if (step === 4) {
+			const { error: err } = await supabase
+				.from("profiles")
+				.update({ content_formats: contentFormats })
+				.eq("user_id", userId);
+			if (err) throw new Error(err.message);
+		}
+		if (step === 5) {
+			const { error: err } = await supabase
+				.from("profiles")
+				.update({ aspiration: aspiration.trim() || null })
+				.eq("user_id", userId);
+			if (err) throw new Error(err.message);
+		}
+		if (step === 6) {
+			const { error: err } = await supabase
+				.from("profiles")
+				.update({ preferred_opportunity_categories: oppTypes })
+				.eq("user_id", userId);
+			if (err) throw new Error(err.message);
+		}
+		if (step === 7) {
 			const { error: err } = await supabase
 				.from("profiles")
 				.update({
@@ -261,77 +273,35 @@ export default function OnboardingPage() {
 				.eq("user_id", userId);
 			if (err) throw new Error(err.message);
 		}
-		if (step === 4 && season) {
-			await Promise.all([
-				supabase
-					.from("profiles")
-					.update({ season_label: season })
-					.eq("user_id", userId),
-				supabase
-					.from("onboarding_responses")
-					.upsert(
-						{ user_id: userId, what_feels_missing: season },
-						{ onConflict: "user_id" },
-					),
-			]);
-		}
-		if (step === 5 && focus.length > 0) {
-			await supabase.from("user_focus_areas").delete().eq("user_id", userId);
-			await supabase
-				.from("user_focus_areas")
-				.insert(focus.map((id) => ({ user_id: userId, focus_area_id: id })));
-		}
-		if (step === 6) {
+		if (step === 8 && educationLevel) {
 			const { error: err } = await supabase
 				.from("profiles")
-				.update({ preferred_opportunity_categories: oppTypes })
+				.update({ education_level: educationLevel })
 				.eq("user_id", userId);
 			if (err) throw new Error(err.message);
 		}
-		if (step === 7 && time) {
+		if (step === 9 && time) {
 			await supabase
 				.from("profiles")
 				.update({ time_budget_label: time })
 				.eq("user_id", userId);
 		}
-		if (step === 8) {
-			const note = avoid.trim();
-			await Promise.all([
-				supabase
-					.from("profiles")
-					.update({ avoid_note: note || null })
-					.eq("user_id", userId),
-				note
-					? supabase
-							.from("onboarding_responses")
-							.upsert(
-								{ user_id: userId, biggest_distraction: note },
-								{ onConflict: "user_id" },
-							)
-					: Promise.resolve(),
-			]);
-		}
-		if (step === 10) {
-			const { error: err } = await supabase
-				.from("profiles")
-				.update({ aspiration: aspiration.trim() || null })
-				.eq("user_id", userId);
-			if (err) throw new Error(err.message);
-		}
 	}
 
 	async function handleComplete() {
-		if (!userId || focus.length === 0 || baseline == null) return;
+		if (!userId || focus.length === 0) return;
 		setSaving(true);
 		setError(null);
 		try {
 			const topFocusId = focus[0];
 			const topFocusLabel =
 				FOCUS_AREAS.find((f) => f.id === topFocusId)?.label ?? topFocusId;
+			// Signal baseline is no longer asked; seed the neutral midpoint of the
+			// 1..5 scale (3) and let the Direction Score build from real behaviour.
 			const { error: rpcErr } = await supabase.rpc("complete_onboarding", {
 				p_focus_area_id: topFocusId,
 				p_focus_area_label: topFocusLabel,
-				p_pulse_score: baseline,
+				p_pulse_score: 3,
 			});
 			if (rpcErr) throw new Error(rpcErr.message);
 			router.replace("/for-you");
@@ -363,15 +333,14 @@ export default function OnboardingPage() {
 		if (step === 0) return name.trim().length > 0;
 		if (step === 1) return careerStage !== null;
 		if (step === 2) return fields.length > 0;
-		if (step === 3) return country !== "";
-		if (step === 4) return season !== null;
-		if (step === 5) return focus.length > 0;
+		if (step === 3) return focus.length > 0;
+		if (step === 4) return contentFormats.length > 0;
+		if (step === 5) return true; // goal is optional (skippable)
 		if (step === 6) return oppTypes.length > 0;
-		if (step === 7) return time !== null;
-		if (step === 8) return true;
-		if (step === 9) return baseline !== null;
-		if (step === 10) return true;
-		if (step === 11) return focus.length > 0 && baseline !== null && consent;
+		if (step === 7) return country !== "";
+		if (step === 8) return educationLevel !== null;
+		if (step === 9) return time !== null;
+		if (step === 10) return focus.length > 0 && consent;
 		return false;
 	})();
 
@@ -422,7 +391,20 @@ export default function OnboardingPage() {
 					<StepCareerStage value={careerStage} onSelect={setCareerStage} />
 				)}
 				{step === 2 && <StepFields value={fields} onToggle={toggleField} />}
-				{step === 3 && (
+				{step === 3 && <StepFocus value={focus} onToggle={toggleFocus} />}
+				{step === 4 && (
+					<StepLearnFormat
+						value={contentFormats}
+						onToggle={toggleContentFormat}
+					/>
+				)}
+				{step === 5 && (
+					<StepAspiration value={aspiration} onChange={setAspiration} />
+				)}
+				{step === 6 && (
+					<StepOpportunityTypes value={oppTypes} onToggle={toggleOppType} />
+				)}
+				{step === 7 && (
 					<StepLocation
 						country={country}
 						onCountry={setCountry}
@@ -432,18 +414,11 @@ export default function OnboardingPage() {
 						onRelocate={setOpenToRelocate}
 					/>
 				)}
-				{step === 4 && <StepPurpose value={season} onSelect={setSeason} />}
-				{step === 5 && <StepFocus value={focus} onToggle={toggleFocus} />}
-				{step === 6 && (
-					<StepOpportunityTypes value={oppTypes} onToggle={toggleOppType} />
+				{step === 8 && (
+					<StepEducation value={educationLevel} onSelect={setEducationLevel} />
 				)}
-				{step === 7 && <StepTime value={time} onSelect={setTime} />}
-				{step === 8 && <StepAvoid value={avoid} onChange={setAvoid} />}
-				{step === 9 && <StepBaseline value={baseline} onSelect={setBaseline} />}
+				{step === 9 && <StepTime value={time} onSelect={setTime} />}
 				{step === 10 && (
-					<StepAspiration value={aspiration} onChange={setAspiration} />
-				)}
-				{step === 11 && (
 					<StepConsent consent={consent} onConsent={setConsent} />
 				)}
 
@@ -462,7 +437,7 @@ export default function OnboardingPage() {
 					>
 						{CTA_LABELS[step]}
 					</CtaButton>
-					{(step === 8 || step === 10) && (
+					{step === 5 && (
 						<button
 							type="button"
 							onClick={handleNext}
@@ -471,7 +446,7 @@ export default function OnboardingPage() {
 							Skip for now
 						</button>
 					)}
-					{step === 11 && !consent && (
+					{step === 10 && !consent && (
 						<p className="mt-2 text-center text-[#0E1420]/50 text-[11px]">
 							You must agree to continue
 						</p>
@@ -674,7 +649,7 @@ function StepFields({
 		<div>
 			<StepHead
 				eyebrow="Your work"
-				headline="What field are you in — or moving toward?"
+				headline="What field are you in, or moving toward?"
 				sub="Pick up to two. This shapes the opportunities and stories you'll see."
 			/>
 			<div className="flex flex-wrap gap-2">
@@ -735,7 +710,7 @@ function StepLocation({
 		<div>
 			<StepHead
 				eyebrow="Where you are"
-				headline="Where are you based — and how far will you go?"
+				headline="Where are you based, and how far will you go?"
 				sub="So we honour what you're eligible for, and rank remote-friendly picks for you."
 			/>
 			<label htmlFor="onb-country" className="sr-only">
@@ -828,7 +803,60 @@ function ToggleRow({
 	);
 }
 
-function StepPurpose({
+function StepLearnFormat({
+	value,
+	onToggle,
+}: {
+	value: string[];
+	onToggle: (id: string) => void;
+}) {
+	return (
+		<div>
+			<StepHead
+				eyebrow="How you take it in"
+				headline="How do you like to learn?"
+				sub="Pick any that fit. Your feed leans toward these formats."
+			/>
+			<div className="flex flex-wrap gap-2">
+				{CONTENT_FORMATS.map((opt) => {
+					const selected = value.includes(opt.id);
+					return (
+						<button
+							key={opt.id}
+							type="button"
+							aria-pressed={selected}
+							onClick={() => onToggle(opt.id)}
+							className={`cursor-pointer rounded-full border px-4 py-2.5 font-bold text-[12px] transition-all hover:bg-[#F4F7FC] ${selectableRing()} motion-reduce:transition-none`}
+							style={
+								selected
+									? {
+											backgroundColor: "rgba(62,207,191,0.14)",
+											borderColor: "rgba(62,207,191,0.55)",
+											color: "#0A8F7F",
+										}
+									: {
+											backgroundColor: "#ffffff",
+											borderColor: "rgba(14,20,32,0.12)",
+											color: "rgba(14,20,32,0.55)",
+										}
+							}
+						>
+							{opt.label}
+						</button>
+					);
+				})}
+			</div>
+			<p className="mt-4 text-center text-[#0E1420]/55 text-[11px]">
+				<span style={{ color: value.length > 0 ? "#0A8F7F" : undefined }}>
+					{value.length}
+				</span>{" "}
+				selected
+			</p>
+		</div>
+	);
+}
+
+function StepEducation({
 	value,
 	onSelect,
 }: {
@@ -838,42 +866,37 @@ function StepPurpose({
 	return (
 		<div>
 			<StepHead
-				eyebrow="Your starting point"
-				headline="Where are you with your purpose?"
-				sub="No right answer. Just where you are right now."
+				eyebrow="Your background"
+				headline="Where are you in your education?"
+				sub="So we only surface scholarships and programmes you can actually apply to."
 			/>
-			<div className="flex flex-col gap-3">
-				{PURPOSE_CARDS.map((c) => {
-					const selected = value === c.value;
+			<div className="flex flex-col gap-2">
+				{EDUCATION_LEVELS.map((opt) => {
+					const selected = value === opt.value;
 					return (
 						<button
-							key={c.value}
+							key={opt.value}
 							type="button"
 							aria-pressed={selected}
-							onClick={() => onSelect(c.value)}
-							className={`relative rounded-[18px] border-[1.5px] p-5 text-left transition-all hover:bg-[#F4F7FC] ${selectableRing()} motion-reduce:transition-none`}
+							onClick={() => onSelect(opt.value)}
+							className={`relative flex items-center gap-4 rounded-[16px] border-[1.5px] p-4 text-left transition-all hover:bg-[#F4F7FC] ${selectableRing()} motion-reduce:transition-none`}
 							style={{
-								backgroundColor: selected ? `${c.color}14` : "#ffffff",
-								borderColor: selected ? c.color : "rgba(14,20,32,0.12)",
+								backgroundColor: selected ? "rgba(245,200,66,0.10)" : "#ffffff",
+								borderColor: selected ? GOLD : "rgba(14,20,32,0.12)",
 							}}
 						>
-							{selected && (
-								<span className="absolute top-4 right-4">
-									<CheckBadge color={c.color} size={24} />
-								</span>
-							)}
-							<span
-								className="mb-3 flex h-10 w-10 items-center justify-center rounded-[12px]"
-								style={{ backgroundColor: `${c.color}1a` }}
-							>
-								<Icon name={c.icon} color={c.color} size={20} />
+							<span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#F4F7FC]">
+								<Icon name="book" color="rgba(14,20,32,0.55)" size={18} />
 							</span>
-							<p className="mb-1 font-black text-[#0E1420] text-[15px]">
-								{c.label}
-							</p>
-							<p className="text-[#0E1420]/60 text-[12px] leading-relaxed">
-								{c.sub}
-							</p>
+							<span className="flex-1">
+								<span className="block font-black text-[#0E1420] text-[14px]">
+									{opt.value}
+								</span>
+								<span className="mt-0.5 block text-[#0E1420]/55 text-[11px]">
+									{opt.sub}
+								</span>
+							</span>
+							{selected && <CheckBadge color={GOLD} size={22} />}
 						</button>
 					);
 				})}
@@ -1043,35 +1066,6 @@ function StepTime({
 	);
 }
 
-function StepAvoid({
-	value,
-	onChange,
-}: {
-	value: string;
-	onChange: (v: string) => void;
-}) {
-	return (
-		<div>
-			<StepHead
-				eyebrow="Just between us"
-				headline="Is there something you keep starting and not finishing?"
-				sub="North uses this to help you break the pattern. Optional, and only ever used to support you."
-			/>
-			<label htmlFor="onb-avoid" className="sr-only">
-				What you keep starting and not finishing
-			</label>
-			<textarea
-				id="onb-avoid"
-				value={value}
-				onChange={(e) => onChange(e.target.value)}
-				maxLength={500}
-				placeholder="e.g. I always start exercising but stop after two weeks"
-				className="h-[120px] w-full resize-none rounded-[14px] border border-[#0E1420]/10 bg-white px-4 py-3.5 font-medium text-[#0E1420] text-[14px] outline-none transition-all placeholder:text-[#0E1420]/35 focus:border-[#3ECFBF] focus:bg-[rgba(62,207,191,0.04)]"
-			/>
-		</div>
-	);
-}
-
 function StepAspiration({
 	value,
 	onChange,
@@ -1101,59 +1095,6 @@ function StepAspiration({
 	);
 }
 
-function StepBaseline({
-	value,
-	onSelect,
-}: {
-	value: number | null;
-	onSelect: (v: number) => void;
-}) {
-	return (
-		<div>
-			<StepHead
-				eyebrow="Your starting signal"
-				headline="In a typical week, how much of your time goes toward what matters to you?"
-				sub="This sets your starting Signal score. Be honest — North works better when it knows the truth."
-			/>
-			<div className="flex justify-center gap-3">
-				{[1, 2, 3, 4, 5].map((n) => {
-					const selected = value === n;
-					const c = BASELINE_COLORS[n - 1];
-					return (
-						<button
-							key={n}
-							type="button"
-							aria-pressed={selected}
-							aria-label={`${n} out of 5`}
-							onClick={() => onSelect(n)}
-							className={`flex h-14 w-14 cursor-pointer items-center justify-center rounded-full border-[2px] font-black text-[18px] transition-all ${selectableRing()} motion-reduce:transition-none`}
-							style={
-								selected
-									? {
-											backgroundColor: c.bg,
-											borderColor: c.border,
-											color: c.text,
-										}
-									: {
-											backgroundColor: "#ffffff",
-											borderColor: "rgba(14,20,32,0.12)",
-											color: "rgba(14,20,32,0.55)",
-										}
-							}
-						>
-							{n}
-						</button>
-					);
-				})}
-			</div>
-			<div className="mt-2 flex justify-between text-[#0E1420]/55 text-[10px]">
-				<span>Almost none</span>
-				<span>Most of it</span>
-			</div>
-		</div>
-	);
-}
-
 function StepConsent({
 	consent,
 	onConsent,
@@ -1166,7 +1107,7 @@ function StepConsent({
 			<StepHead
 				eyebrow="One last thing"
 				headline="North learns from how you show up."
-				sub="To personalise your Signal score and surface better opportunities, North tracks your in-app behaviour — tasks completed, content engaged with, and time patterns. This data never leaves North and is never sold."
+				sub="To personalise your Signal score and surface better opportunities, North tracks your in-app behaviour: tasks completed, content engaged with, and time patterns. This data never leaves North and is never sold."
 			/>
 			<div className="mb-6 rounded-[16px] border border-[#0E1420]/10 bg-white p-4">
 				<div className="flex flex-col gap-3">

@@ -31,11 +31,19 @@ export async function proxy(request: NextRequest) {
 
 	const pathname = request.nextUrl.pathname;
 
-	// Public utility endpoint: the For You feed fetches it client-side to pull an
-	// article's Open Graph image. It has its own SSRF guard and never touches
-	// user data, so let it through without the auth/onboarding redirects (which
-	// would otherwise hand the fetch a sign-in HTML page instead of JSON).
-	if (pathname.startsWith("/api/og-image")) return response;
+	// Public utility endpoints, each with its own SSRF guard and no access to user
+	// data. They MUST bypass the auth/onboarding redirects: an <img> (for /api/img)
+	// or fetch (for /api/og-image) cannot follow a 307 into a sign-in HTML page, so
+	// gating them silently breaks every card image. /api/img is the same-origin
+	// image proxy every For You card loads through — keeping it public is what makes
+	// real images actually render.
+	if (
+		pathname.startsWith("/api/img") ||
+		pathname.startsWith("/api/og-image") ||
+		pathname.startsWith("/api/cover")
+	) {
+		return response;
+	}
 
 	const isSignIn = pathname === "/sign-in" || pathname === "/sign-up";
 	const isAuthRoute = pathname.startsWith("/auth/");

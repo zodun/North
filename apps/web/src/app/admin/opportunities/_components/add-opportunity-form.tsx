@@ -82,7 +82,7 @@ export function AddOpportunityForm() {
 			if ("error" in res && res.error) {
 				toast.error(res.error);
 			} else {
-				toast.success("Added as draft — clear it to make it live.");
+				toast.success("Added as draft. Clear it to make it live.");
 				setFields(BLANK);
 				setOpen(false);
 			}
@@ -138,7 +138,7 @@ export function AddOpportunityForm() {
 					id="opp-title"
 					value={fields.title}
 					onChange={(e) => set("title", e.target.value)}
-					placeholder="Software Engineer — Caribbean Remote"
+					placeholder="Software Engineer, Caribbean Remote"
 					required
 				/>
 			</div>
@@ -182,7 +182,7 @@ export function AddOpportunityForm() {
 					id="opp-why"
 					value={fields.why}
 					onChange={(e) => set("why", e.target.value)}
-					placeholder="One line for the user — why this matters"
+					placeholder="One line for the user: why this matters"
 				/>
 			</div>
 

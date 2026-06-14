@@ -1,6 +1,7 @@
 import { env } from "@north/env/web";
 import Image from "next/image";
 
+import { proxiedImage } from "@/lib/img";
 import { getServerSupabase } from "@/lib/supabase-server";
 
 import { AddLinkOutForm } from "./_components/add-link-out-form";
@@ -12,7 +13,7 @@ export default async function AdminContent() {
 	const { data: items, error } = await supabase
 		.from("content_items")
 		.select(
-			"id, kind, title, content_category_id, focus_area_id, license_type, license_status, attribution_text, external_url, cloudinary_public_id, published_at, created_at",
+			"id, kind, title, content_category_id, focus_area_id, license_type, license_status, attribution_text, external_url, cloudinary_public_id, thumbnail_url, published_at, created_at",
 		)
 		// Drafts first so anything needing clearance is impossible to miss.
 		.order("license_status", { ascending: true })
@@ -81,6 +82,18 @@ export default async function AdminContent() {
 													className="rounded object-cover"
 													unoptimized
 												/>
+											) : it.thumbnail_url ? (
+												// Link-out thumbnail via the same-origin proxy so it
+												// always loads (no third-party hotlink failures). Lets
+												// curators see the real image clients will get.
+												<Image
+													src={proxiedImage(it.thumbnail_url)}
+													alt=""
+													width={56}
+													height={56}
+													className="rounded object-cover"
+													unoptimized
+												/>
 											) : it.external_url ? (
 												<a
 													href={it.external_url}
@@ -91,7 +104,7 @@ export default async function AdminContent() {
 													Link ↗
 												</a>
 											) : (
-												<span className="text-muted-foreground">—</span>
+												<span className="text-muted-foreground">·</span>
 											)}
 										</td>
 										<td className="max-w-[16rem] py-2 pr-3">
@@ -100,10 +113,10 @@ export default async function AdminContent() {
 										<td className="py-2 pr-3">{it.kind}</td>
 										<td className="py-2 pr-3">
 											{it.content_category_id ?? (
-												<span className="text-muted-foreground">—</span>
+												<span className="text-muted-foreground">·</span>
 											)}
 										</td>
-										<td className="py-2 pr-3">{it.license_type ?? "—"}</td>
+										<td className="py-2 pr-3">{it.license_type ?? "·"}</td>
 										<td className="py-2 pr-3">
 											<span
 												className={
@@ -120,7 +133,7 @@ export default async function AdminContent() {
 										<td className="py-2 pr-3">
 											{it.published_at
 												? new Date(it.published_at).toLocaleDateString()
-												: "—"}
+												: "·"}
 										</td>
 										<td className="py-2">
 											<RowActions

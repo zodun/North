@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { coverUrl } from "@/lib/article-image/cover";
 import { supabase } from "@/lib/auth-client";
+import { proxiedImage } from "@/lib/img";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // For You — bright, warm, full-bleed feed. Each card bleeds the article's image
@@ -31,11 +33,14 @@ type Item = {
 type Category = { id: string; label: string };
 
 // ── Bright warm tokens ───────────────────────────────────────────────────────
-const BG = "#FDF8EF";
-const TEXT = "#1A1208";
-const GOLD = "#C47D00";
-const TEAL = "#0EA596";
-const VIOLET = "#7C4DFF";
+const BG = "#EDF1F8";
+const TEXT = "#0E1420";
+const GOLD = "#F5C842";
+const GOLD_INK = "#8A6A00";
+const TEAL = "#3ECFBF";
+const TEAL_INK = "#0A8F7F";
+const VIOLET = "#7B61FF";
+const VIOLET_INK = "#5B43E0";
 const CORAL = "#D4522A";
 const GREEN = "#2E9E5B";
 
@@ -90,15 +95,12 @@ function catStyle(label: string | null): CatStyle {
 	return CAT_STYLES[catKey(label)] ?? CAT_STYLES.career;
 }
 
-// FIX 3 — curated category fallback image, rotated across the 3 variants by a
-// stable hash of the content id (so a card always picks the same one).
+// Stable hash of the content id — drives deterministic per-card choices (cover
+// art, story gradients, the synthetic save count).
 function hashId(id: string): number {
 	let h = 0;
 	for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
 	return h;
-}
-function categoryFallback(label: string | null, id: string): string {
-	return `/fallbacks/${catKey(label)}-${(hashId(id) % 3) + 1}.svg`;
 }
 
 // ── Kind → presentation ──────────────────────────────────────────────────────
@@ -151,6 +153,10 @@ function darken(c: string, amt: number): string {
 	return `rgb(${Math.round(r * f)},${Math.round(g * f)},${Math.round(b * f)})`;
 }
 
+// Card images render through proxiedImage() (same-origin /api/img) so they always
+// load. Keep the raw URL in state — only the rendered src is proxied — so onError
+// string checks (maxresdefault, /api/cover) still hold.
+
 // YouTube thumbnail — used directly (no API call) for cards whose link is a
 // YouTube URL. maxres falls back to hqdefault via onError.
 function youtubeThumbnail(url: string): string | null {
@@ -158,10 +164,10 @@ function youtubeThumbnail(url: string): string | null {
 	return m ? `https://img.youtube.com/vi/${m[1]}/maxresdefault.jpg` : null;
 }
 
-// FIX 2 — sources that reliably carry a rich og:image. "Read" cards (essays /
-// stories) from anywhere else are held back from the feed so we never surface a
-// thumbnail-less article. Watch / Listen / opportunity cards are exempt (they
-// resolve images via YouTube/og or the curated fallback).
+// FIX 2 — reputable Read sources. "Read" cards (essays / stories) from anywhere
+// else are held back from the feed for editorial quality. Watch / Listen /
+// opportunity cards are exempt. Image-wise every card is covered: a real image
+// when available, otherwise the curated category fallback.
 const APPROVED_READ_SOURCES = [
 	"ted.com",
 	"ideas.ted.com",
@@ -190,6 +196,17 @@ const APPROVED_READ_SOURCES = [
 	"jamaicaobserver.com",
 	"loopjamaica.com",
 	"caricom.org",
+	// Curated-feed reputable read sources (see lib/curated-feed + api/curated-feed)
+	"nerdwallet.com",
+	"thefinancialdiet.com",
+	"investopedia.com",
+	"smashingmagazine.com",
+	"css-tricks.com",
+	"dev.to",
+	"ycombinator.com",
+	"firstround.com",
+	"paulgraham.com",
+	"linkedin.com",
 ] as const;
 function isApprovedReadSource(url: string | null): boolean {
 	if (!url) return false;
@@ -371,10 +388,11 @@ export function ForYouFeed({
 		return () => el.removeEventListener("scroll", onFirstScroll);
 	}, []);
 
-	// FIX 2 — hold back Read cards (essays/stories) from non-approved sources so
-	// every Read card has a reliable rich thumbnail. Display-only; the underlying
+	// Hold back Read cards from non-approved sources only. Every card that passes
+	// the source gate is shown — cards with no real image render the curated
+	// category fallback rather than being dropped. Display-only; the underlying
 	// query is untouched.
-	const filtered = items.filter(passesSourceGate);
+	const filtered = items.filter((i) => passesSourceGate(i));
 	const catLabel = (id: string | null) =>
 		categories.find((c) => c.id === id)?.label ?? null;
 
@@ -499,7 +517,9 @@ function FeedCard({
 	const ytThumb = item.external_url
 		? youtubeThumbnail(item.external_url)
 		: null;
-	const fallbackImg = categoryFallback(categoryLabel, item.id);
+	// Image-less cards get a deterministic, on-brand cover (see lib/article-image)
+	// instead of one of a few static SVGs — a unique Soft Sky field per article.
+	const fallbackImg = coverUrl({ id: item.id, category: categoryLabel });
 	// Hit the OG route only when there's no thumbnail and no YouTube thumb.
 	const canFetch =
 		!item.thumbnail_url && !ytThumb && Boolean(item.external_url);
@@ -537,8 +557,9 @@ function FeedCard({
 					)
 					.then((d: { imageUrl?: string | null } | null) => {
 						console.log("[Card] OG result:", d);
-						// og/twitter image, else the curated category fallback.
-						setImgUrl(d?.imageUrl ? d.imageUrl : fallbackImg);
+						// og/twitter image when found; otherwise every kind falls back to
+						// the curated category image so no card is ever image-less.
+						setImgUrl(d?.imageUrl ?? fallbackImg);
 					})
 					.catch(() => setImgUrl(fallbackImg))
 					.finally(() => setPhase("done"));
@@ -585,18 +606,19 @@ function FeedCard({
 					{/* biome-ignore lint/performance/noImgElement: full-bleed remote image, dynamic dimensions */}
 					<img
 						key={imgUrl ?? ""}
-						src={imgUrl ?? ""}
+						src={proxiedImage(imgUrl)}
 						alt=""
 						loading="lazy"
 						onError={() => {
 							if (imgUrl?.includes("maxresdefault")) {
 								// YouTube maxres often 404s → hqdefault always exists.
 								setImgUrl(imgUrl.replace("maxresdefault", "hqdefault"));
-							} else if (imgUrl && !imgUrl.includes("/fallbacks/")) {
-								// Any failed real image → the curated category fallback.
+							} else if (imgUrl && !imgUrl.includes("/api/cover")) {
+								// Any real image that fails → swap in the deterministic
+								// on-brand cover (same-origin SVG that always loads).
 								setImgUrl(fallbackImg);
 							} else {
-								// Even the fallback failed → compass (now very rare).
+								// Even the fallback failed (effectively never) → compass.
 								setImgUrl(null);
 								setPhase("done");
 							}
@@ -644,14 +666,14 @@ function FeedCard({
 						aria-hidden="true"
 						className="pointer-events-none absolute inset-0 z-[3]"
 						style={{
-							background: `linear-gradient(to top, rgba(${bgC},0.6) 0%, rgba(${bgC},0.28) 18%, rgba(${bgC},0.08) 38%, transparent 58%)`,
+							background: `linear-gradient(to top, rgba(${bgC},0.95) 0%, rgba(${bgC},0.82) 24%, rgba(${bgC},0.55) 42%, rgba(${bgC},0.22) 56%, transparent 70%)`,
 						}}
 					/>
 					<div
 						aria-hidden="true"
 						className="pointer-events-none absolute inset-0 z-[4]"
 						style={{
-							background: `linear-gradient(to right, rgba(${bgC},0.42) 0%, rgba(${bgC},0.16) 26%, transparent 52%)`,
+							background: `linear-gradient(to right, rgba(${bgC},0.6) 0%, rgba(${bgC},0.28) 30%, transparent 56%)`,
 						}}
 					/>
 					<div
@@ -678,7 +700,7 @@ function FeedCard({
 						className="font-bold text-[10px]"
 						style={{ color: withAlpha(ink, 0.85) }}
 					>
-						{streak} day streak — keep it going
+						{streak} day streak, keep it going
 					</span>
 				</div>
 			)}
@@ -712,7 +734,7 @@ function FeedCard({
 						fontFamily:
 							"'Iowan Old Style', Palatino, Georgia, 'Times New Roman', serif",
 						fontSize: "clamp(28px, 7vw, 44px)",
-						fontWeight: 600,
+						fontWeight: 800,
 						letterSpacing: "-0.5px",
 						lineHeight: 1.05,
 					}}
@@ -931,9 +953,9 @@ type Story = {
 };
 type PeerStoryRow = Story & { focusArea: string };
 const STORY_GRADS = [
-	"linear-gradient(135deg, #F5C842, #C47D00)",
-	"linear-gradient(135deg, #3ECFBF, #0EA596)",
-	"linear-gradient(135deg, #9B7DFF, #7C4DFF)",
+	"linear-gradient(135deg, #F5C842, #E8B84B)",
+	"linear-gradient(135deg, #3ECFBF, #2BB6A8)",
+	"linear-gradient(135deg, #9B7DFF, #7B61FF)",
 ];
 const STORIES: Record<string, Story[]> = {
 	career: [
@@ -1151,17 +1173,17 @@ const PROOF_AVATARS = [
 	{
 		id: "gold",
 		overlap: false,
-		grad: "linear-gradient(135deg, #F5C842, #C47D00)",
+		grad: "linear-gradient(135deg, #F5C842, #E8B84B)",
 	},
 	{
 		id: "teal",
 		overlap: true,
-		grad: "linear-gradient(135deg, #3ECFBF, #0EA596)",
+		grad: "linear-gradient(135deg, #3ECFBF, #2BB6A8)",
 	},
 	{
 		id: "violet",
 		overlap: true,
-		grad: "linear-gradient(135deg, #9B7DFF, #7C4DFF)",
+		grad: "linear-gradient(135deg, #9B7DFF, #7B61FF)",
 	},
 ];
 
@@ -1185,7 +1207,9 @@ function SocialProof({
 			</div>
 			<span
 				className="font-semibold text-[11px]"
-				style={{ color: light ? "rgba(255,255,255,0.7)" : "rgba(26,18,8,0.5)" }}
+				style={{
+					color: light ? "rgba(255,255,255,0.7)" : "rgba(14,20,32,0.5)",
+				}}
 			>
 				{count} people on a similar path saved this
 			</span>
@@ -1314,9 +1338,9 @@ function IconButton({
 	const cls =
 		"flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-full transition-colors duration-200 motion-reduce:transition-none";
 	const style = {
-		background: "rgba(196,125,0,0.08)",
-		border: "1px solid rgba(196,125,0,0.15)",
-		color: "rgba(26,18,8,0.4)",
+		background: "rgba(245,200,66,0.08)",
+		border: "1px solid rgba(245,200,66,0.15)",
+		color: "rgba(14,20,32,0.4)",
 	};
 	if (href) {
 		return (
@@ -1436,7 +1460,7 @@ function ProgressIndicator({
 	if (total > 14) {
 		const pct = total > 1 ? ((index + 1) / total) * 100 : 100;
 		return (
-			<div className="absolute bottom-[6px] left-1/2 z-10 h-[3px] w-[120px] -translate-x-1/2 overflow-hidden rounded-full bg-[rgba(26,18,8,0.12)]">
+			<div className="absolute bottom-[6px] left-1/2 z-10 h-[3px] w-[120px] -translate-x-1/2 overflow-hidden rounded-full bg-[rgba(14,20,32,0.12)]">
 				<div
 					className="h-full rounded-full"
 					style={{ width: `${pct}%`, background: accent }}
@@ -1454,7 +1478,7 @@ function ProgressIndicator({
 					style={
 						i === index
 							? { width: 16, background: accent }
-							: { width: 4, background: "rgba(26,18,8,0.12)" }
+							: { width: 4, background: "rgba(14,20,32,0.12)" }
 					}
 				/>
 			))}
@@ -1480,11 +1504,11 @@ function EmptyState() {
 			</svg>
 			<p
 				className="mt-4 font-bold text-[17px]"
-				style={{ color: "rgba(26,18,8,0.35)" }}
+				style={{ color: "rgba(14,20,32,0.35)" }}
 			>
 				Nothing here yet
 			</p>
-			<p className="mt-1 text-[13px]" style={{ color: "rgba(26,18,8,0.22)" }}>
+			<p className="mt-1 text-[13px]" style={{ color: "rgba(14,20,32,0.22)" }}>
 				Your personalised feed is building.
 			</p>
 		</div>

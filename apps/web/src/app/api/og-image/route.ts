@@ -73,13 +73,28 @@ function extractImage(html: string, base: string): string | null {
 		findMeta("og:image") ??
 		findMeta("twitter:image:src") ??
 		findMeta("twitter:image");
-	if (meta) return resolve(meta, base);
+	if (meta) {
+		const r = resolve(meta, base);
+		if (!isTrackingPixel(r)) return r;
+	}
 
 	const img = html.match(
 		/<img[^>]+src\s*=\s*["']([^"']+\.(?:jpg|jpeg|png|webp)(?:\?[^"']*)?)["']/i,
 	);
-	if (img?.[1]) return resolve(img[1], base);
+	if (img?.[1]) {
+		const r = resolve(img[1], base);
+		if (!isTrackingPixel(r)) return r;
+	}
 	return null;
+}
+
+// Some sites advertise a tracking pixel / spacer as their og:image (e.g.
+// NerdWallet's nw-pixel.gif). It's a valid image but renders blank, so treat it
+// as "no image" and let the card fall back.
+function isTrackingPixel(url: string): boolean {
+	return /(?:pixel|spacer|1x1|blank|transparent|tracking|beacon)\b|\/track\//i.test(
+		url,
+	);
 }
 
 function json(imageUrl: string | null): Response {

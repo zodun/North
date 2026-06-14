@@ -57,11 +57,11 @@ export default async function AdminOpportunities() {
 										<td className="py-2 pr-3">{it.org}</td>
 										<td className="py-2 pr-3">
 											{it.category_id ?? (
-												<span className="text-muted-foreground">—</span>
+												<span className="text-muted-foreground">·</span>
 											)}
 										</td>
-										<td className="py-2 pr-3">{it.location ?? "—"}</td>
-										<td className="py-2 pr-3">{it.deadline ?? "—"}</td>
+										<td className="py-2 pr-3">{it.location ?? "·"}</td>
+										<td className="py-2 pr-3">{it.deadline ?? "·"}</td>
 										<td className="py-2 pr-3">
 											<span
 												className={
@@ -78,7 +78,7 @@ export default async function AdminOpportunities() {
 										<td className="py-2 pr-3">
 											{it.published_at
 												? new Date(it.published_at).toLocaleDateString()
-												: "—"}
+												: "·"}
 										</td>
 										<td className="py-2">
 											<RowActions

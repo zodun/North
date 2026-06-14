@@ -7,8 +7,11 @@ import { usePathname } from "next/navigation";
 // lives in the For You header (see ProductShell) and Profile is reached via the
 // top-right avatar present on every tab page.
 
-const GOLD = "#C47D00";
-const INACTIVE = "rgba(26,18,8,0.3)";
+// Active tab carries the gold "needle" meaning; as text/icon on the light sky it
+// uses the readable gold-ink (≥4.5:1), while the position dot is the vivid fill.
+const GOLD = "#8A6A00";
+const GOLD_DOT = "#F5C842";
+const INACTIVE = "rgba(14,20,32,0.6)";
 
 type TabDef = {
 	href: string;
@@ -31,8 +34,8 @@ export function TabBar() {
 		<nav
 			className="fixed right-0 bottom-0 left-0 z-40 flex items-stretch pt-2 pb-[max(6px,env(safe-area-inset-bottom))] backdrop-blur-xl"
 			style={{
-				background: "rgba(245,240,232,0.97)",
-				borderTop: "1px solid rgba(26,18,8,0.08)",
+				background: "rgba(237,241,248,0.82)",
+				borderTop: "1px solid rgba(14,20,32,0.08)",
 			}}
 		>
 			{TABS.map((tab) => {
@@ -56,7 +59,7 @@ export function TabBar() {
 						</span>
 						<span
 							className="h-[3px] w-[3px] rounded-full"
-							style={{ background: active ? GOLD : "transparent" }}
+							style={{ background: active ? GOLD_DOT : "transparent" }}
 						/>
 					</a>
 				);

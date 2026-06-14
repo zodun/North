@@ -30,7 +30,7 @@ const bandInfo = (
 ): Record<BandLabel, { color: string; body: string }> => ({
 	Drifting: {
 		color: p.bandDrift,
-		body: "You’re showing up, just not toward what you said matters. No alarm — drift is part of finding direction.",
+		body: "You’re showing up, just not toward what you said matters. No alarm. Drift is part of finding direction.",
 	},
 	Finding: {
 		color: p.bandFind,
@@ -744,8 +744,8 @@ function NarrativeView({
 						margin: 0,
 					}}
 				>
-					You're <span style={{ color: info.color }}>{band.toLowerCase()}</span>{" "}
-					— closing in on a fourth week of climbing. The week you skipped your
+					You're <span style={{ color: info.color }}>{band.toLowerCase()}</span>
+					, closing in on a fourth week of climbing. The week you skipped your
 					deep-work block twice still showed up in your score.
 				</p>
 			</div>

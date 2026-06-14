@@ -106,7 +106,7 @@ export default async function MissionPage() {
 				promptGoal={promptGoal}
 				journalSlot={
 					<>
-						<p className="mt-2 mb-3 font-bold text-[#1A1208]/50 text-[10px] uppercase tracking-[0.12em]">
+						<p className="mt-2 mb-3 font-bold text-[#0E1420]/50 text-[10px] uppercase tracking-[0.12em]">
 							Signal &amp; Noise
 						</p>
 						<JournalCard entryDate={today} initialEntry={signal.lastJournal} />

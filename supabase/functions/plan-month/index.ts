@@ -15,9 +15,11 @@
 import { createClient } from "@supabase/supabase-js";
 
 import { captureServer } from "../_shared/posthog.ts";
+import { stripDashes } from "../_shared/text.ts";
 import {
 	buildSuggestPrompt,
 	buildUserPrompt,
+	DAYS_PER_WEEK,
 	fallbackPlan,
 	type GoalSuggestion,
 	MODEL_NAME,
@@ -211,9 +213,14 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 				.maybeSingle<{ id: string; focus_area_id: string | null }>(),
 			userClient
 				.from("profiles")
-				.select("time_budget_label")
+				.select("time_budget_label, career_stage, fields, country")
 				.eq("user_id", user.id)
-				.maybeSingle<{ time_budget_label: string | null }>(),
+				.maybeSingle<{
+					time_budget_label: string | null;
+					career_stage: string | null;
+					fields: string[] | null;
+					country: string | null;
+				}>(),
 		]);
 
 		if (!missionRes.data) {
@@ -243,18 +250,37 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 						goal_title: goalTitle,
 						goal_intent: goalIntent,
 						focus_areas: focusAreas,
+						career_stage: profileRes.data?.career_stage ?? undefined,
+						fields: profileRes.data?.fields ?? undefined,
+						region: profileRes.data?.country ?? undefined,
 					}),
 					PLAN_TOOL,
-					1024,
+					2048,
 				)) as PlanResult;
 				if (!Array.isArray(result.weeks) || result.weeks.length !== 4) {
 					throw new Error("plan did not contain 4 weeks");
+				}
+				if (
+					result.weeks.some(
+						(wk) =>
+							!Array.isArray(wk.daily_actions) || wk.daily_actions.length === 0,
+					)
+				) {
+					throw new Error("plan week missing daily_actions");
 				}
 				plan = result;
 				usedAi = true;
 			} catch {
 				plan = fallbackPlan(goalTitle);
 			}
+		}
+
+		// Keep all generated copy dash-free (mirrors migration 0053).
+		goalTitle = stripDashes(goalTitle);
+		goalIntent = stripDashes(goalIntent);
+		for (const wk of plan.weeks) {
+			wk.milestone = stripDashes(wk.milestone);
+			wk.daily_actions = (wk.daily_actions ?? []).map(stripDashes);
 		}
 
 		// ── Rewrite mission + steps with the service role ────────────────
@@ -297,17 +323,24 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 				sort_order: w,
 			});
 		}
-		// One daily step per calendar day, titled with that week's daily action.
+		// One daily step per calendar day, each with its own distinct task. Days map
+		// into 7-day week buckets; within a bucket each day takes the matching task,
+		// cycling if the final bucket runs longer than seven days.
 		const days = monthDays(monthStart);
 		days.forEach((due, offset) => {
-			const w = Math.min(3, Math.floor(offset / 7));
+			const w = Math.min(3, Math.floor(offset / DAYS_PER_WEEK));
+			const actions = plan.weeks[w].daily_actions;
+			const dayTask =
+				actions.length > 0
+					? actions[(offset % DAYS_PER_WEEK) % actions.length]
+					: plan.weeks[w].milestone;
 			rows.push({
 				monthly_mission_id: missionId,
 				user_id: user.id,
 				cadence: "daily",
 				week_index: w,
 				due_date: due,
-				title: plan.weeks[w].daily_action,
+				title: dayTask,
 				detail: plan.weeks[w].milestone,
 				estimate_label: estimate,
 				sort_order: offset,

@@ -23,7 +23,7 @@ export default async function AdminHome() {
 					<Link href="/admin/content" className="underline underline-offset-4">
 						Curated content
 					</Link>{" "}
-					<span className="text-muted-foreground">— FR-FEED-04</span>
+					<span className="text-muted-foreground">· FR-FEED-04</span>
 				</li>
 				<li>
 					<Link
@@ -33,7 +33,7 @@ export default async function AdminHome() {
 						Opportunities
 					</Link>{" "}
 					<span className="text-muted-foreground">
-						— Manual upload (DEC-03)
+						· Manual upload (DEC-03)
 					</span>
 				</li>
 			</ul>

@@ -5,12 +5,12 @@
 // it's edited.
 
 // Single-select. Stored verbatim in profiles.career_stage so the personalize
-// prompt reads naturally ("Career stage: 0–2 years in").
+// prompt reads naturally ("Career stage: 0 to 2 years in").
 export const CAREER_STAGES: { value: string; sub: string }[] = [
 	{ value: "Student", sub: "Still studying" },
 	{ value: "About to graduate", sub: "In the final stretch" },
-	{ value: "0–2 years in", sub: "Just getting started" },
-	{ value: "3–5 years in", sub: "Finding my stride" },
+	{ value: "0 to 2 years in", sub: "Just getting started" },
+	{ value: "3 to 5 years in", sub: "Finding my stride" },
 	{ value: "Building my own thing", sub: "Self-employed or founder" },
 ];
 

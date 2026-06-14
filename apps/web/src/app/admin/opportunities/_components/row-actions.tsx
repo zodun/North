@@ -39,7 +39,7 @@ export function RowActions({ id, status, canClear }: Props) {
 					if ("error" in res && res.error) {
 						toast.error(res.error);
 					} else {
-						toast.success("Cleared — opportunity is now live.");
+						toast.success("Cleared. Opportunity is now live.");
 					}
 				});
 			}}

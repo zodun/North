@@ -9,6 +9,7 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { type NextRequest, NextResponse } from "next/server";
+import { cleanCopy } from "@/lib/text";
 
 export const runtime = "nodejs";
 
@@ -31,9 +32,18 @@ function parseSuggestion(text: string): Suggestion {
 	if (start === -1 || end <= start) return NONE;
 	try {
 		const data = JSON.parse(text.slice(start, end + 1)) as Suggestion;
-		return typeof data.suggestion === "string" && data.suggestion.trim()
-			? data
-			: NONE;
+		if (typeof data.suggestion !== "string" || !data.suggestion.trim()) {
+			return NONE;
+		}
+		// Keep the pill dash-free (URLs are left untouched).
+		return {
+			...data,
+			suggestion: cleanCopy(data.suggestion),
+			resource: cleanCopy(data.resource),
+			source: cleanCopy(data.source),
+			duration: cleanCopy(data.duration),
+			why: cleanCopy(data.why),
+		};
 	} catch {
 		return NONE;
 	}

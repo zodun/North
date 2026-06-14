@@ -28,7 +28,7 @@ export const FEED: FeedItem[] = [
 		tag: "craft",
 		eyebrow: "Essay · 6 min",
 		title: "The work that compounds is the work no one sees.",
-		body: "Three years in, the people who shipped invisibly are the ones still building. The audience came later, or not at all — it stopped mattering.",
+		body: "Three years in, the people who shipped invisibly are the ones still building. The audience came later, or not at all. It stopped mattering.",
 		source: "Field Notes",
 		match: 0.91,
 		reason:
@@ -51,7 +51,7 @@ export const FEED: FeedItem[] = [
 		kind: "opportunity",
 		tag: "venture",
 		eyebrow: "Opportunity · open",
-		title: "On Deck Founders — Spring cohort applications close June 14.",
+		title: "On Deck Founders: Spring cohort applications close June 14.",
 		body: "Remote-first, 8 weeks, no equity. Strong fit for solo builders who already have a prototype.",
 		source: "On Deck",
 		match: 0.78,
@@ -94,7 +94,7 @@ export const MISSIONS = {
 		date: "Thursday · 28 May",
 		title: "A quiet day to make one real thing.",
 		intent:
-			"Today is about finishing — not starting. You’ve opened three things this week. Close one.",
+			"Today is about finishing, not starting. You’ve opened three things this week. Close one.",
 		tasks: [
 			{
 				id: "t1",
@@ -122,7 +122,7 @@ export const MISSIONS = {
 	yesterday: {
 		date: "Wednesday · 27 May",
 		summary:
-			"You did 2 of 3. The one you skipped was the deep-work block — second time this week.",
+			"You did 2 of 3. The one you skipped was the deep-work block, second time this week.",
 	},
 };
 
@@ -141,7 +141,7 @@ export type Opportunity = {
 export const OPPORTUNITIES: Opportunity[] = [
 	{
 		id: "o1",
-		title: "On Deck Founders — Spring",
+		title: "On Deck Founders: Spring",
 		org: "On Deck",
 		type: "Programme",
 		location: "Remote · 8 weeks",
@@ -163,7 +163,7 @@ export const OPPORTUNITIES: Opportunity[] = [
 	},
 	{
 		id: "o3",
-		title: "Write for Field Notes — open call",
+		title: "Write for Field Notes: open call",
 		org: "Field Notes",
 		type: "Submission",
 		location: "Remote",
@@ -174,7 +174,7 @@ export const OPPORTUNITIES: Opportunity[] = [
 	},
 	{
 		id: "o4",
-		title: "Founders meetup — Kingston",
+		title: "Founders meetup: Kingston",
 		org: "StartUp JA",
 		type: "Event",
 		location: "Kingston · in person",
@@ -280,7 +280,7 @@ export const ONBOARDING_QS: OnboardingQ[] = [
 		kind: "scale",
 		prompt:
 			"In a typical week, how much of your time goes toward what matters to you?",
-		sub: "Baseline — we’ll ask again in four weeks.",
+		sub: "Baseline. We’ll ask again in four weeks.",
 		scale: ["Not at all", "A little", "Somewhat", "Mostly", "Fully"],
 	},
 	{

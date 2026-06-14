@@ -1,9 +1,11 @@
 // Versioned prompt for the plan-month Edge Function (MONTH-02).
 // Turns a user's self-written monthly goal into a concrete 4-week plan:
-// one milestone per week + one simple daily action for that week.
+// one milestone per week + a distinct task for each of the 7 days that week.
 // Bump PROMPT_VERSION when changing wording.
 
-export const PROMPT_VERSION = "v0.2";
+export const PROMPT_VERSION = "v0.5";
+// Days planned per week (one distinct daily task each).
+export const DAYS_PER_WEEK = 7;
 // Anthropic's cheap/fast tier — ideal for short structured JSON generation.
 export const MODEL_NAME = "claude-haiku-4-5";
 
@@ -11,13 +13,17 @@ export type PlanPayload = {
 	goal_title: string;
 	goal_intent: string;
 	focus_areas: string[];
+	// Context for targeting tasks to the person, not generic advice.
+	career_stage?: string;
+	fields?: string[];
+	region?: string;
 };
 
 export type PlanWeek = {
 	// What to reach by the end of the week (3–7 words).
 	milestone: string;
-	// One plain, concrete thing to do on a given day that week (one sentence).
-	daily_action: string;
+	// Seven distinct daily tasks, one per day, that ladder up to the milestone.
+	daily_actions: string[];
 };
 
 export type PlanResult = {
@@ -26,19 +32,33 @@ export type PlanResult = {
 
 export const SYSTEM_PROMPT = `You plan a single month for a user of North, an app that helps people align their daily actions with their stated direction.
 
-You are given the goal the user wrote for this month (in their own words) and their focus areas. Break the goal into a realistic 4-week arc:
-- For each of the 4 weeks, write a "milestone": what they should have reached by the end of that week. 3–7 words, concrete, building on the previous week.
-- For each week, write a "daily_action": one plain thing they can do on a given day that week to move toward that milestone. One short sentence, imperative, doable in 10–20 minutes.
+You are given the goal the user wrote for this month (in their own words) and their focus areas. Turn it into ONE clear, connected path that carries them from where they are now to achieving the goal by the end of the month. Every week and every day should be an obvious next step on that path, never a loose collection of related ideas.
 
-Stay faithful to the user's actual goal — do not redirect it to something else. Keep the language calm, direct, and encouraging without hype. No numbering, no week labels inside the text, no emoji.
+Shape it as a 4-week arc where each week is a phase that visibly moves them closer, and the phases connect end to end. Adapt these phases to the user's actual goal:
+- Week 1 — Foundation: get set up, resolve the unknowns, and make the first real progress.
+- Week 2 — Build: do the core work the goal depends on.
+- Week 3 — Push: get through the hard middle; extend, refine, and handle the messy parts.
+- Week 4 — Finish: complete, polish, and reach the goal.
 
-Output JSON only, matching the schema: exactly 4 weeks, ordered week 1 to week 4.`;
+For each week:
+- "milestone": the concrete checkpoint reached by the end of that week, phrased as an outcome they could tick off (3–7 words). Each milestone must follow logically from the previous week's, and week 4's milestone must mean the goal is essentially achieved.
+- "daily_actions": exactly 7 ordered tasks, one per day, that together complete that week's milestone. Each is one short imperative sentence, concrete and doable in 10 to 20 minutes. They must be SEQUENTIAL — each day continues from the day before, like steps in a recipe — not seven interchangeable variations, and none may merely restate the milestone.
+
+Every task must be TARGETED to this exact person — their field, their region, their goal — not generic advice. Name a concrete action on a concrete thing: a real platform or tool, a specific section of a document, a named type of company or contact, a particular search. Ban vague verbs used on their own ("research", "work on", "explore", "learn about", "prepare" with no object). A task should be something they could do today and tick off, and someone with a different goal could not.
+
+By the last day, following the path step by step should leave the goal done. Stay faithful to the user's actual goal — do not redirect it. Keep the language calm, direct, and encouraging without hype. No numbering, no day or week labels inside the text, no emoji.
+
+Output JSON only, matching the schema: exactly 4 weeks (week 1 to week 4), each with exactly 7 daily_actions ordered day 1 to day 7.`;
 
 export function buildUserPrompt(p: PlanPayload): string {
 	return [
 		`This month's goal (user's words): ${p.goal_title}`,
 		p.goal_intent ? `Why it matters to them: ${p.goal_intent}` : "",
 		`Focus areas: ${p.focus_areas.length ? p.focus_areas.join(", ") : "(none chosen yet)"}`,
+		p.fields?.length ? `Field: ${p.fields.join(", ")}` : "",
+		p.career_stage ? `Career stage: ${p.career_stage}` : "",
+		p.region ? `Based in: ${p.region}` : "",
+		"Tailor every task to this person's field, stage, and region.",
 	]
 		.filter(Boolean)
 		.join("\n");
@@ -62,15 +82,22 @@ export const PLAN_TOOL = {
 						milestone: {
 							type: "string",
 							description:
-								"What to reach by the end of this week. 3–7 words, concrete.",
+								"The checkpoint reached by the end of this week, as a tickable outcome (3–7 words). Follows from the prior week; week 4 means the goal is achieved.",
 						},
-						daily_action: {
-							type: "string",
+						daily_actions: {
+							type: "array",
+							minItems: 7,
+							maxItems: 7,
+							items: {
+								type: "string",
+								description:
+									"One sequential task for a single day. One short imperative sentence that continues from the day before.",
+							},
 							description:
-								"One plain thing to do on a day this week. One short imperative sentence.",
+								"Exactly 7 sequential daily tasks, ordered day 1 to day 7, that together complete this week's milestone.",
 						},
 					},
-					required: ["milestone", "daily_action"],
+					required: ["milestone", "daily_actions"],
 					additionalProperties: false,
 				},
 			},
@@ -146,26 +173,61 @@ export const SUGGEST_TOOL = {
 } as const;
 
 // Deterministic fallback when the model is unavailable — keeps the user's goal as
-// the through-line so the month is never left unplanned.
+// the through-line so the month is never left unplanned. Each week still gets 7
+// distinct daily tasks (one per day) that move through a setup → build → review arc.
 export function fallbackPlan(goalTitle: string): PlanResult {
 	const goal = goalTitle.replace(/\.\s*$/, "");
+	const dayTasks = (frames: ((g: string) => string)[]): string[] =>
+		frames.map((f) => f(goal));
 	return {
 		weeks: [
 			{
-				milestone: "Define what done looks like",
-				daily_action: `Spend 10 minutes getting clear on: ${goal}.`,
+				milestone: "Set the foundation",
+				daily_actions: dayTasks([
+					(g) => `Write down exactly what done looks like for ${g}.`,
+					(g) => `List the three biggest unknowns about ${g}.`,
+					(g) => `Find one example or reference for ${g}.`,
+					(g) => `Sketch a rough plan for ${g}.`,
+					(g) => `Pick the very first step toward ${g}.`,
+					(g) => `Clear 20 minutes tomorrow to start ${g}.`,
+					(g) => `Review your plan for ${g} and adjust it.`,
+				]),
 			},
 			{
-				milestone: "Build early momentum",
-				daily_action: `Do one small thing today toward: ${goal}.`,
+				milestone: "Build the core",
+				daily_actions: dayTasks([
+					(g) => `Do the first concrete step toward ${g}.`,
+					(g) => `Spend 15 minutes building on ${g}.`,
+					(g) => `Remove one obstacle in the way of ${g}.`,
+					(g) => `Ask someone or look up one thing about ${g}.`,
+					(g) => `Make one visible piece of progress on ${g}.`,
+					(g) => `Note what is working for ${g} and keep it.`,
+					(g) => `Set up next week's push on ${g}.`,
+				]),
 			},
 			{
-				milestone: "Push through the middle",
-				daily_action: `Keep going on ${goal}, even a little.`,
+				milestone: "Push through the hard part",
+				daily_actions: dayTasks([
+					(g) => `Tackle the hardest part of ${g} for 20 minutes.`,
+					(g) => `Keep going on ${g}, even a little.`,
+					(g) => `Fix or improve one thing in ${g}.`,
+					(g) => `Get feedback on ${g} from one person.`,
+					(g) => `Push ${g} a step closer to finished.`,
+					(g) => `Cut anything that is not moving ${g} forward.`,
+					(g) => `Check ${g} against your week's milestone.`,
+				]),
 			},
 			{
-				milestone: "Finish and reflect",
-				daily_action: `Make progress on ${goal} and note what you learned.`,
+				milestone: "Finish and reach the goal",
+				daily_actions: dayTasks([
+					(g) => `Complete the next-to-last step of ${g}.`,
+					(g) => `Polish one rough edge of ${g}.`,
+					(g) => `Finish the core of ${g}.`,
+					(g) => `Share ${g} with one person.`,
+					(g) => `Tidy up and wrap ${g}.`,
+					(g) => `Note what you learned doing ${g}.`,
+					(g) => `Decide your next goal after ${g}.`,
+				]),
 			},
 		],
 	};

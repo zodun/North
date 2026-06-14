@@ -21,7 +21,7 @@ export const FALLBACK_TEMPLATES: Record<string, MissionTemplate[]> = {
 		{
 			title: "Sharpen one skill deliberately today",
 			intent:
-				"Mastery compounds — one focused session moves you further than scattered effort.",
+				"Mastery compounds, one focused session moves you further than scattered effort.",
 			tasks: [
 				{
 					label: "Identify the one skill gap that's limiting you right now",
@@ -51,7 +51,7 @@ export const FALLBACK_TEMPLATES: Record<string, MissionTemplate[]> = {
 					estimate_label: "5 min",
 				},
 				{
-					label: "Study it closely — what specifically makes it work?",
+					label: "Study it closely, what specifically makes it work?",
 					kind: "reflect",
 					estimate_label: "20 min",
 				},
@@ -141,7 +141,7 @@ export const FALLBACK_TEMPLATES: Record<string, MissionTemplate[]> = {
 				},
 				{
 					label:
-						"Read it aloud — does it make sense to someone who has never heard of your venture?",
+						"Read it aloud, does it make sense to someone who has never heard of your venture?",
 					kind: "reflect",
 					estimate_label: "10 min",
 				},
@@ -158,10 +158,10 @@ export const FALLBACK_TEMPLATES: Record<string, MissionTemplate[]> = {
 		{
 			title: "Reset your mental state with one deliberate practice",
 			intent:
-				"Clarity isn't found — it's created by clearing the noise and returning to the body.",
+				"Clarity isn't found, it's created by clearing the noise and returning to the body.",
 			tasks: [
 				{
-					label: "Do 10 minutes of movement — a walk, stretch, or workout",
+					label: "Do 10 minutes of movement, a walk, stretch, or workout",
 					kind: "do",
 					estimate_label: "10 min",
 				},
@@ -236,7 +236,7 @@ export const FALLBACK_TEMPLATES: Record<string, MissionTemplate[]> = {
 					estimate_label: "5 min",
 				},
 				{
-					label: "Reach out — not to ask for something, but to offer something",
+					label: "Reach out, not to ask for something, but to offer something",
 					kind: "connect",
 					estimate_label: "15 min",
 				},
@@ -282,7 +282,7 @@ export const FALLBACK_TEMPLATES: Record<string, MissionTemplate[]> = {
 					estimate_label: "5 min",
 				},
 				{
-					label: "Send a genuine message — no ask, just reconnection",
+					label: "Send a genuine message, no ask, just reconnection",
 					kind: "connect",
 					estimate_label: "10 min",
 				},
@@ -299,7 +299,7 @@ export const FALLBACK_TEMPLATES: Record<string, MissionTemplate[]> = {
 		{
 			title: "Get clear on one financial number",
 			intent:
-				"Financial clarity isn't about having more — it's about knowing what you have and where it's going.",
+				"Financial clarity isn't about having more, it's about knowing what you have and where it's going.",
 			tasks: [
 				{
 					label:
@@ -380,7 +380,7 @@ export const FALLBACK_TEMPLATES: Record<string, MissionTemplate[]> = {
 					estimate_label: "5 min",
 				},
 				{
-					label: "Read one high-quality source on it — no skimming",
+					label: "Read one high-quality source on it, no skimming",
 					kind: "read",
 					estimate_label: "30 min",
 				},
@@ -431,7 +431,7 @@ export const FALLBACK_TEMPLATES: Record<string, MissionTemplate[]> = {
 				},
 				{
 					label:
-						"Share it — a note to a friend, a post, a message to a colleague",
+						"Share it, a note to a friend, a post, a message to a colleague",
 					kind: "connect",
 					estimate_label: "10 min",
 				},

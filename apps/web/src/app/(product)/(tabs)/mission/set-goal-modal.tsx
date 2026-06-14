@@ -181,7 +181,7 @@ export function SetGoalModal({
 				<form onSubmit={submit} className="flex flex-col gap-4 p-5">
 					<p className="text-[#0E1420]/65 text-[13px] leading-relaxed">
 						Name one thing you want to make happen this month. We'll break it
-						into a weekly and daily plan you can actually follow.
+						into weekly milestones and a different small step for each day.
 					</p>
 
 					<div>

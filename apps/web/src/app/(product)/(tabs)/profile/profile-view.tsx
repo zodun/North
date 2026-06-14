@@ -285,7 +285,7 @@ export function ProfileView({
 							</p>
 							<p className="mt-1.5 text-[#0E1420]/70 text-[13px] leading-relaxed">
 								Premium uses AI to rank your feed and opportunities around your
-								focus, goal, and interests — with a reason for every pick.
+								focus, goal, and interests, with a reason for every pick.
 							</p>
 							<a
 								href="/api/billing/checkout"
@@ -338,7 +338,7 @@ export function ProfileView({
 					<Label>Saved</Label>
 					{savedCount === 0 ? (
 						<p className="text-[#0E1420]/65 text-[13px] leading-relaxed">
-							Nothing saved yet — tap the bookmark on an opportunity to keep it
+							Nothing saved yet. Tap the bookmark on an opportunity to keep it
 							here.
 						</p>
 					) : (

@@ -65,7 +65,7 @@ export function AddLinkOutForm() {
 			if ("error" in res && res.error) {
 				toast.error(res.error);
 			} else {
-				toast.success("Added as draft — set it to Cleared to make it live.");
+				toast.success("Added as draft. Set it to Cleared to make it live.");
 				setFields(BLANK);
 				setOpen(false);
 			}

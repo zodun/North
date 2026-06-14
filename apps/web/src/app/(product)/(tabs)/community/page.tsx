@@ -23,7 +23,7 @@ export default async function CommunityPage() {
 	if (!user) {
 		return (
 			<div className="flex h-full items-center justify-center p-8 text-center">
-				<p className="text-[#1A1208]/55 text-sm">
+				<p className="text-[#0E1420]/55 text-sm">
 					Sign in to join the community.
 				</p>
 			</div>
@@ -183,7 +183,7 @@ export default async function CommunityPage() {
 		avatars: sample.slice(0, 4).map((s, i) => ({
 			id: `av-${i}`,
 			initial: (s.display_name?.[0] ?? "·").toUpperCase(),
-			hue: focusMap[s.focus_area_ids?.[0] ?? ""]?.hue ?? "#C47D00",
+			hue: focusMap[s.focus_area_ids?.[0] ?? ""]?.hue ?? "#F5C842",
 		})),
 	};
 

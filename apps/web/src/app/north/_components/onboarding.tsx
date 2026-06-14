@@ -599,11 +599,11 @@ function ConversationalView({
 		el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
 	}, []);
 	const summarize = (q: OnboardingQ, a: unknown): string => {
-		if (q.kind === "text") return (a as string) || "—";
+		if (q.kind === "text") return (a as string) || "Not set";
 		if (q.kind === "multi") return ((a as string[]) ?? []).join(" · ");
-		if (q.kind === "scale") return q.scale?.[a as number] ?? "—";
+		if (q.kind === "scale") return q.scale?.[a as number] ?? "Not set";
 		if (q.kind === "consent") return "Understood.";
-		return (a as string) || "—";
+		return (a as string) || "Not set";
 	};
 	const cur = qs[idx];
 	if (!cur) return null;

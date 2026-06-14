@@ -40,7 +40,7 @@ export function RowActions({ id, status, canClear }: Props) {
 					if ("error" in res && res.error) {
 						toast.error(res.error);
 					} else {
-						toast.success("Cleared — item is now live in the feed.");
+						toast.success("Cleared. Item is now live in the feed.");
 					}
 				});
 			}}

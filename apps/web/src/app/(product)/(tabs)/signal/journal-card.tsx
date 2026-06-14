@@ -118,7 +118,7 @@ export function JournalCard({
 		<div className="mb-2 rounded-[14px] border border-[#0E1420]/10 bg-white p-[14px] font-jakarta">
 			<p className="mb-1 font-bold text-[#0E1420] text-[13px]">Journal</p>
 			<p className="mb-3 text-[#0E1420]/55 text-[11px] leading-relaxed">
-				Type or talk through your day — we'll surface the signal and the noise.
+				Type or talk through your day. We'll surface the signal and the noise.
 			</p>
 
 			{analysis && (

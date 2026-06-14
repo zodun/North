@@ -71,8 +71,22 @@ const serwist = new Serwist({
 				cacheName: "images",
 				plugins: [
 					{
-						cacheWillUpdate: async ({ response }) =>
-							response?.status === 200 ? response : null,
+						// Only cache a genuine, directly-served image. Guarding on
+						// status===200 alone let a redirect-to-sign-in HTML page (200 after
+						// the 307 follow) poison this CacheFirst store under /api/img keys,
+						// so cards then served HTML-as-image forever. Require an image
+						// content-type and reject any redirected response.
+						cacheWillUpdate: async ({ response }) => {
+							const ct = response?.headers.get("content-type") ?? "";
+							if (
+								response?.status === 200 &&
+								!response.redirected &&
+								ct.startsWith("image/")
+							) {
+								return response;
+							}
+							return null;
+						},
 					},
 				],
 			}),

@@ -66,11 +66,14 @@ export type LiveStrip = {
 };
 
 // ── Tokens ───────────────────────────────────────────────────────────────────
-const BG = "#F5F0E8";
-const TEXT = "#1A1208";
-const GOLD = "#C47D00";
-const TEAL = "#0EA596";
-const VIOLET = "#7C4DFF";
+const BG = "#EDF1F8";
+const TEXT = "#0E1420";
+const GOLD = "#F5C842";
+const GOLD_INK = "#8A6A00";
+const TEAL = "#3ECFBF";
+const TEAL_INK = "#0A8F7F";
+const VIOLET = "#7B61FF";
+const VIOLET_INK = "#5B43E0";
 const PAGE = 10;
 
 const FILTERS: { key: "all" | Category; label: string }[] = [
@@ -94,9 +97,9 @@ function initialOf(name: string | null | undefined): string {
 	return (name?.[0] ?? "·").toUpperCase();
 }
 function scoreColor(score: number | null): string {
-	if (score == null) return "rgba(26,18,8,0.4)";
+	if (score == null) return "rgba(14,20,32,0.4)";
 	if (score < 40) return "rgba(124,77,255,0.8)";
-	if (score < 60) return "rgba(14,165,150,0.8)";
+	if (score < 60) return "rgba(62,207,191,0.8)";
 	if (score < 80) return GOLD;
 	return "#22c55e";
 }
@@ -354,17 +357,16 @@ export function CommunityView({
 							type="button"
 							aria-label="Search community"
 							className="flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-full border bg-white"
-							style={{ borderColor: "rgba(26,18,8,0.08)" }}
+							style={{ borderColor: "rgba(14,20,32,0.08)" }}
 						>
 							<SearchIcon />
 						</button>
 						<button
 							type="button"
 							onClick={() => setSheetOpen(true)}
-							className="flex cursor-pointer items-center gap-1.5 rounded-full border-none px-4 py-2 font-bold text-[12px] text-white"
+							className="flex cursor-pointer items-center gap-1.5 rounded-full border-none px-4 py-2 font-bold text-[#05050E] text-[12px]"
 							style={{
 								background: GOLD,
-								boxShadow: "0 3px 12px rgba(196,125,0,0.3)",
 							}}
 						>
 							<PlusIcon />
@@ -375,8 +377,8 @@ export function CommunityView({
 							aria-label="Your profile"
 							className="flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-full font-black text-[13px]"
 							style={{
-								background: "rgba(196,125,0,0.14)",
-								color: GOLD,
+								background: "rgba(245,200,66,0.14)",
+								color: GOLD_INK,
 							}}
 						>
 							{initialOf(viewer.displayName)}
@@ -402,13 +404,13 @@ export function CommunityView({
 									active
 										? {
 												background: GOLD,
-												color: "#FFFFFF",
+												color: "#05050E",
 												border: `1px solid ${GOLD}`,
 											}
 										: {
 												background: "transparent",
-												color: "rgba(26,18,8,0.45)",
-												border: "1px solid rgba(26,18,8,0.12)",
+												color: "rgba(14,20,32,0.45)",
+												border: "1px solid rgba(14,20,32,0.12)",
 											}
 								}
 							>
@@ -476,8 +478,7 @@ function LiveMembers({ live }: { live: LiveStrip }) {
 		<div
 			className="mb-[14px] flex items-center gap-[8px] rounded-[14px] border bg-white p-[10px_14px]"
 			style={{
-				borderColor: "rgba(26,18,8,0.07)",
-				boxShadow: "0 1px 4px rgba(26,18,8,0.04)",
+				borderColor: "rgba(14,20,32,0.07)",
 			}}
 		>
 			<div className="flex items-center" aria-hidden="true">
@@ -495,7 +496,7 @@ function LiveMembers({ live }: { live: LiveStrip }) {
 			</div>
 			<p
 				className="flex-1 font-semibold text-[11px] leading-[1.4]"
-				style={{ color: "rgba(26,18,8,0.55)" }}
+				style={{ color: "rgba(14,20,32,0.55)" }}
 			>
 				<span className="font-[800]" style={{ color: TEXT }}>
 					{live.count}
@@ -530,14 +531,14 @@ function AccountabilityCard({
 		<section
 			className="mb-[14px] rounded-[18px] border p-[16px]"
 			style={{
-				borderColor: "rgba(14,165,150,0.18)",
+				borderColor: "rgba(62,207,191,0.18)",
 				background:
-					"linear-gradient(135deg, rgba(14,165,150,0.07), rgba(14,165,150,0.02))",
+					"linear-gradient(135deg, rgba(62,207,191,0.07), rgba(62,207,191,0.02))",
 			}}
 		>
 			<p
 				className="mb-[8px] font-bold text-[9px] uppercase tracking-[0.12em]"
-				style={{ color: "rgba(14,165,150,0.7)" }}
+				style={{ color: "rgba(62,207,191,0.7)" }}
 			>
 				Find Your People
 			</p>
@@ -546,7 +547,7 @@ function AccountabilityCard({
 			</p>
 			<p
 				className="mb-[12px] text-[11px] leading-relaxed"
-				style={{ color: "rgba(26,18,8,0.45)" }}
+				style={{ color: "rgba(14,20,32,0.45)" }}
 			>
 				Matched on your focus areas and Signal score
 			</p>
@@ -562,7 +563,7 @@ function AccountabilityCard({
 							className="rounded-[12px] border p-[10px_12px]"
 							style={{
 								background: "rgba(255,255,255,0.7)",
-								borderColor: "rgba(14,165,150,0.12)",
+								borderColor: "rgba(62,207,191,0.12)",
 							}}
 						>
 							<div className="flex items-center gap-[10px]">
@@ -578,7 +579,7 @@ function AccountabilityCard({
 									</p>
 									<p
 										className="text-[10px]"
-										style={{ color: "rgba(26,18,8,0.4)" }}
+										style={{ color: "rgba(14,20,32,0.4)" }}
 									>
 										{[p.country, focusLabel].filter(Boolean).join(" · ") ||
 											"On a similar path"}
@@ -588,9 +589,9 @@ function AccountabilityCard({
 									<span
 										className="shrink-0 rounded-full border px-2 py-0.5 font-bold text-[9px]"
 										style={{
-											color: "#0A6458",
-											background: "rgba(14,165,150,0.1)",
-											borderColor: "rgba(14,165,150,0.18)",
+											color: "#0A8F7F",
+											background: "rgba(62,207,191,0.1)",
+											borderColor: "rgba(62,207,191,0.18)",
 										}}
 									>
 										Signal {p.signalScore}
@@ -601,10 +602,9 @@ function AccountabilityCard({
 								type="button"
 								disabled={isConnected}
 								onClick={() => onConnect(p)}
-								className="mt-[10px] w-full cursor-pointer rounded-[12px] border-none py-[11px] font-bold text-[13px] text-white disabled:cursor-default disabled:opacity-60"
+								className="mt-[10px] w-full cursor-pointer rounded-[12px] border-none py-[11px] font-bold text-[#05050E] text-[13px] disabled:cursor-default disabled:opacity-60"
 								style={{
 									background: TEAL,
-									boxShadow: "0 3px 12px rgba(14,165,150,0.25)",
 								}}
 							>
 								{isConnected ? "Request sent" : "Connect"}
@@ -644,10 +644,9 @@ function PostCard({
 			className="relative mb-[10px] overflow-hidden rounded-[18px] border p-[16px]"
 			style={{
 				borderColor: post.featured
-					? "rgba(196,125,0,0.2)"
-					: "rgba(26,18,8,0.07)",
+					? "rgba(245,200,66,0.2)"
+					: "rgba(14,20,32,0.07)",
 				background: post.featured ? "rgba(255,252,245,0.8)" : "#FFFFFF",
-				boxShadow: "0 2px 8px rgba(26,18,8,0.05)",
 			}}
 		>
 			{post.featured && (
@@ -673,7 +672,7 @@ function PostCard({
 						<span
 							className="absolute right-[-2px] bottom-[-2px] flex h-[15px] w-[15px] items-center justify-center rounded-full border bg-white text-center font-[800] text-[7px]"
 							style={{
-								borderColor: "rgba(26,18,8,0.08)",
+								borderColor: "rgba(14,20,32,0.08)",
 								color: scoreColor(score),
 							}}
 						>
@@ -695,7 +694,7 @@ function PostCard({
 							</span>
 						)}
 					</div>
-					<p className="text-[10px]" style={{ color: "rgba(26,18,8,0.35)" }}>
+					<p className="text-[10px]" style={{ color: "rgba(14,20,32,0.35)" }}>
 						{[anon ? null : author?.country, timeAgo(post.createdAt)]
 							.filter(Boolean)
 							.join(" · ")}
@@ -718,20 +717,20 @@ function PostCard({
 				<div
 					className="mb-[10px] flex items-start gap-[8px] rounded-[12px] border p-[10px_12px]"
 					style={{
-						borderColor: "rgba(196,125,0,0.18)",
+						borderColor: "rgba(245,200,66,0.18)",
 						background:
-							"linear-gradient(135deg, rgba(196,125,0,0.08), rgba(196,125,0,0.02))",
+							"linear-gradient(135deg, rgba(245,200,66,0.08), rgba(245,200,66,0.02))",
 					}}
 				>
 					<span
 						className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full"
-						style={{ background: "rgba(196,125,0,0.15)" }}
+						style={{ background: "rgba(245,200,66,0.15)" }}
 					>
-						<StarIcon color={GOLD} />
+						<StarIcon color={GOLD_INK} />
 					</span>
 					<p
 						className="font-bold text-[12px] leading-[1.4]"
-						style={{ color: "#8B5500" }}
+						style={{ color: "#8A6A00" }}
 					>
 						{post.title || post.body}
 					</p>
@@ -769,7 +768,7 @@ function PostCard({
 					)}
 					<p
 						className={`text-[12px] leading-[1.6] ${expanded ? "" : "line-clamp-3"}`}
-						style={{ color: "rgba(26,18,8,0.6)" }}
+						style={{ color: "rgba(14,20,32,0.6)" }}
 					>
 						{post.body}
 					</p>
@@ -778,7 +777,7 @@ function PostCard({
 							type="button"
 							onClick={() => setExpanded(true)}
 							className="mt-1 cursor-pointer font-bold text-[11px]"
-							style={{ color: GOLD }}
+							style={{ color: GOLD_INK }}
 						>
 							Read more
 						</button>
@@ -798,7 +797,7 @@ function PostCard({
 					<HeartIcon liked={post.liked} />
 					<span
 						className="font-semibold text-[11px]"
-						style={{ color: post.liked ? GOLD : "rgba(26,18,8,0.45)" }}
+						style={{ color: post.liked ? GOLD_INK : "rgba(14,20,32,0.45)" }}
 					>
 						{post.likesCount}
 					</span>
@@ -811,7 +810,7 @@ function PostCard({
 					<ReplyIcon />
 					<span
 						className="font-semibold text-[11px]"
-						style={{ color: "rgba(26,18,8,0.45)" }}
+						style={{ color: "rgba(14,20,32,0.45)" }}
 					>
 						Reply · {post.repliesCount}
 					</span>
@@ -820,9 +819,9 @@ function PostCard({
 					<span
 						className="ml-auto flex items-center gap-[4px] rounded-full border px-2 py-0.5 font-bold text-[9px]"
 						style={{
-							color: "rgba(14,165,150,0.7)",
-							background: "rgba(14,165,150,0.07)",
-							borderColor: "rgba(14,165,150,0.15)",
+							color: "rgba(62,207,191,0.7)",
+							background: "rgba(62,207,191,0.07)",
+							borderColor: "rgba(62,207,191,0.15)",
 						}}
 					>
 						<BoostIcon />
@@ -842,32 +841,32 @@ function CategoryBadge({ category }: { category: Category }) {
 	> = {
 		win: {
 			label: "Win",
-			color: "#8B5500",
-			bg: "rgba(196,125,0,0.1)",
-			icon: <StarIcon color={GOLD} />,
+			color: "#8A6A00",
+			bg: "rgba(245,200,66,0.1)",
+			icon: <StarIcon color={GOLD_INK} />,
 		},
 		question: {
 			label: "Question",
 			color: "#5B43E0",
 			bg: "rgba(124,77,255,0.1)",
-			icon: <InfoIcon color={VIOLET} />,
+			icon: <InfoIcon color={VIOLET_INK} />,
 		},
 		accountability: {
 			label: "Accountability",
-			color: "#0A6458",
-			bg: "rgba(14,165,150,0.1)",
-			icon: <HandshakeIcon color={TEAL} />,
+			color: "#0A8F7F",
+			bg: "rgba(62,207,191,0.1)",
+			icon: <HandshakeIcon color={TEAL_INK} />,
 		},
 		opportunity: {
 			label: "Opportunity",
-			color: "#8B5500",
-			bg: "rgba(196,125,0,0.1)",
-			icon: <BriefcaseIcon color={GOLD} />,
+			color: "#8A6A00",
+			bg: "rgba(245,200,66,0.1)",
+			icon: <BriefcaseIcon color={GOLD_INK} />,
 		},
 		general: {
 			label: "General",
-			color: "rgba(26,18,8,0.5)",
-			bg: "rgba(26,18,8,0.05)",
+			color: "rgba(14,20,32,0.5)",
+			bg: "rgba(14,20,32,0.05)",
 			icon: null,
 		},
 	};
@@ -953,7 +952,7 @@ function PostSheet({
 				aria-label="Close"
 				onClick={onClose}
 				className="absolute inset-0 cursor-default"
-				style={{ background: "rgba(26,18,8,0.4)" }}
+				style={{ background: "rgba(14,20,32,0.4)" }}
 			/>
 			<div
 				className="cm-sheet relative w-full rounded-t-[24px] bg-white p-5"
@@ -966,7 +965,7 @@ function PostSheet({
 				</p>
 				<p
 					className="mb-[16px] text-[11px]"
-					style={{ color: "rgba(26,18,8,0.4)" }}
+					style={{ color: "rgba(14,20,32,0.4)" }}
 				>
 					Your Signal score is shown with your post
 				</p>
@@ -986,13 +985,13 @@ function PostSheet({
 									on
 										? {
 												background: GOLD,
-												color: "#FFFFFF",
+												color: "#05050E",
 												border: `1px solid ${GOLD}`,
 											}
 										: {
 												background: "transparent",
-												color: "rgba(26,18,8,0.45)",
-												border: "1px solid rgba(26,18,8,0.12)",
+												color: "rgba(14,20,32,0.45)",
+												border: "1px solid rgba(14,20,32,0.12)",
 											}
 								}
 							>
@@ -1010,10 +1009,10 @@ function PostSheet({
 					value={title}
 					onChange={(e) => setTitle(e.target.value)}
 					placeholder="Add a title (optional)"
-					className="mb-[10px] w-full rounded-[12px] border px-[14px] py-[11px] text-[13px] outline-none placeholder:text-[rgba(26,18,8,0.2)]"
+					className="mb-[10px] w-full rounded-[12px] border px-[14px] py-[11px] text-[13px] outline-none placeholder:text-[rgba(14,20,32,0.2)]"
 					style={{
-						background: "rgba(26,18,8,0.03)",
-						borderColor: "rgba(26,18,8,0.08)",
+						background: "rgba(14,20,32,0.03)",
+						borderColor: "rgba(14,20,32,0.08)",
 						color: TEXT,
 					}}
 				/>
@@ -1026,10 +1025,10 @@ function PostSheet({
 					value={body}
 					onChange={(e) => setBody(e.target.value)}
 					placeholder="Share your win, ask your question, or describe what you need..."
-					className="mb-[14px] min-h-[100px] w-full resize-none rounded-[12px] border px-[14px] py-[11px] text-[13px] outline-none placeholder:text-[rgba(26,18,8,0.2)]"
+					className="mb-[14px] min-h-[100px] w-full resize-none rounded-[12px] border px-[14px] py-[11px] text-[13px] outline-none placeholder:text-[rgba(14,20,32,0.2)]"
 					style={{
-						background: "rgba(26,18,8,0.03)",
-						borderColor: "rgba(26,18,8,0.08)",
+						background: "rgba(14,20,32,0.03)",
+						borderColor: "rgba(14,20,32,0.08)",
 						color: TEXT,
 					}}
 				/>
@@ -1040,7 +1039,7 @@ function PostSheet({
 						<p className="font-bold text-[12px]" style={{ color: TEXT }}>
 							Post anonymously
 						</p>
-						<p className="text-[10px]" style={{ color: "rgba(26,18,8,0.4)" }}>
+						<p className="text-[10px]" style={{ color: "rgba(14,20,32,0.4)" }}>
 							Your Signal score won't be shown
 						</p>
 					</div>
@@ -1051,7 +1050,7 @@ function PostSheet({
 						aria-label="Post anonymously"
 						onClick={() => setAnon((v) => !v)}
 						className="relative h-[26px] w-[46px] cursor-pointer rounded-full transition-colors duration-200 motion-reduce:transition-none"
-						style={{ background: anon ? VIOLET : "rgba(26,18,8,0.1)" }}
+						style={{ background: anon ? VIOLET : "rgba(14,20,32,0.1)" }}
 					>
 						<span
 							className="absolute top-[3px] h-[20px] w-[20px] rounded-full bg-white transition-[left] duration-200 motion-reduce:transition-none"
@@ -1064,10 +1063,9 @@ function PostSheet({
 					type="button"
 					disabled={!canSubmit}
 					onClick={() => void submit()}
-					className="w-full cursor-pointer rounded-[14px] border-none py-[14px] font-black text-[13px] text-white disabled:cursor-not-allowed disabled:opacity-40"
+					className="w-full cursor-pointer rounded-[14px] border-none py-[14px] font-black text-[#05050E] text-[13px] disabled:cursor-not-allowed disabled:opacity-40"
 					style={{
 						background: GOLD,
-						boxShadow: "0 4px 16px rgba(196,125,0,0.28)",
 					}}
 				>
 					{submitting ? "Posting…" : "Post to Community"}
@@ -1086,36 +1084,36 @@ function FeedSkeleton({ compact = false }: { compact?: boolean }) {
 				<div
 					key={i}
 					className="mb-[10px] animate-pulse rounded-[18px] border bg-white p-[16px] motion-reduce:animate-none"
-					style={{ borderColor: "rgba(26,18,8,0.07)" }}
+					style={{ borderColor: "rgba(14,20,32,0.07)" }}
 				>
 					<div className="mb-[10px] flex items-center gap-[10px]">
 						<div
 							className="h-[36px] w-[36px] rounded-full"
-							style={{ background: "rgba(26,18,8,0.07)" }}
+							style={{ background: "rgba(14,20,32,0.07)" }}
 						/>
 						<div className="flex-1">
 							<div
 								className="mb-1.5 h-[10px] w-1/3 rounded-lg"
-								style={{ background: "rgba(26,18,8,0.07)" }}
+								style={{ background: "rgba(14,20,32,0.07)" }}
 							/>
 							<div
 								className="h-[8px] w-1/4 rounded-lg"
-								style={{ background: "rgba(26,18,8,0.05)" }}
+								style={{ background: "rgba(14,20,32,0.05)" }}
 							/>
 						</div>
 					</div>
 					<div className="flex flex-col gap-2">
 						<div
 							className="h-[12px] w-full rounded-lg"
-							style={{ background: "rgba(26,18,8,0.05)" }}
+							style={{ background: "rgba(14,20,32,0.05)" }}
 						/>
 						<div
 							className="h-[12px] w-5/6 rounded-lg"
-							style={{ background: "rgba(26,18,8,0.05)" }}
+							style={{ background: "rgba(14,20,32,0.05)" }}
 						/>
 						<div
 							className="h-[12px] w-2/3 rounded-lg"
-							style={{ background: "rgba(26,18,8,0.05)" }}
+							style={{ background: "rgba(14,20,32,0.05)" }}
 						/>
 					</div>
 				</div>
@@ -1132,23 +1130,23 @@ function EmptyState({ onPost }: { onPost: () => void }) {
 				height="48"
 				viewBox="0 0 24 24"
 				fill="none"
-				stroke={GOLD}
+				stroke={GOLD_INK}
 				strokeWidth={1.4}
 				aria-hidden="true"
 				style={{ opacity: 0.2 }}
 			>
 				<circle cx="12" cy="12" r="10" />
-				<path d="M15.5 8.5l-2 5-5 2 2-5z" fill={GOLD} stroke="none" />
+				<path d="M15.5 8.5l-2 5-5 2 2-5z" fill={GOLD_INK} stroke="none" />
 			</svg>
 			<p
 				className="mt-[12px] font-bold text-[16px]"
-				style={{ color: "rgba(26,18,8,0.35)" }}
+				style={{ color: "rgba(14,20,32,0.35)" }}
 			>
 				Nothing here yet
 			</p>
 			<p
 				className="mt-[4px] text-[12px]"
-				style={{ color: "rgba(26,18,8,0.25)" }}
+				style={{ color: "rgba(14,20,32,0.25)" }}
 			>
 				Be the first to post in this category
 			</p>
@@ -1157,9 +1155,9 @@ function EmptyState({ onPost }: { onPost: () => void }) {
 				onClick={onPost}
 				className="mt-[14px] cursor-pointer rounded-[12px] border px-[20px] py-[10px] font-bold text-[12px]"
 				style={{
-					background: "rgba(196,125,0,0.1)",
-					borderColor: "rgba(196,125,0,0.22)",
-					color: "#8B5500",
+					background: "rgba(245,200,66,0.1)",
+					borderColor: "rgba(245,200,66,0.22)",
+					color: "#8A6A00",
 				}}
 			>
 				Post something
@@ -1173,7 +1171,7 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 		<div className="mt-[40px] flex flex-col items-center text-center">
 			<p
 				className="font-bold text-[15px]"
-				style={{ color: "rgba(26,18,8,0.4)" }}
+				style={{ color: "rgba(14,20,32,0.4)" }}
 			>
 				Couldn't load the feed
 			</p>
@@ -1182,9 +1180,9 @@ function ErrorState({ onRetry }: { onRetry: () => void }) {
 				onClick={onRetry}
 				className="mt-[12px] cursor-pointer rounded-[12px] border px-[20px] py-[10px] font-bold text-[12px]"
 				style={{
-					background: "rgba(196,125,0,0.1)",
-					borderColor: "rgba(196,125,0,0.22)",
-					color: "#8B5500",
+					background: "rgba(245,200,66,0.1)",
+					borderColor: "rgba(245,200,66,0.22)",
+					color: "#8A6A00",
 				}}
 			>
 				Try again
@@ -1201,7 +1199,7 @@ function SearchIcon() {
 			height="16"
 			viewBox="0 0 24 24"
 			fill="none"
-			stroke="rgba(26,18,8,0.5)"
+			stroke="rgba(14,20,32,0.5)"
 			strokeWidth={2}
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -1235,8 +1233,8 @@ function HeartIcon({ liked }: { liked: boolean }) {
 			width="16"
 			height="16"
 			viewBox="0 0 24 24"
-			fill={liked ? GOLD : "none"}
-			stroke={liked ? GOLD : "rgba(26,18,8,0.35)"}
+			fill={liked ? GOLD_INK : "none"}
+			stroke={liked ? GOLD_INK : "rgba(14,20,32,0.35)"}
 			strokeWidth={1.8}
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -1253,7 +1251,7 @@ function ReplyIcon() {
 			height="16"
 			viewBox="0 0 24 24"
 			fill="none"
-			stroke="rgba(26,18,8,0.35)"
+			stroke="rgba(14,20,32,0.35)"
 			strokeWidth={1.8}
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -1271,7 +1269,7 @@ function BoostIcon() {
 			height="10"
 			viewBox="0 0 24 24"
 			fill="none"
-			stroke="rgba(14,165,150,0.7)"
+			stroke="rgba(62,207,191,0.7)"
 			strokeWidth={2.4}
 			aria-hidden="true"
 		>
@@ -1285,7 +1283,7 @@ function MoreIcon() {
 			width="16"
 			height="16"
 			viewBox="0 0 24 24"
-			fill="rgba(26,18,8,0.3)"
+			fill="rgba(14,20,32,0.3)"
 			aria-hidden="true"
 		>
 			<circle cx="5" cy="12" r="1.6" />

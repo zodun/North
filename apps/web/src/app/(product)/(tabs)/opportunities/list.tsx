@@ -909,7 +909,7 @@ function UpsellCard() {
 				That's your top match. Unlock the rest.
 			</p>
 			<p className="mt-1 text-[#0E1420]/70 text-[12px] leading-relaxed">
-				Premium ranks every opportunity to your goal — with a reason for each
+				Premium ranks every opportunity to your goal, with a reason for each
 				pick.
 			</p>
 			<span

@@ -7,15 +7,14 @@ import { cn } from "@/lib/utils";
 
 // North-tuned shadcn-style button. Primary = Signal Gold.
 const buttonVariants = cva(
-	"inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-[12px] font-bold font-jakarta text-[13px] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(196,125,0,0.4)] disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none",
+	"inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-[12px] font-bold font-jakarta text-[13px] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(62,207,191,0.55)] disabled:pointer-events-none disabled:opacity-50 motion-reduce:transition-none",
 	{
 		variants: {
 			variant: {
-				default:
-					"bg-[#C47D00] text-white shadow-[0_3px_12px_rgba(196,125,0,0.3)] hover:bg-[#A36200]",
+				default: "bg-[#F5C842] text-[#05050E] hover:bg-[#E8B84B]",
 				outline:
-					"border border-[rgba(26,18,8,0.12)] bg-transparent text-[#1A1208] hover:bg-[rgba(245,240,232,0.8)]",
-				ghost: "text-[#1A1208] hover:bg-[rgba(245,240,232,0.8)]",
+					"border border-[rgba(14,20,32,0.12)] bg-transparent text-[#0E1420] hover:bg-[rgba(14,20,32,0.04)]",
+				ghost: "text-[#0E1420] hover:bg-[rgba(14,20,32,0.04)]",
 			},
 			size: {
 				default: "h-11 px-4 py-2",

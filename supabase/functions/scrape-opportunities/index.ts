@@ -8,6 +8,7 @@
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SCRAPE_SECRET (optional auth)
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { stripDashes } from "../_shared/text.ts";
 
 // ── Focus-area keyword mapping ─────────────────────────────────────────────
 
@@ -360,13 +361,13 @@ Deno.serve(async (req: Request) => {
 				plain.length > 220 ? plain.slice(0, 217) + "…" : plain || null;
 
 			const { error } = await supabase.from("opportunities").insert({
-				title: item.title.slice(0, 255),
-				org: org.slice(0, 120),
+				title: stripDashes(item.title.slice(0, 255)),
+				org: stripDashes(org.slice(0, 120)),
 				category_id: categoryId,
 				opportunity_type: opportunityType || null,
-				location: location,
-				deadline: deadline,
-				why: why,
+				location: stripDashes(location),
+				deadline: stripDashes(deadline),
+				why: stripDashes(why),
 				tags: item.categories.slice(0, 6),
 				external_url: item.link,
 				focus_area_tags: focusAreaTags,

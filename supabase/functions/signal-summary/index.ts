@@ -11,6 +11,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import { captureServer } from "../_shared/posthog.ts";
+import { stripDashes } from "../_shared/text.ts";
 import {
 	buildUserPrompt,
 	PROMPT_VERSION,
@@ -115,8 +116,12 @@ export async function runSummaryJob(deps: RunDeps): Promise<RunResult> {
 					{
 						user_id: score.user_id,
 						week_ending: weekEndingStr,
-						summary_text: summary.summary,
-						callouts: summary.callouts,
+						summary_text: stripDashes(summary.summary),
+						callouts: summary.callouts.map((c) => ({
+							...c,
+							label: stripDashes(c.label),
+							body: stripDashes(c.body),
+						})),
 						model_name: MODEL_NAME,
 						prompt_version: PROMPT_VERSION,
 					},

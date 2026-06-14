@@ -34,14 +34,21 @@ type Mission = {
 	generated_by: string;
 };
 
-// ── Warm tokens (shared with the rest of North) ──────────────────────────────
-const BG = "#F8F4EC";
-const TEXT = "#1A1208";
-const GOLD = "#C47D00";
-const GOLD_DEEP = "#A36200";
-const TEAL = "#0EA596";
-const VIOLET = "#7C4DFF";
-const BORDER = "rgba(26,18,8,0.07)";
+// ── Soft Sky tokens ──────────────────────────────────────────────────────────
+// Three meanings, rationed: gold = the needle (next action), teal = on-course,
+// violet = drift. The vivid hues are *fills*; as text/icon on the light sky they
+// step to the readable *_INK variants (≥4.5:1). Surface is transparent so the
+// shell's Soft Sky atmosphere reads through; depth is hairline borders, no shadow.
+const BG = "transparent";
+const TEXT = "#0E1420";
+const GOLD = "#F5C842";
+const GOLD_DEEP = "#E8B84B";
+const GOLD_INK = "#8A6A00";
+const TEAL = "#3ECFBF";
+const TEAL_INK = "#0A8F7F";
+const VIOLET = "#7B61FF";
+const VIOLET_INK = "#5B43E0";
+const BORDER = "rgba(14,20,32,0.1)";
 
 // ── AI suggestion ────────────────────────────────────────────────────────────
 type Suggestion = {
@@ -314,7 +321,7 @@ export function MonthlyMissionView({
 				<h2 className="font-black text-[20px]" style={{ color: TEXT }}>
 					No goal yet
 				</h2>
-				<p className="text-[13px]" style={{ color: "rgba(26,18,8,0.55)" }}>
+				<p className="text-[13px]" style={{ color: "rgba(14,20,32,0.55)" }}>
 					Your monthly goal will appear here shortly.
 				</p>
 			</div>
@@ -338,7 +345,7 @@ export function MonthlyMissionView({
 				<div>
 					<p
 						className="font-bold text-[10px] uppercase tracking-[0.12em]"
-						style={{ color: "rgba(26,18,8,0.3)" }}
+						style={{ color: "rgba(14,20,32,0.3)" }}
 					>
 						{todayLabel(today)}
 					</p>
@@ -350,11 +357,11 @@ export function MonthlyMissionView({
 			{/* ── Progress strip ── */}
 			<div className="mb-[14px] flex gap-[10px]">
 				<StatCard label="Tasks this week" barColor={GOLD} barPct={tasksPct}>
-					<span className="font-black text-[22px]" style={{ color: GOLD }}>
+					<span className="font-black text-[22px]" style={{ color: GOLD_INK }}>
 						{tasksDone}
 						<span
 							className="text-[14px]"
-							style={{ color: "rgba(26,18,8,0.3)" }}
+							style={{ color: "rgba(14,20,32,0.3)" }}
 						>
 							/{tasksTotal || 0}
 						</span>
@@ -365,7 +372,7 @@ export function MonthlyMissionView({
 					barGradient={`linear-gradient(90deg, ${GOLD}, ${TEAL})`}
 					barPct={goalPct}
 				>
-					<span className="font-black text-[22px]" style={{ color: TEAL }}>
+					<span className="font-black text-[22px]" style={{ color: TEAL_INK }}>
 						{goalPct}%
 					</span>
 				</StatCard>
@@ -374,7 +381,10 @@ export function MonthlyMissionView({
 					barColor={VIOLET}
 					barPct={tasksTotal ? (daysLeft / tasksTotal) * 100 : 0}
 				>
-					<span className="font-black text-[22px]" style={{ color: VIOLET }}>
+					<span
+						className="font-black text-[22px]"
+						style={{ color: VIOLET_INK }}
+					>
 						{daysLeft}
 					</span>
 				</StatCard>
@@ -409,14 +419,14 @@ export function MonthlyMissionView({
 							>
 								<span
 									className="font-bold text-[10px] uppercase tracking-[0.12em]"
-									style={{ color: "rgba(26,18,8,0.5)" }}
+									style={{ color: "rgba(14,20,32,0.5)" }}
 								>
 									Today's Tasks
 								</span>
 								{tasksTotal > 0 && (
 									<span
 										className="font-bold text-[10px]"
-										style={{ color: "rgba(26,18,8,0.3)" }}
+										style={{ color: "rgba(14,20,32,0.3)" }}
 									>
 										{tasksDone}/{tasksTotal}
 									</span>
@@ -443,7 +453,7 @@ export function MonthlyMissionView({
 							) : (
 								<p
 									className="mb-[14px] text-[13px]"
-									style={{ color: "rgba(26,18,8,0.45)" }}
+									style={{ color: "rgba(14,20,32,0.45)" }}
 								>
 									No tasks scheduled for this week.
 								</p>
@@ -455,7 +465,6 @@ export function MonthlyMissionView({
 								className="mb-[14px] flex items-end gap-[5px] rounded-[16px] border bg-white p-[12px_14px]"
 								style={{
 									borderColor: BORDER,
-									boxShadow: "0 1px 6px rgba(26,18,8,0.04)",
 								}}
 							>
 								{weekDays.map((s) => {
@@ -470,7 +479,7 @@ export function MonthlyMissionView({
 											key={s.id}
 											type="button"
 											aria-pressed={s.done}
-											aria-label={`${s.due_date ? dayLetter(s.due_date) : ""} — ${
+											aria-label={`${s.due_date ? dayLetter(s.due_date) : ""}, ${
 												s.done ? "done" : isToday ? "today" : "upcoming"
 											}`}
 											onClick={() => void setStepDone(s.id, !s.done)}
@@ -478,7 +487,7 @@ export function MonthlyMissionView({
 										>
 											<span
 												className="mb-1 font-bold text-[9px] uppercase"
-												style={{ color: "rgba(26,18,8,0.3)" }}
+												style={{ color: "rgba(14,20,32,0.3)" }}
 											>
 												{s.due_date ? dayLetter(s.due_date) : "·"}
 											</span>
@@ -505,7 +514,7 @@ export function MonthlyMissionView({
 						{/* 4-Week Plan — all four weeks */}
 						<p
 							className="mb-[10px] font-bold text-[10px] uppercase tracking-[0.12em]"
-							style={{ color: "rgba(26,18,8,0.5)" }}
+							style={{ color: "rgba(14,20,32,0.5)" }}
 						>
 							4-Week Plan
 						</p>
@@ -528,7 +537,7 @@ export function MonthlyMissionView({
 						) : (
 							<p
 								className="mb-[14px] text-[13px]"
-								style={{ color: "rgba(26,18,8,0.45)" }}
+								style={{ color: "rgba(14,20,32,0.45)" }}
 							>
 								Your weekly plan is being prepared.
 							</p>
@@ -547,7 +556,7 @@ export function MonthlyMissionView({
 				type="button"
 				onClick={() => setShowGoal(true)}
 				className="mb-2 cursor-pointer font-bold text-[10px] uppercase tracking-[0.1em] transition-colors hover:opacity-80"
-				style={{ color: "rgba(196,125,0,0.7)" }}
+				style={{ color: GOLD_INK }}
 			>
 				Edit {monthName} goal
 			</button>
@@ -614,7 +623,7 @@ function TabSwitcher({
 		<div className="relative mb-[14px]">
 			<div
 				className="flex rounded-[16px] p-1"
-				style={{ background: "rgba(26,18,8,0.06)" }}
+				style={{ background: "rgba(14,20,32,0.06)" }}
 			>
 				{TABS.map((t) => {
 					const on = active === t.key;
@@ -623,7 +632,7 @@ function TabSwitcher({
 							key={t.key}
 							type="button"
 							aria-pressed={on}
-							aria-label={`${t.label} — ${t.sub}`}
+							aria-label={`${t.label}, ${t.sub}`}
 							onClick={() => {
 								dismissHint();
 								onChange(t.key);
@@ -633,26 +642,29 @@ function TabSwitcher({
 								on
 									? {
 											background: "#FFFFFF",
-											boxShadow: "0 2px 8px rgba(26,18,8,0.08)",
+											border: "1px solid rgba(14,20,32,0.1)",
 										}
-									: { background: "transparent" }
+									: {
+											background: "transparent",
+											border: "1px solid transparent",
+										}
 							}
 						>
 							{t.key === "daily" ? (
-								<SunIcon color={on ? GOLD : "rgba(26,18,8,0.25)"} />
+								<SunIcon color={on ? GOLD : "rgba(14,20,32,0.25)"} />
 							) : (
-								<CalendarIcon color={on ? GOLD : "rgba(26,18,8,0.25)"} />
+								<CalendarIcon color={on ? GOLD : "rgba(14,20,32,0.25)"} />
 							)}
 							<span
 								className="font-extrabold text-[12px]"
-								style={{ color: on ? TEXT : "rgba(26,18,8,0.4)" }}
+								style={{ color: on ? TEXT : "rgba(14,20,32,0.4)" }}
 							>
 								{t.label}
 							</span>
 							<span
 								className="font-medium text-[10px]"
 								style={{
-									color: on ? "rgba(26,18,8,0.4)" : "rgba(26,18,8,0.25)",
+									color: on ? "rgba(14,20,32,0.4)" : "rgba(14,20,32,0.25)",
 								}}
 							>
 								{t.sub}
@@ -677,12 +689,12 @@ function TabSwitcher({
 						style={{
 							borderLeft: "5px solid transparent",
 							borderRight: "5px solid transparent",
-							borderBottom: "5px solid rgba(26,18,8,0.75)",
+							borderBottom: "5px solid rgba(14,20,32,0.75)",
 						}}
 					/>
 					<span
 						className="rounded-[8px] px-[10px] py-[5px] font-medium text-[10px] text-white backdrop-blur-sm"
-						style={{ background: "rgba(26,18,8,0.75)" }}
+						style={{ background: "rgba(14,20,32,0.75)" }}
 					>
 						Tap to see your weekly plan
 					</span>
@@ -708,9 +720,9 @@ function GoalCard({
 		<section
 			className="relative mb-[14px] overflow-hidden rounded-[18px] border p-4"
 			style={{
-				borderColor: "rgba(196,125,0,0.25)",
+				borderColor: "rgba(245,200,66,0.25)",
 				background:
-					"linear-gradient(135deg, rgba(196,125,0,0.10), rgba(196,125,0,0.02))",
+					"linear-gradient(135deg, rgba(245,200,66,0.10), rgba(245,200,66,0.02))",
 			}}
 		>
 			<span
@@ -720,7 +732,7 @@ function GoalCard({
 			/>
 			<p
 				className="mb-1.5 font-bold text-[9px] uppercase tracking-[0.15em]"
-				style={{ color: "rgba(196,125,0,0.7)" }}
+				style={{ color: GOLD_INK }}
 			>
 				This Month's Goal
 			</p>
@@ -731,16 +743,16 @@ function GoalCard({
 				{title}
 			</p>
 			<div className="mb-2 flex items-center justify-between">
-				<span className="text-[11px]" style={{ color: "rgba(26,18,8,0.55)" }}>
+				<span className="text-[11px]" style={{ color: "rgba(14,20,32,0.55)" }}>
 					{weeksDone} of {weeksTotal} weeks
 				</span>
-				<span className="font-bold text-[11px]" style={{ color: "#8B5500" }}>
+				<span className="font-bold text-[11px]" style={{ color: "#8A6A00" }}>
 					{pct}%
 				</span>
 			</div>
 			<div
 				className="h-[5px] overflow-hidden rounded-full"
-				style={{ background: "rgba(26,18,8,0.1)" }}
+				style={{ background: "rgba(14,20,32,0.1)" }}
 			>
 				<div
 					className="h-full rounded-full transition-[width] duration-300 motion-reduce:transition-none"
@@ -767,39 +779,42 @@ function WeekCard({
 	const badge = isDone
 		? {
 				label: "Done",
-				bg: "rgba(14,165,150,0.1)",
-				color: "#0A6458",
-				border: "rgba(14,165,150,0.2)",
+				bg: "rgba(62,207,191,0.1)",
+				color: "#0A8F7F",
+				border: "rgba(62,207,191,0.2)",
 			}
 		: isCurrent
 			? {
 					label: "In progress",
-					bg: "rgba(196,125,0,0.1)",
-					color: "#8B5500",
-					border: "rgba(196,125,0,0.2)",
+					bg: "rgba(245,200,66,0.1)",
+					color: "#8A6A00",
+					border: "rgba(245,200,66,0.2)",
 				}
 			: {
 					label: "Upcoming",
-					bg: "rgba(26,18,8,0.05)",
-					color: "rgba(26,18,8,0.3)",
-					border: "rgba(26,18,8,0.08)",
+					bg: "rgba(14,20,32,0.05)",
+					color: "rgba(14,20,32,0.3)",
+					border: "rgba(14,20,32,0.08)",
 				};
 	const circle = isDone
-		? { bg: "rgba(196,125,0,0.12)", border: "rgba(196,125,0,0.4)", color: GOLD }
+		? {
+				bg: "rgba(245,200,66,0.12)",
+				border: "rgba(245,200,66,0.4)",
+				color: GOLD_INK,
+			}
 		: isCurrent
-			? { bg: GOLD, border: GOLD, color: "#FFFFFF" }
+			? { bg: GOLD, border: GOLD, color: "#05050E" }
 			: {
 					bg: "transparent",
-					border: "rgba(26,18,8,0.12)",
-					color: "rgba(26,18,8,0.4)",
+					border: "rgba(14,20,32,0.12)",
+					color: "rgba(14,20,32,0.4)",
 				};
 	return (
 		<div
 			className="relative flex items-start gap-3 overflow-hidden rounded-[14px] border p-[12px_14px]"
 			style={{
-				background: isCurrent ? "rgba(255,248,232,0.7)" : "#FFFFFF",
-				borderColor: isCurrent ? "rgba(196,125,0,0.3)" : BORDER,
-				boxShadow: "0 1px 6px rgba(26,18,8,0.04)",
+				background: isCurrent ? "rgba(245,200,66,0.08)" : "#FFFFFF",
+				borderColor: isCurrent ? "rgba(245,200,66,0.3)" : BORDER,
 			}}
 		>
 			{isCurrent && (
@@ -817,12 +832,16 @@ function WeekCard({
 					color: circle.color,
 				}}
 			>
-				{isDone ? <CheckMark color={GOLD} size={12} /> : week.week_index + 1}
+				{isDone ? (
+					<CheckMark color={GOLD_INK} size={12} />
+				) : (
+					week.week_index + 1
+				)}
 			</span>
 			<div className="min-w-0 flex-1">
 				<p
 					className="mb-1 font-bold text-[9px] uppercase tracking-[0.1em]"
-					style={{ color: "rgba(26,18,8,0.3)" }}
+					style={{ color: "rgba(14,20,32,0.3)" }}
 				>
 					Week {week.week_index + 1}
 				</p>
@@ -858,14 +877,14 @@ function SundayCheckin({ onStart }: { onStart: () => void }) {
 		<section
 			className="mb-[14px] rounded-[18px] border p-4"
 			style={{
-				borderColor: "rgba(196,125,0,0.2)",
+				borderColor: "rgba(245,200,66,0.2)",
 				background:
-					"linear-gradient(135deg, rgba(196,125,0,0.09), rgba(196,125,0,0.02))",
+					"linear-gradient(135deg, rgba(245,200,66,0.09), rgba(245,200,66,0.02))",
 			}}
 		>
 			<p
 				className="mb-2 font-bold text-[9px] uppercase tracking-[0.15em]"
-				style={{ color: "rgba(196,125,0,0.65)" }}
+				style={{ color: GOLD_INK }}
 			>
 				Weekly Review
 			</p>
@@ -880,7 +899,7 @@ function SundayCheckin({ onStart }: { onStart: () => void }) {
 					/>
 					<span
 						className="font-semibold text-[12px] leading-[1.5]"
-						style={{ color: "rgba(26,18,8,0.6)" }}
+						style={{ color: "rgba(14,20,32,0.6)" }}
 					>
 						{q}
 					</span>
@@ -889,10 +908,9 @@ function SundayCheckin({ onStart }: { onStart: () => void }) {
 			<button
 				type="button"
 				onClick={onStart}
-				className="w-full cursor-pointer rounded-[12px] py-[11px] font-bold text-[13px] text-white"
+				className="w-full cursor-pointer rounded-[12px] py-[11px] font-bold text-[#05050E] text-[13px]"
 				style={{
 					background: GOLD,
-					boxShadow: "0 4px 16px rgba(196,125,0,0.25)",
 				}}
 			>
 				Start this week's review
@@ -947,22 +965,22 @@ function StreakBadge({ streak }: { streak: number }) {
 			className="mt-1 flex items-center gap-[5px] rounded-[20px] px-3 py-1.5"
 			style={{
 				background:
-					"linear-gradient(135deg, rgba(212,146,10,0.12), rgba(212,146,10,0.06))",
-				border: "1px solid rgba(212,146,10,0.3)",
+					"linear-gradient(135deg, rgba(245,200,66,0.12), rgba(245,200,66,0.06))",
+				border: "1px solid rgba(245,200,66,0.3)",
 			}}
 		>
 			<FlameIcon />
 			<span className="flex flex-col leading-none">
 				<span
 					className="font-black text-[16px] leading-none"
-					style={{ color: GOLD }}
+					style={{ color: GOLD_INK }}
 				>
 					{active ? streak : 0}
 				</span>
 			</span>
 			<span
 				className="font-bold text-[9px] uppercase tracking-wider"
-				style={{ color: "rgba(196,125,0,0.7)" }}
+				style={{ color: GOLD_INK }}
 			>
 				{active ? "day streak" : "Start today"}
 			</span>
@@ -987,12 +1005,19 @@ function HeroTask({
 	const { slot, setSlot } = useTaskTime(task?.id);
 	return (
 		<section
-			className="relative mb-[14px] overflow-hidden rounded-[22px] p-5"
+			className="relative mb-[14px] overflow-hidden rounded-[22px] border p-5"
 			style={{
-				background: `linear-gradient(135deg, ${GOLD}, ${GOLD_DEEP})`,
-				boxShadow: "0 8px 32px rgba(196,125,0,0.25)",
+				background:
+					"linear-gradient(135deg, rgba(245,200,66,0.16), rgba(245,200,66,0.04))",
+				borderColor: "rgba(245,200,66,0.32)",
 			}}
 		>
+			{/* The single sanctioned gold rail — the needle, full-height, not a stripe. */}
+			<span
+				aria-hidden="true"
+				className="absolute top-0 bottom-0 left-0 w-[3px] rounded-r-[3px]"
+				style={{ background: GOLD }}
+			/>
 			<CompassRose />
 
 			<div className="relative">
@@ -1000,18 +1025,21 @@ function HeroTask({
 				<div className="mb-[10px] flex items-center gap-2">
 					<span
 						className="h-[5px] w-[5px] rounded-full"
-						style={{ background: "rgba(255,255,255,0.5)" }}
+						style={{ background: GOLD }}
 					/>
 					<span
 						className="font-bold text-[9px] uppercase tracking-[0.15em]"
-						style={{ color: "rgba(255,255,255,0.65)" }}
+						style={{ color: GOLD_INK }}
 					>
 						Up Next · Week {week}
 					</span>
 				</div>
 
 				{/* Title */}
-				<h2 className="mb-2 font-black text-[18px] text-white leading-[1.3] tracking-[-0.3px]">
+				<h2
+					className="mb-2 font-black text-[18px] leading-[1.3] tracking-[-0.3px]"
+					style={{ color: TEXT }}
+				>
 					{task ? task.title : "You're all caught up for now"}
 				</h2>
 
@@ -1025,7 +1053,7 @@ function HeroTask({
 				{goalShort && (
 					<p
 						className="mb-4 font-semibold text-[10px]"
-						style={{ color: "rgba(255,255,255,0.55)" }}
+						style={{ color: "rgba(14,20,32,0.5)" }}
 					>
 						→ {goalShort}
 					</p>
@@ -1040,12 +1068,11 @@ function HeroTask({
 							onClick={() => onToggle(task)}
 							className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-[12px] px-[20px] py-[11px] font-black text-[13px] transition-[filter] duration-200 hover:brightness-95 motion-reduce:transition-none"
 							style={{
-								background: "#FFFFFF",
-								color: GOLD,
-								boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+								background: GOLD,
+								color: "#05050E",
 							}}
 						>
-							<CheckMark color={GOLD} />
+							<CheckMark color="#05050E" />
 							{task.done ? "Done" : "Mark done"}
 						</button>
 					)}
@@ -1062,13 +1089,11 @@ function HeroTask({
 									onClick={() => setSlot(s)}
 									className="flex-1 cursor-pointer rounded-[10px] py-[7px] text-center font-bold text-[9px] transition-colors duration-200 motion-reduce:transition-none"
 									style={{
-										background: on
-											? "rgba(255,255,255,0.2)"
-											: "rgba(255,255,255,0.1)",
+										background: on ? "rgba(245,200,66,0.2)" : "#FFFFFF",
 										border: `1px solid ${
-											on ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.25)"
+											on ? "rgba(245,200,66,0.55)" : "rgba(14,20,32,0.12)"
 										}`,
-										color: on ? "#FFFFFF" : "rgba(255,255,255,0.6)",
+										color: on ? GOLD_INK : "rgba(14,20,32,0.55)",
 									}}
 								>
 									{s}
@@ -1085,30 +1110,30 @@ function HeroTask({
 function SuggestionPill({ data }: { data: Suggestion }) {
 	return (
 		<div
-			className="mb-4 rounded-[12px] p-[10px_14px] backdrop-blur-sm"
-			style={{
-				background: "rgba(255,255,255,0.15)",
-				border: "1px solid rgba(255,255,255,0.25)",
-			}}
+			className="mb-4 rounded-[12px] bg-white p-[10px_14px]"
+			style={{ border: "1px solid rgba(245,200,66,0.3)" }}
 		>
 			<div className="mb-2 flex items-center gap-2">
-				<SparkleIcon color="rgba(255,255,255,0.7)" />
+				<SparkleIcon color={GOLD_INK} />
 				<span
 					className="font-bold text-[9px] uppercase tracking-[0.1em]"
-					style={{ color: "rgba(255,255,255,0.6)" }}
+					style={{ color: GOLD_INK }}
 				>
 					North suggests
 				</span>
 				{data.duration && (
 					<span
 						className="font-bold text-[9px]"
-						style={{ color: "rgba(255,255,255,0.45)" }}
+						style={{ color: "rgba(14,20,32,0.45)" }}
 					>
 						· {data.duration}
 					</span>
 				)}
 			</div>
-			<p className="font-bold text-[13px] text-white leading-[1.4]">
+			<p
+				className="font-bold text-[13px] leading-[1.4]"
+				style={{ color: TEXT }}
+			>
 				{data.suggestion}
 			</p>
 			{(data.source || data.resource) && (
@@ -1116,9 +1141,9 @@ function SuggestionPill({ data }: { data: Suggestion }) {
 					<span
 						className="flex items-center gap-1.5 rounded-full px-2.5 py-1 font-bold text-[9px]"
 						style={{
-							background: "rgba(255,255,255,0.15)",
-							border: "1px solid rgba(255,255,255,0.2)",
-							color: "rgba(255,255,255,0.7)",
+							background: "rgba(245,200,66,0.12)",
+							border: "1px solid rgba(245,200,66,0.25)",
+							color: GOLD_INK,
 						}}
 					>
 						<LinkIcon />
@@ -1129,11 +1154,8 @@ function SuggestionPill({ data }: { data: Suggestion }) {
 							href={data.sourceUrl}
 							target="_blank"
 							rel="noopener noreferrer"
-							className="cursor-pointer rounded-full px-3 py-1 font-bold text-[10px] text-white transition-colors hover:bg-white/30"
-							style={{
-								background: "rgba(255,255,255,0.2)",
-								border: "1px solid rgba(255,255,255,0.3)",
-							}}
+							className="cursor-pointer rounded-full px-3 py-1 font-bold text-[10px] transition-colors hover:brightness-95"
+							style={{ background: GOLD, color: "#05050E" }}
 						>
 							Use this
 						</a>
@@ -1147,19 +1169,16 @@ function SuggestionPill({ data }: { data: Suggestion }) {
 function SuggestionSkeleton() {
 	return (
 		<div
-			className="mb-4 rounded-[12px] p-[10px_14px]"
-			style={{
-				background: "rgba(255,255,255,0.1)",
-				border: "1px solid rgba(255,255,255,0.15)",
-			}}
+			className="mb-4 rounded-[12px] bg-white p-[10px_14px]"
+			style={{ border: "1px solid rgba(14,20,32,0.1)" }}
 		>
 			<div
 				className="mm-shimmer mb-2 h-4 w-3/4 rounded-lg"
-				style={{ background: "rgba(255,255,255,0.15)" }}
+				style={{ background: "rgba(14,20,32,0.08)" }}
 			/>
 			<div
 				className="mm-shimmer h-3 w-1/2 rounded-lg"
-				style={{ background: "rgba(255,255,255,0.1)" }}
+				style={{ background: "rgba(14,20,32,0.05)" }}
 			/>
 		</div>
 	);
@@ -1182,18 +1201,18 @@ function StatCard({
 	return (
 		<div
 			className="flex-1 rounded-[16px] border bg-white p-3 text-center"
-			style={{ borderColor: BORDER, boxShadow: "0 1px 6px rgba(26,18,8,0.04)" }}
+			style={{ borderColor: BORDER }}
 		>
 			{children}
 			<p
 				className="mt-1 font-bold text-[9px] uppercase tracking-[0.08em]"
-				style={{ color: "rgba(26,18,8,0.35)" }}
+				style={{ color: "rgba(14,20,32,0.35)" }}
 			>
 				{label}
 			</p>
 			<div
 				className="mt-2 h-[4px] overflow-hidden rounded-full"
-				style={{ background: "rgba(26,18,8,0.07)" }}
+				style={{ background: "rgba(14,20,32,0.07)" }}
 			>
 				<div
 					className="h-full rounded-full transition-[width] duration-300 motion-reduce:transition-none"
@@ -1214,11 +1233,11 @@ function DayCircle({ state }: { state: "done" | "today" | "upcoming" }) {
 			<span
 				className="flex h-[28px] w-[28px] items-center justify-center rounded-full border-[1.5px]"
 				style={{
-					background: "rgba(196,125,0,0.1)",
-					borderColor: "rgba(196,125,0,0.4)",
+					background: "rgba(245,200,66,0.1)",
+					borderColor: "rgba(245,200,66,0.4)",
 				}}
 			>
-				<CheckMark color={GOLD} size={12} />
+				<CheckMark color={GOLD_INK} size={12} />
 			</span>
 		);
 	}
@@ -1239,8 +1258,8 @@ function DayCircle({ state }: { state: "done" | "today" | "upcoming" }) {
 		<span
 			className="h-[28px] w-[28px] rounded-full border-[1.5px]"
 			style={{
-				background: "rgba(26,18,8,0.03)",
-				borderColor: "rgba(26,18,8,0.08)",
+				background: "rgba(14,20,32,0.03)",
+				borderColor: "rgba(14,20,32,0.08)",
 			}}
 		/>
 	);
@@ -1266,26 +1285,26 @@ function TaskRow({
 		? TEAL
 		: isCurrent || isNext
 			? GOLD
-			: "rgba(26,18,8,0.07)";
+			: "rgba(14,20,32,0.07)";
 	const badge = task.done
 		? {
 				label: "Done",
-				bg: "rgba(14,165,150,0.1)",
-				color: "#0A6458",
-				border: "rgba(14,165,150,0.2)",
+				bg: "rgba(62,207,191,0.1)",
+				color: "#0A8F7F",
+				border: "rgba(62,207,191,0.2)",
 			}
 		: isNext || isCurrent
 			? {
 					label: "Next",
-					bg: "rgba(196,125,0,0.1)",
-					color: "#8B5500",
-					border: "rgba(196,125,0,0.2)",
+					bg: "rgba(245,200,66,0.1)",
+					color: "#8A6A00",
+					border: "rgba(245,200,66,0.2)",
 				}
 			: {
 					label: "Later",
-					bg: "rgba(26,18,8,0.05)",
-					color: "rgba(26,18,8,0.3)",
-					border: "rgba(26,18,8,0.08)",
+					bg: "rgba(14,20,32,0.05)",
+					color: "rgba(14,20,32,0.3)",
+					border: "rgba(14,20,32,0.08)",
 				};
 	return (
 		<button
@@ -1293,7 +1312,7 @@ function TaskRow({
 			aria-pressed={task.done}
 			onClick={onToggle}
 			className="mm-task relative flex w-full cursor-pointer items-start gap-[12px] overflow-hidden rounded-[14px] border bg-white p-[12px_14px] text-left"
-			style={{ borderColor: BORDER, boxShadow: "0 1px 4px rgba(26,18,8,0.04)" }}
+			style={{ borderColor: BORDER }}
 		>
 			<span
 				aria-hidden="true"
@@ -1309,7 +1328,7 @@ function TaskRow({
 						? { background: TEAL, borderColor: TEAL }
 						: {
 								background: "transparent",
-								borderColor: isCurrent || isNext ? GOLD : "rgba(26,18,8,0.15)",
+								borderColor: isCurrent || isNext ? GOLD : "rgba(14,20,32,0.15)",
 							}
 				}
 			>
@@ -1321,7 +1340,7 @@ function TaskRow({
 					className="block font-bold text-[12px] leading-[1.4]"
 					style={
 						task.done
-							? { color: "rgba(26,18,8,0.35)", textDecoration: "line-through" }
+							? { color: "rgba(14,20,32,0.35)", textDecoration: "line-through" }
 							: { color: TEXT }
 					}
 				>
@@ -1333,14 +1352,14 @@ function TaskRow({
 					<span
 						className="mt-[6px] flex items-start gap-[6px] rounded-[8px] p-[7px_10px]"
 						style={{
-							background: "rgba(196,125,0,0.06)",
-							border: "1px solid rgba(196,125,0,0.15)",
+							background: "rgba(245,200,66,0.06)",
+							border: "1px solid rgba(245,200,66,0.15)",
 						}}
 					>
-						<SparkleIcon color={GOLD} size={10} />
+						<SparkleIcon color={GOLD_INK} size={10} />
 						<span
 							className="line-clamp-1 font-medium text-[11px] leading-[1.4]"
-							style={{ color: "rgba(26,18,8,0.6)" }}
+							style={{ color: "rgba(14,20,32,0.6)" }}
 						>
 							{suggestion.data.suggestion}
 						</span>
@@ -1350,7 +1369,7 @@ function TaskRow({
 				{goalShort && (
 					<span
 						className="mt-[2px] block font-semibold text-[9px]"
-						style={{ color: "rgba(196,125,0,0.55)" }}
+						style={{ color: GOLD_INK }}
 					>
 						→ {goalShort}
 					</span>
@@ -1379,7 +1398,7 @@ function Chevron({ open }: { open: boolean }) {
 			height="14"
 			viewBox="0 0 24 24"
 			fill="none"
-			stroke="rgba(26,18,8,0.4)"
+			stroke="rgba(14,20,32,0.4)"
 			strokeWidth={2.4}
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -1401,12 +1420,12 @@ function CompassRose() {
 		<svg
 			aria-hidden="true"
 			className="pointer-events-none absolute inset-0 h-full w-full"
-			style={{ opacity: 0.08 }}
+			style={{ opacity: 0.16 }}
 			viewBox="0 0 320 200"
 			fill="none"
 			preserveAspectRatio="xMaxYMin slice"
 		>
-			<g stroke="#FFFFFF" strokeWidth="1">
+			<g stroke={GOLD_INK} strokeWidth="1">
 				<circle cx="270" cy="40" r="70" />
 				<circle cx="270" cy="40" r="48" />
 				<circle cx="270" cy="40" r="26" />
@@ -1426,12 +1445,12 @@ function CompassMark() {
 			height="40"
 			viewBox="0 0 24 24"
 			fill="none"
-			stroke={GOLD}
+			stroke={GOLD_INK}
 			strokeWidth={1.4}
 			aria-hidden="true"
 		>
 			<circle cx="12" cy="12" r="10" />
-			<polygon points="16.2 7.8 13.4 13.4 7.8 16.2 10.6 10.6" fill={GOLD} />
+			<polygon points="16.2 7.8 13.4 13.4 7.8 16.2 10.6 10.6" fill={GOLD_INK} />
 		</svg>
 	);
 }
@@ -1442,7 +1461,7 @@ function FlameIcon() {
 			width="13"
 			height="13"
 			viewBox="0 0 24 24"
-			fill={GOLD}
+			fill={GOLD_INK}
 			aria-hidden="true"
 		>
 			<path d="M12 2c1 4-2 5-2 8a2 2 0 1 0 4 0c0-1 0-1 .5-2 1 2 1.5 3 1.5 4a4 4 0 1 1-8 0c0-3 2-4 2-6 0-2 1-3 2-4z" />
@@ -1507,8 +1526,8 @@ function CheckMark({ color, size = 13 }: { color: string; size?: number }) {
 const ANIM = `
 @keyframes mm-shimmer { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
 .mm-shimmer { animation: mm-shimmer 1.5s ease-in-out infinite; }
-.mm-task { transition: box-shadow 0.15s ease; }
-.mm-task:hover { box-shadow: 0 3px 12px rgba(26,18,8,0.08); }
+.mm-task { transition: border-color 0.15s ease, background 0.15s ease; }
+.mm-task:hover { border-color: rgba(14,20,32,0.18); background: rgba(255,255,255,0.92); }
 @keyframes mm-tab-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .mm-tab-in { animation: mm-tab-in 200ms ease-out both; }
 @media (prefers-reduced-motion: reduce) {

@@ -15,6 +15,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 import { captureServer } from "../_shared/posthog.ts";
+import { stripDashes } from "../_shared/text.ts";
 import {
 	buildUserPrompt,
 	MODEL_NAME,
@@ -170,6 +171,14 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 				return json({ reflection_id: reflectionId, error: message }, 200);
 			}
 		}
+
+		// Keep the surfaced analysis dash-free (mirrors migration 0053).
+		analysis = {
+			...analysis,
+			signal: (analysis.signal ?? []).map(stripDashes),
+			noise: (analysis.noise ?? []).map(stripDashes),
+			read: stripDashes(analysis.read),
+		};
 
 		// ── Write analysis back (service role to bypass client update RLS) ─
 		const serviceClient = createClient(supabaseUrl, serviceRole, {

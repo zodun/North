@@ -35,7 +35,7 @@ const FORUMS = [
 
 // North glass card: warm white, soft white hairline, blur + low shadow.
 const GLASS =
-	"bg-[rgba(255,255,255,0.72)] backdrop-blur-[16px] shadow-[0_2px_12px_rgba(26,18,8,0.06)]";
+	"bg-[rgba(255,255,255,0.72)] backdrop-blur-[16px] shadow-[0_2px_12px_rgba(14,20,32,0.06)]";
 const GLASS_BORDER = "1px solid rgba(255,255,255,0.9)";
 
 type Trending = { id: string; title: string; replies: number };
@@ -126,7 +126,7 @@ export default function CommunitySupportBlock({
 					<Card className={GLASS} style={{ border: GLASS_BORDER }}>
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2">
-								<Sparkles className="h-4 w-4" style={{ color: "#C47D00" }} />
+								<Sparkles className="h-4 w-4" style={{ color: "#8A6A00" }} />
 								Ask the Community
 							</CardTitle>
 						</CardHeader>
@@ -162,9 +162,9 @@ export default function CommunitySupportBlock({
 										animate={{ opacity: 1, y: 0 }}
 										exit={{ opacity: 0 }}
 										className="mt-2 font-semibold text-[11px]"
-										style={{ color: "#0A6458" }}
+										style={{ color: "#0A8F7F" }}
 									>
-										Posted — your question is live in the feed.
+										Posted. Your question is live in the feed.
 									</motion.p>
 								)}
 							</AnimatePresence>
@@ -175,7 +175,7 @@ export default function CommunitySupportBlock({
 					<Card className={GLASS} style={{ border: GLASS_BORDER }}>
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2">
-								<TrendingUp className="h-4 w-4" style={{ color: "#0EA596" }} />
+								<TrendingUp className="h-4 w-4" style={{ color: "#0A8F7F" }} />
 								Trending
 							</CardTitle>
 						</CardHeader>
@@ -185,29 +185,29 @@ export default function CommunitySupportBlock({
 							) : trending.length === 0 ? (
 								<p
 									className="text-[11px]"
-									style={{ color: "rgba(26,18,8,0.4)" }}
+									style={{ color: "rgba(14,20,32,0.4)" }}
 								>
-									No threads yet — start one above.
+									No threads yet. Start one above.
 								</p>
 							) : (
 								trending.map((t) => (
 									<button
 										key={t.id}
 										type="button"
-										className="flex w-full items-center gap-3 rounded-[14px] border px-[12px] py-[9px] text-left transition-colors hover:bg-[rgba(245,240,232,0.8)] motion-reduce:transition-none"
-										style={{ borderColor: "rgba(26,18,8,0.08)" }}
+										className="flex w-full items-center gap-3 rounded-[14px] border px-[12px] py-[9px] text-left transition-colors hover:bg-[rgba(14,20,32,0.04)] motion-reduce:transition-none"
+										style={{ borderColor: "rgba(14,20,32,0.08)" }}
 									>
 										<span
 											className="min-w-0 flex-1 truncate font-semibold text-[12px]"
-											style={{ color: "#1A1208" }}
+											style={{ color: "#0E1420" }}
 										>
 											{t.title}
 										</span>
 										<span
 											className="shrink-0 rounded-full px-2 py-0.5 font-bold text-[10px]"
 											style={{
-												background: "rgba(196,125,0,0.1)",
-												color: "#8B5500",
+												background: "rgba(245,200,66,0.1)",
+												color: "#8A6A00",
 											}}
 										>
 											{t.replies}
@@ -222,7 +222,7 @@ export default function CommunitySupportBlock({
 					<Card className={GLASS} style={{ border: GLASS_BORDER }}>
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2">
-								<Trophy className="h-4 w-4" style={{ color: "#C47D00" }} />
+								<Trophy className="h-4 w-4" style={{ color: "#8A6A00" }} />
 								Top Signal this week
 							</CardTitle>
 						</CardHeader>
@@ -232,7 +232,7 @@ export default function CommunitySupportBlock({
 							) : leaders.length === 0 ? (
 								<p
 									className="text-[11px]"
-									style={{ color: "rgba(26,18,8,0.4)" }}
+									style={{ color: "rgba(14,20,32,0.4)" }}
 								>
 									Signal scores appear after members complete a full week.
 								</p>
@@ -241,15 +241,15 @@ export default function CommunitySupportBlock({
 									<div key={l.userId} className="flex items-center gap-[10px]">
 										<span
 											className="w-[14px] text-center font-black text-[11px]"
-											style={{ color: "rgba(26,18,8,0.3)" }}
+											style={{ color: "rgba(14,20,32,0.3)" }}
 										>
 											{i + 1}
 										</span>
 										<Avatar className="h-[30px] w-[30px]">
 											<AvatarFallback
 												style={{
-													background: "rgba(196,125,0,0.16)",
-													color: "#8B5500",
+													background: "rgba(245,200,66,0.16)",
+													color: "#8A6A00",
 												}}
 											>
 												{l.name[0]?.toUpperCase() ?? "·"}
@@ -258,14 +258,14 @@ export default function CommunitySupportBlock({
 										<div className="min-w-0 flex-1">
 											<p
 												className="truncate font-bold text-[12px]"
-												style={{ color: "#1A1208" }}
+												style={{ color: "#0E1420" }}
 											>
 												{l.name}
 											</p>
 											{l.country && (
 												<p
 													className="truncate text-[10px]"
-													style={{ color: "rgba(26,18,8,0.4)" }}
+													style={{ color: "rgba(14,20,32,0.4)" }}
 												>
 													{l.country}
 												</p>
@@ -277,9 +277,9 @@ export default function CommunitySupportBlock({
 													<span
 														className="shrink-0 cursor-default rounded-full border px-2 py-0.5 font-bold text-[10px]"
 														style={{
-															color: "#0A6458",
-															background: "rgba(14,165,150,0.1)",
-															borderColor: "rgba(14,165,150,0.18)",
+															color: "#0A8F7F",
+															background: "rgba(62,207,191,0.1)",
+															borderColor: "rgba(62,207,191,0.18)",
 														}}
 													>
 														{l.signal} Signal
@@ -298,7 +298,7 @@ export default function CommunitySupportBlock({
 					<Card className={GLASS} style={{ border: GLASS_BORDER }}>
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2">
-								<Users className="h-4 w-4" style={{ color: "#7C4DFF" }} />
+								<Users className="h-4 w-4" style={{ color: "#7B61FF" }} />
 								Communities
 							</CardTitle>
 						</CardHeader>
@@ -309,21 +309,21 @@ export default function CommunitySupportBlock({
 									<button
 										key={f.name}
 										type="button"
-										className="flex w-full items-center gap-3 rounded-[14px] border px-[12px] py-[9px] text-left transition-colors hover:bg-[rgba(245,240,232,0.8)] motion-reduce:transition-none"
-										style={{ borderColor: "rgba(26,18,8,0.08)" }}
+										className="flex w-full items-center gap-3 rounded-[14px] border px-[12px] py-[9px] text-left transition-colors hover:bg-[rgba(14,20,32,0.04)] motion-reduce:transition-none"
+										style={{ borderColor: "rgba(14,20,32,0.08)" }}
 									>
 										<span
 											className="flex h-7 w-7 items-center justify-center rounded-full"
-											style={{ background: "rgba(245,240,232,0.8)" }}
+											style={{ background: "rgba(14,20,32,0.04)" }}
 										>
 											<Icon
 												className="h-[14px] w-[14px]"
-												style={{ color: "#C47D00" }}
+												style={{ color: "#8A6A00" }}
 											/>
 										</span>
 										<span
 											className="font-semibold text-[12px]"
-											style={{ color: "#1A1208" }}
+											style={{ color: "#0E1420" }}
 										>
 											{f.name}
 										</span>
@@ -356,16 +356,16 @@ function RowSkeletons({
 					{avatar && (
 						<span
 							className="h-[30px] w-[30px] rounded-full"
-							style={{ background: "rgba(26,18,8,0.07)" }}
+							style={{ background: "rgba(14,20,32,0.07)" }}
 						/>
 					)}
 					<span
 						className="h-[12px] flex-1 rounded-lg"
-						style={{ background: "rgba(26,18,8,0.06)" }}
+						style={{ background: "rgba(14,20,32,0.06)" }}
 					/>
 					<span
 						className="h-[12px] w-[34px] rounded-full"
-						style={{ background: "rgba(26,18,8,0.05)" }}
+						style={{ background: "rgba(14,20,32,0.05)" }}
 					/>
 				</div>
 			))}

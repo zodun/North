@@ -44,14 +44,14 @@ export function ProductShell({ children }: { children: React.ReactNode }) {
 					href="/profile"
 					aria-label="Your profile"
 					className="fixed top-[12px] right-[14px] z-30 flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-full border bg-white/90 backdrop-blur-sm"
-					style={{ borderColor: "rgba(26,18,8,0.08)" }}
+					style={{ borderColor: "rgba(14,20,32,0.08)" }}
 				>
 					<svg
 						width="18"
 						height="18"
 						viewBox="0 0 24 24"
 						fill="none"
-						stroke="rgba(26,18,8,0.55)"
+						stroke="rgba(14,20,32,0.55)"
 						strokeWidth={2}
 						strokeLinecap="round"
 						strokeLinejoin="round"
@@ -79,8 +79,8 @@ export function ProductShell({ children }: { children: React.ReactNode }) {
 					aria-label="Post a video"
 					className="fixed right-[16px] bottom-[84px] z-30 flex h-[52px] w-[52px] cursor-pointer items-center justify-center rounded-full active:scale-95"
 					style={{
-						background: "linear-gradient(135deg, #C47D00, #A36200)",
-						boxShadow: "0 6px 20px rgba(196,125,0,0.4)",
+						background: "linear-gradient(135deg, #F5C842, #E8B84B)",
+						border: "1px solid rgba(138,106,0,0.35)",
 					}}
 				>
 					<svg
@@ -88,7 +88,7 @@ export function ProductShell({ children }: { children: React.ReactNode }) {
 						height="24"
 						viewBox="0 0 24 24"
 						fill="none"
-						stroke="#FFFFFF"
+						stroke="#0E1420"
 						strokeWidth={2.4}
 						strokeLinecap="round"
 						strokeLinejoin="round"

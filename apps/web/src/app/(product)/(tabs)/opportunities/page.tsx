@@ -6,6 +6,58 @@ import { OpportunitiesList } from "./list";
 
 export const metadata: Metadata = { title: "Opportunities" };
 
+// ── Onboarding-driven eligibility (location + education) ─────────────────────
+// Opportunities carry only free-text location and no structured education field,
+// so this is a soft signal that re-ranks rather than a hard filter (fuzzy data
+// must never empty the list). Eligible picks float up; clearly out-of-reach ones
+// sink.
+function locationScore(
+	location: string | null,
+	country: string | null,
+	relocate: boolean,
+): number {
+	const loc = (location ?? "").toLowerCase();
+	if (!loc) return 0;
+	if (/(remote|online|worldwide|global|anywhere|virtual)/.test(loc)) return 2;
+	const c = (country ?? "").toLowerCase();
+	if (c && loc.includes(c)) return 2;
+	if (/eligible/.test(loc)) return 2; // e.g. "Remote (Jamaica eligible)"
+	return relocate ? 0 : -3; // specific on-site place the user can't reach
+}
+
+const USER_EDU_BAND: Record<string, number> = {
+	"In high school": 0,
+	"High school graduate": 1,
+	"In university": 2,
+	"Undergraduate degree": 2,
+	"Postgraduate degree": 3,
+};
+function oppEduBand(text: string): number | null {
+	const t = text.toLowerCase();
+	if (
+		/(ph\.?d|doctoral|doctorate|postdoc|post-doc|postgraduate|master'?s|\bmba\b|graduate (program|fellowship|scholarship|students))/.test(
+			t,
+		)
+	)
+		return 3;
+	if (
+		/(undergraduate|bachelor|college student|university student|current students|in college)/.test(
+			t,
+		)
+	)
+		return 2;
+	if (/(high school|secondary school|teen|under 18)/.test(t)) return 0;
+	return null;
+}
+function educationScore(text: string, edu: string | null): number {
+	if (!edu) return 0;
+	const userBand = USER_EDU_BAND[edu];
+	if (userBand == null) return 0; // self-taught / unknown → no penalty
+	const oppBand = oppEduBand(text);
+	if (oppBand == null) return 0; // no stated requirement
+	return oppBand <= userBand ? 1 : -2; // qualified vs needs a higher level
+}
+
 export default async function OpportunitiesPage() {
 	const supabase = await getServerSupabase();
 
@@ -46,7 +98,9 @@ export default async function OpportunitiesPage() {
 			user
 				? supabase
 						.from("profiles")
-						.select("preferred_opportunity_categories")
+						.select(
+							"preferred_opportunity_categories, country, open_to_relocate, education_level",
+						)
 						.eq("user_id", user.id)
 						.maybeSingle()
 				: Promise.resolve({ data: null }),
@@ -57,10 +111,14 @@ export default async function OpportunitiesPage() {
 	const userFocusAreas = (focusRes.data ?? []).map((r) => r.focus_area_id);
 	const preferredCategories: string[] =
 		profileRes.data?.preferred_opportunity_categories ?? [];
+	const country = (profileRes.data?.country as string | null) ?? null;
+	const openToRelocate = Boolean(profileRes.data?.open_to_relocate);
+	const educationLevel =
+		(profileRes.data?.education_level as string | null) ?? null;
 
-	// Compute a match score per item: focus-area overlap, plus a boost when the
-	// item's category is one the user asked for in onboarding. The category
-	// weight (2) outranks a single focus-area match so preferred *types* lead.
+	// Compute a match score per item: focus-area overlap, a boost when the item's
+	// category is one the user asked for in onboarding, plus eligibility from their
+	// onboarding location + education answers so reachable, qualifying picks lead.
 	const scored = items.map((item) => {
 		const tags: string[] = item.focus_area_tags ?? [];
 		const focusScore = userFocusAreas.length
@@ -70,7 +128,15 @@ export default async function OpportunitiesPage() {
 			item.category_id && preferredCategories.includes(item.category_id)
 				? 2
 				: 0;
-		return { ...item, matchScore: focusScore + categoryScore };
+		const locScore = locationScore(item.location, country, openToRelocate);
+		const eduScore = educationScore(
+			`${item.title} ${item.why ?? ""} ${item.opportunity_type ?? ""}`,
+			educationLevel,
+		);
+		return {
+			...item,
+			matchScore: focusScore + categoryScore + locScore + eduScore,
+		};
 	});
 
 	const initialSaved = savedRows
@@ -95,7 +161,7 @@ export default async function OpportunitiesPage() {
 			"opportunities",
 			scored.map((i) => ({
 				id: i.id,
-				label: `${i.opportunity_type ?? i.category_id ?? "Opportunity"}: ${i.title} — ${i.org}`,
+				label: `${i.opportunity_type ?? i.category_id ?? "Opportunity"}: ${i.title}, ${i.org}${i.location ? ` (${i.location})` : ""}`,
 			})),
 		);
 		if (res && res.order.length > 0) {
