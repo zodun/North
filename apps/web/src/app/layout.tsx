@@ -38,7 +38,7 @@ export const metadata: Metadata = {
 		// SVG North compass mark — modern browsers render it in the tab at any
 		// size. (The raster PNG variants are regenerated from this SVG; until
 		// then only the SVG is referenced so no stale icon shows.)
-		icon: [{ url: "/favicon/favicon.svg", type: "image/svg+xml" }],
+		icon: [{ url: "/favicon/favicon.svg?v=2", type: "image/svg+xml" }],
 		// Without this link iOS "Add to Home Screen" falls back to a screenshot.
 		apple: "/favicon/apple-touch-icon.png",
 	},
