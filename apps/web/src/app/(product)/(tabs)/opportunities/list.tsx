@@ -4,6 +4,18 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/auth-client";
 import { SubmitOpportunityForm } from "./submit-form";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Opportunities — Stitch "Discovery Hub" design, WIRED to the real backend.
+// Sleek-light language (glass cards, blue/serif), consistent with the other
+// tabs. Every action hits Supabase; the fabricated finance content (Quantum
+// Equity, IRR%, $250k allocations) is dropped — cards show real opportunity
+// fields (type, org, location, deadline) + the AI match reason.
+//   • filter / search → client-side over the server-ranked list
+//   • save            → user_saved_opportunities (upsert/delete, optimistic)
+//   • apply           → user_saved_opportunities (applied=true) + open link
+//   • submit          → SubmitOpportunityForm (opportunity_submissions)
+// ─────────────────────────────────────────────────────────────────────────────
+
 type Category = { id: string; label: string };
 
 type Item = {
@@ -21,39 +33,50 @@ type Item = {
 	matchScore: number;
 };
 
-const GOLD = "#F5C842";
-const TEAL = "#3ECFBF";
+const PRIMARY = "#005ac2";
+const SECONDARY = "#ee9800";
+const ON_SURFACE = "#1a1a1a";
+const ON_VARIANT = "#5f6368";
+const SERIF = "'Libre Caslon Text', Georgia, serif";
+const SANS = "'Sora', system-ui, sans-serif";
+const FONT_SHEET =
+	"https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&display=swap";
+const ICON_SHEET =
+	"https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block";
 
-// Per-category accent. Drives every coloured element on a card: the gradient,
-// the badge, the accent rail, the apply button and the compass-rose art.
-const CAT_COLOR: Record<string, string> = {
-	job: GOLD,
-	grant: "rgba(80,200,120,0.9)",
-	internship: "#7B61FF",
-	event: "rgba(245,150,80,0.9)",
-	accelerator: "rgba(200,100,245,0.9)",
-	community: TEAL,
-	scholarship: "rgba(62,130,200,0.9)",
-	"creator-programme": "rgba(123,97,255,0.85)",
+const NAV = [
+	{ href: "/for-you", label: "For You", icon: "auto_awesome" },
+	{ href: "/mission", label: "Mission", icon: "target" },
+	{ href: "/opportunities", label: "Opportunities", icon: "trending_up" },
+	{ href: "/journal", label: "Journal", icon: "menu_book" },
+	{ href: "/community", label: "Community", icon: "group" },
+];
+
+// Per-category accent + icon. Drives the card header tint and chip.
+const CAT: Record<string, { color: string; icon: string; label: string }> = {
+	job: { color: "#0E9E73", icon: "work", label: "Jobs" },
+	internship: { color: "#7B61FF", icon: "school", label: "Internships" },
+	scholarship: { color: PRIMARY, icon: "menu_book", label: "Scholarships" },
+	accelerator: {
+		color: "#c864f5",
+		icon: "rocket_launch",
+		label: "Accelerators",
+	},
+	grant: { color: "#34a853", icon: "volunteer_activism", label: "Grants" },
+	community: { color: "#3ECFBF", icon: "group", label: "Communities" },
+	event: { color: SECONDARY, icon: "event", label: "Events" },
+	"creator-programme": {
+		color: "#7B61FF",
+		icon: "videocam",
+		label: "Creator Programmes",
+	},
 };
-const catColor = (id: string | null) =>
-	(id && CAT_COLOR[id]) || "rgba(14,20,32,0.3)";
-
-// Categories that read as fast-moving roles — surfaced in a horizontal rail.
-const COMPACT_CATEGORIES = new Set(["job", "internship"]);
-
-const CAT_LABELS: Record<string, string> = {
-	job: "Jobs",
-	internship: "Internships",
-	scholarship: "Scholarships",
-	accelerator: "Accelerators",
-	grant: "Grants",
-	community: "Communities",
-	event: "Events",
-	"creator-programme": "Creator Programmes",
-};
-const catLabelFor = (id: string | null): string | null =>
-	(id && (CAT_LABELS[id] ?? id)) || null;
+const catMeta = (id: string | null) =>
+	(id && CAT[id]) || {
+		color: PRIMARY,
+		icon: "trending_up",
+		label: "Opportunity",
+	};
 
 const FOCUS_LABELS: Record<string, string> = {
 	craft: "Craft",
@@ -64,70 +87,20 @@ const FOCUS_LABELS: Record<string, string> = {
 	learn: "Learning",
 };
 
-const SOURCE_LABELS: Record<string, string> = {
-	"opportunity-desk": "Opportunity Desk",
-	scholars4dev: "Scholars4Dev",
-	youthop: "Youth Op",
-	"afterschool-africa": "After School Africa",
-	"world-scholarship-forum": "World Scholarships",
-	"opportunities-for-africans": "Opps for Africans",
-	youth4work: "Devex",
-};
-
-// ── Colour helpers ───────────────────────────────────────────────────────────
-// Accents arrive as either #hex or rgba(); normalise to channels so we can
-// derive tints, deep gradients and a readable foreground for apply buttons.
-
-function channels(color: string): [number, number, number] {
-	if (color.startsWith("#")) {
-		const h = color.slice(1);
-		return [
-			Number.parseInt(h.slice(0, 2), 16),
-			Number.parseInt(h.slice(2, 4), 16),
-			Number.parseInt(h.slice(4, 6), 16),
-		];
-	}
-	const m = color.match(/[\d.]+/g);
-	if (m && m.length >= 3) return [Number(m[0]), Number(m[1]), Number(m[2])];
-	return [14, 20, 32];
-}
-function withAlpha(color: string, a: number): string {
-	const [r, g, b] = channels(color);
-	return `rgba(${r}, ${g}, ${b}, ${a})`;
-}
-// Light accents (gold, teal, green) need ink-dark text; deep ones take white.
-// Used only for text that sits ON a solid accent fill (apply CTA).
-function inkOn(color: string): string {
-	const [r, g, b] = channels(color);
-	return 0.299 * r + 0.587 * g + 0.114 * b > 150 ? "#0E1420" : "#FFFFFF";
-}
-// Readable ink for an accent used as TEXT/stroke/icon on a light surface:
-// darken the channels until they clear the contrast bar, then return as a solid.
-function accentInk(color: string): string {
-	let [r, g, b] = channels(color);
-	let lum = 0.299 * r + 0.587 * g + 0.114 * b;
-	// Pull bright accents (gold/teal/green) down to a legible ink tone.
-	while (lum > 120) {
-		r *= 0.82;
-		g *= 0.82;
-		b *= 0.82;
-		lum = 0.299 * r + 0.587 * g + 0.114 * b;
-	}
-	return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
-}
-// Soft Sky cards: white surface with a whisper of the category accent so each
-// card still reads to its meaning, no dark gradient or scrim.
-const heroGradient = (accent: string) =>
-	`linear-gradient(135deg, ${withAlpha(accent, 0.1)} 0%, ${withAlpha(accent, 0.04)} 48%, #FFFFFF 100%)`;
-const cardGradient = (accent: string) =>
-	`linear-gradient(135deg, ${withAlpha(accent, 0.07)} 0%, #FFFFFF 70%)`;
-
 function daysLeft(deadline: string | null): number | null {
 	if (!deadline) return null;
 	const t = Date.parse(deadline);
 	if (Number.isNaN(t)) return null;
 	const d = Math.ceil((t - Date.now()) / 86_400_000);
 	return d >= 0 ? d : null;
+}
+function closesLabel(deadline: string | null, mounted: boolean): string {
+	if (!deadline) return "Rolling";
+	if (!mounted) return "";
+	const d = daysLeft(deadline);
+	if (d == null) return "Closed";
+	if (d === 0) return "Closes today";
+	return `${d} day${d === 1 ? "" : "s"} left`;
 }
 
 export function OpportunitiesList({
@@ -155,13 +128,13 @@ export function OpportunitiesList({
 
 	useEffect(() => setMounted(true), []);
 
-	// Filter (unchanged logic), then surface best matches first.
 	const filtered = useMemo(() => {
 		const f = items.filter((item) => {
+			const q = search.toLowerCase();
 			const matchSearch =
 				!search ||
-				item.title.toLowerCase().includes(search.toLowerCase()) ||
-				item.org.toLowerCase().includes(search.toLowerCase());
+				item.title.toLowerCase().includes(q) ||
+				item.org.toLowerCase().includes(q);
 			const matchCategory =
 				!activeCategory || item.category_id === activeCategory;
 			return matchSearch && matchCategory;
@@ -169,20 +142,8 @@ export function OpportunitiesList({
 		return [...f].sort((a, b) => b.matchScore - a.matchScore);
 	}, [items, search, activeCategory]);
 
-	// Purely presentational regroup of the already-filtered list: the strongest
-	// match becomes the hero, fast-moving roles collapse into a scroll rail, the
-	// rest stack as full-width cards. No item is added, dropped or re-fetched.
-	const { hero, compact, rest } = useMemo(() => {
-		const [first, ...others] = filtered;
-		const compactRow: Item[] = [];
-		const restRows: Item[] = [];
-		for (const it of others) {
-			if (it.category_id && COMPACT_CATEGORIES.has(it.category_id))
-				compactRow.push(it);
-			else restRows.push(it);
-		}
-		return { hero: first ?? null, compact: compactRow, rest: restRows };
-	}, [filtered]);
+	const hero = filtered[0] ?? null;
+	const rest = filtered.slice(1);
 
 	async function toggleSave(item: Item) {
 		if (saving.has(item.id)) return;
@@ -220,167 +181,142 @@ export function OpportunitiesList({
 	}
 
 	async function markApplied(item: Item) {
-		if (applied.has(item.id)) return;
-		setApplied((prev) => new Set([...prev, item.id]));
-		const {
-			data: { user },
-		} = await supabase.auth.getUser();
-		if (user) {
-			await supabase.from("user_saved_opportunities").upsert(
-				{
-					user_id: user.id,
-					opportunity_id: item.id,
-					applied: true,
-					applied_at: new Date().toISOString(),
-				},
-				{ onConflict: "user_id,opportunity_id" },
-			);
-			setSaved((prev) => new Set([...prev, item.id]));
+		if (!applied.has(item.id)) {
+			setApplied((prev) => new Set([...prev, item.id]));
+			const {
+				data: { user },
+			} = await supabase.auth.getUser();
+			if (user) {
+				await supabase.from("user_saved_opportunities").upsert(
+					{
+						user_id: user.id,
+						opportunity_id: item.id,
+						applied: true,
+						applied_at: new Date().toISOString(),
+					},
+					{ onConflict: "user_id,opportunity_id" },
+				);
+				setSaved((prev) => new Set([...prev, item.id]));
+			}
 		}
 		if (item.external_url)
 			window.open(item.external_url, "_blank", "noopener,noreferrer");
 	}
 
-	const cardProps = (item: Item) => ({
-		isSaved: saved.has(item.id),
-		isApplied: applied.has(item.id),
-		isSaving: saving.has(item.id),
-		daysRemaining: mounted ? daysLeft(item.deadline) : null,
-		userFocusAreas,
-		onSave: () => void toggleSave(item),
-		onApply: () => void markApplied(item),
-	});
-
-	// Deterministic running index for the staggered entrance (hero, then the
-	// rail, then the stack) — computed up front so render stays side-effect free.
-	const heroOffset = hero ? 1 : 0;
-	const compactBase = heroOffset;
-	const restBase = heroOffset + compact.length;
+	const filterPills = categories.filter((c) => CAT[c.id]);
 
 	return (
-		<div className="h-full overflow-y-auto overflow-x-hidden pb-24 font-jakarta">
-			<style>{ANIM}</style>
+		<div style={{ background: "#F8F9FA", color: ON_SURFACE, fontFamily: SANS }}>
+			<link rel="preconnect" href="https://fonts.googleapis.com" />
+			<link
+				rel="preconnect"
+				href="https://fonts.gstatic.com"
+				crossOrigin="anonymous"
+			/>
+			<link rel="stylesheet" href={FONT_SHEET} precedence="default" />
+			<link rel="stylesheet" href={ICON_SHEET} precedence="default" />
+			<style>{SCOPED_CSS}</style>
 
-			{/* Header */}
-			<header className="px-[18px] pt-[18px]">
-				<p className="mb-1 font-bold text-[#0E1420]/50 text-[9px] uppercase tracking-[0.15em]">
-					Discover
-				</p>
-				<h1 className="mb-1 font-black text-[#0E1420] text-[24px] tracking-[-0.8px]">
-					Opportunities
-				</h1>
-				<p className="mb-4 text-[#0E1420]/55 text-[12px]">
-					Built for where you are headed.
-				</p>
-			</header>
+			<Sidebar />
 
-			{/* Search */}
-			<div className="mx-[18px] mb-3 flex items-center gap-3 rounded-[14px] border border-[#0E1420]/12 bg-white px-4 py-[10px]">
-				<SearchIcon />
-				<label htmlFor="opp-search" className="sr-only">
-					Search opportunities
-				</label>
-				<input
-					id="opp-search"
-					type="search"
-					autoComplete="off"
-					placeholder="Search opportunities"
-					value={search}
-					onChange={(e) => setSearch(e.target.value)}
-					className="min-w-0 flex-1 border-none bg-transparent font-medium text-[#0E1420] text-[13px] outline-none placeholder:text-[#0E1420]/40"
-				/>
-			</div>
-
-			{/* Category filter */}
-			<div
-				className="mb-[14px] flex gap-2 overflow-x-auto scroll-smooth px-[18px] [&::-webkit-scrollbar]:hidden"
-				style={{ scrollbarWidth: "none" }}
-			>
-				<CategoryPill
-					label="All"
-					active={!activeCategory}
-					onClick={() => setActiveCategory(null)}
-				/>
-				{categories.map((cat) => (
-					<CategoryPill
-						key={cat.id}
-						label={cat.label}
-						active={activeCategory === cat.id}
-						onClick={() =>
-							setActiveCategory(cat.id === activeCategory ? null : cat.id)
-						}
-					/>
-				))}
-			</div>
-
-			{/* List */}
-			{filtered.length === 0 ? (
-				<EmptyState />
-			) : (
-				<>
-					{hero && <HeroCard item={hero} index={0} {...cardProps(hero)} />}
-
-					{preview && hero && <UpsellCard />}
-
-					{compact.length > 0 && (
-						<section>
-							<h2 className="px-[18px] pt-0.5 pb-[10px] font-bold text-[#0E1420]/50 text-[10px] uppercase tracking-[0.12em]">
-								Roles &amp; internships
-							</h2>
-							<div
-								className="mb-[14px] flex gap-3 overflow-x-auto px-[18px] pb-1 [&::-webkit-scrollbar]:hidden"
-								style={{ scrollbarWidth: "none" }}
-							>
-								{compact.map((item, i) => (
-									<CompactCard
-										key={item.id}
-										item={item}
-										index={compactBase + i}
-										{...cardProps(item)}
-									/>
-								))}
+			<div className="op-main min-h-screen">
+				<TopBar search={search} onSearch={setSearch} />
+				<div className="px-5 pb-6 sm:px-6 lg:px-8">
+					<div className="mx-auto max-w-[1280px]">
+						{/* ── Header + filters ────────────────────────────── */}
+						<section className="mt-4 mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
+							<div>
+								<h1
+									className="mb-2 font-bold text-4xl tracking-tight sm:text-5xl"
+									style={{ fontFamily: SERIF }}
+								>
+									Discovery Hub
+								</h1>
+								<p className="max-w-xl text-base" style={{ color: ON_VARIANT }}>
+									Real opportunities like scholarships, jobs, and programmes,
+									ranked to your direction.
+								</p>
 							</div>
+							<button
+								type="button"
+								onClick={() => setShowSubmit(true)}
+								className="inline-flex w-fit items-center gap-2 rounded-full border border-black/10 bg-white px-5 py-2.5 font-bold text-sm transition-colors hover:border-[#005ac2]/40"
+								style={{ color: ON_SURFACE }}
+							>
+								<span className="material-symbols-outlined text-lg">add</span>
+								Submit one
+							</button>
 						</section>
-					)}
 
-					{rest.length > 0 && (
-						<section>
-							{(hero || compact.length > 0) && (
-								<h2 className="px-[18px] pt-0.5 pb-[10px] font-bold text-[#0E1420]/50 text-[10px] uppercase tracking-[0.12em]">
-									More to explore
-								</h2>
-							)}
-							{rest.map((item, i) => (
-								<FullCard
-									key={item.id}
-									item={item}
-									index={restBase + i}
-									{...cardProps(item)}
+						<div className="mb-10 flex flex-wrap gap-2">
+							<FilterPill
+								active={activeCategory === null}
+								onClick={() => setActiveCategory(null)}
+								label="All matches"
+							/>
+							{filterPills.map((c) => (
+								<FilterPill
+									key={c.id}
+									active={activeCategory === c.id}
+									onClick={() => setActiveCategory(c.id)}
+									label={catMeta(c.id).label}
 								/>
 							))}
-						</section>
-					)}
-				</>
-			)}
+						</div>
 
-			{/* Submit CTA */}
-			<button
-				type="button"
-				onClick={() => setShowSubmit(true)}
-				className="mx-[18px] mt-1 mb-4 flex w-[calc(100%-36px)] cursor-pointer items-center gap-3 rounded-[16px] border border-[#0E1420]/12 border-dashed p-[14px] transition-all hover:border-[#0E1420]/20 hover:bg-[#0E1420]/[0.02] motion-reduce:transition-none"
-			>
-				<span className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-[#F4F7FC]">
-					<PlusCircleIcon />
-				</span>
-				<span className="text-left">
-					<span className="block font-bold text-[#0E1420]/55 text-[12px]">
-						Submit an opportunity
-					</span>
-					<span className="mt-0.5 block text-[#0E1420]/50 text-[10px]">
-						Know something worth sharing?
-					</span>
-				</span>
-			</button>
+						{hero ? (
+							<>
+								<HeroCard
+									item={hero}
+									preview={preview}
+									saved={saved.has(hero.id)}
+									applied={applied.has(hero.id)}
+									closes={closesLabel(hero.deadline, mounted)}
+									onSave={() => void toggleSave(hero)}
+									onApply={() => void markApplied(hero)}
+								/>
+
+								{rest.length > 0 && (
+									<section className="mt-10">
+										<div className="mb-6 flex items-center justify-between">
+											<h2
+												className="font-bold text-[11px] uppercase tracking-[0.2em]"
+												style={{ color: ON_VARIANT }}
+											>
+												Recommended for you
+											</h2>
+											<span
+												className="text-xs"
+												style={{ color: ON_VARIANT, opacity: 0.7 }}
+											>
+												Sorted by match
+											</span>
+										</div>
+										<div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+											{rest.map((item) => (
+												<OppCard
+													key={item.id}
+													item={item}
+													locked={preview}
+													saved={saved.has(item.id)}
+													applied={applied.has(item.id)}
+													closes={closesLabel(item.deadline, mounted)}
+													userFocusAreas={userFocusAreas}
+													onSave={() => void toggleSave(item)}
+													onApply={() => void markApplied(item)}
+												/>
+											))}
+										</div>
+										{preview && <UpgradeNote count={rest.length} />}
+									</section>
+								)}
+							</>
+						) : (
+							<EmptyState onSubmit={() => setShowSubmit(true)} />
+						)}
+					</div>
+				</div>
+			</div>
 
 			{showSubmit && (
 				<SubmitOpportunityForm onClose={() => setShowSubmit(false)} />
@@ -389,497 +325,29 @@ export function OpportunitiesList({
 	);
 }
 
-// Props shared by every card variant.
-type CardCommon = {
-	item: Item;
-	index: number;
-	isSaved: boolean;
-	isApplied: boolean;
-	isSaving: boolean;
-	daysRemaining: number | null;
-	userFocusAreas: string[];
-	onSave: () => void;
-	onApply: () => void;
-};
-
-// ── Featured hero card ───────────────────────────────────────────────────────
-
-function HeroCard({
-	item,
-	index,
-	isSaved,
-	isApplied,
-	isSaving,
-	daysRemaining,
-	onSave,
-	onApply,
-}: CardCommon) {
-	const accent = catColor(item.category_id);
-	const ink = inkOn(accent);
-	const accInk = accentInk(accent);
-	const catLabel = catLabelFor(item.category_id);
-	const urgent = daysRemaining != null && daysRemaining < 7;
-
-	return (
-		<article
-			tabIndex={-1}
-			className="opp-card relative mx-[18px] mb-[14px] min-h-[195px] cursor-pointer overflow-hidden rounded-[22px] outline-none focus-visible:ring-2 focus-visible:ring-[#F5C842]"
-			style={{
-				background: heroGradient(accent),
-				border: `1px solid ${withAlpha(accent, 0.22)}`,
-				animationDelay: `${Math.min(index, 8) * 60}ms`,
-			}}
-		>
-			<CompassRose accent={accent} />
-
-			{/* Category badge */}
-			{catLabel && (
-				<span
-					className="absolute top-[14px] left-[14px] z-10 rounded-full px-[11px] py-1 font-bold text-[9px] uppercase tracking-[0.12em] backdrop-blur-sm"
-					style={{
-						color: accInk,
-						backgroundColor: withAlpha(accent, 0.14),
-						border: `1px solid ${withAlpha(accent, 0.35)}`,
-					}}
-				>
-					{catLabel}
-				</span>
-			)}
-
-			{/* Save */}
-			<button
-				type="button"
-				onClick={onSave}
-				disabled={isSaving}
-				aria-label={isSaved ? "Remove from saved" : "Save opportunity"}
-				aria-pressed={isSaved}
-				className="absolute top-[12px] right-[12px] z-10 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-[#0E1420]/[0.06] disabled:opacity-50 motion-reduce:transition-none"
-				style={{
-					backgroundColor: isSaved ? withAlpha(accent, 0.16) : "#FFFFFF",
-					border: `1px solid ${isSaved ? withAlpha(accent, 0.4) : "rgba(14,20,32,0.12)"}`,
-				}}
-			>
-				<BookmarkIcon active={isSaved} accent={accent} />
-			</button>
-
-			{/* Content */}
-			<div className="relative z-10 flex min-h-[195px] flex-col justify-end p-5">
-				<p className="mb-1.5 font-semibold text-[#0E1420]/55 text-[10px]">
-					{item.org}
-				</p>
-				<h2 className="mb-2 line-clamp-2 font-black text-[#0E1420] text-[19px] leading-[1.2] tracking-[-0.5px]">
-					{item.title}
-				</h2>
-
-				{(item.location || item.opportunity_type) && (
-					<div className="mb-3 flex flex-wrap items-center gap-2">
-						{item.opportunity_type && (
-							<span className="font-medium text-[#0E1420]/65 text-[10px]">
-								{item.opportunity_type}
-							</span>
-						)}
-						{item.location && item.opportunity_type && <Dot />}
-						{item.location && (
-							<span className="font-medium text-[#0E1420]/65 text-[10px]">
-								{item.location}
-							</span>
-						)}
-					</div>
-				)}
-
-				<div className="flex flex-wrap items-center gap-3">
-					{item.external_url && (
-						<button
-							type="button"
-							onClick={onApply}
-							className="flex cursor-pointer items-center gap-1.5 rounded-[11px] border-none px-[18px] py-[9px] font-extrabold text-[13px] transition-transform active:scale-95 motion-reduce:transition-none"
-							style={{
-								backgroundColor: isApplied ? withAlpha(accent, 0.14) : accent,
-								color: isApplied ? accInk : ink,
-							}}
-						>
-							{isApplied && <CheckIcon />}
-							{isApplied ? "Applied" : "Apply now"}
-						</button>
-					)}
-					{daysRemaining != null && (
-						<DaysPill days={daysRemaining} urgent={urgent} />
-					)}
-				</div>
-			</div>
-		</article>
-	);
-}
-
-// ── Compact card (horizontal rail) ───────────────────────────────────────────
-
-function CompactCard({
-	item,
-	index,
-	isApplied,
-	daysRemaining,
-	onApply,
-}: CardCommon) {
-	const accent = catColor(item.category_id);
-	const accInk = accentInk(accent);
-	const typeLabel = item.opportunity_type ?? catLabelFor(item.category_id);
-
-	return (
-		<article
-			tabIndex={-1}
-			className="opp-card relative min-h-[130px] w-[200px] shrink-0 cursor-pointer overflow-hidden rounded-[18px] outline-none focus-visible:ring-2 focus-visible:ring-[#F5C842]"
-			style={{
-				background: cardGradient(accent),
-				border: `1px solid ${withAlpha(accent, 0.2)}`,
-				animationDelay: `${Math.min(index, 8) * 60}ms`,
-			}}
-		>
-			<span
-				aria-hidden="true"
-				className="absolute inset-x-0 top-0 h-0.5"
-				style={{
-					background: `linear-gradient(90deg, ${accent}, transparent)`,
-				}}
-			/>
-			<div className="relative z-[2] flex h-full min-h-[130px] flex-col p-[14px]">
-				{typeLabel && (
-					<p
-						className="mb-1.5 font-bold text-[8px] uppercase tracking-[0.12em]"
-						style={{ color: accInk }}
-					>
-						{typeLabel}
-					</p>
-				)}
-				<h3 className="mb-1 line-clamp-2 font-black text-[#0E1420] text-[13px] leading-[1.3]">
-					{item.title}
-				</h3>
-				<p className="mb-3 line-clamp-1 text-[#0E1420]/65 text-[10px]">
-					{item.org}
-				</p>
-				<div className="mt-auto flex items-center justify-between gap-2">
-					{daysRemaining != null ? (
-						<span className="font-medium text-[#0E1420]/65 text-[9px]">
-							{daysRemaining === 0 ? "Closes today" : `${daysRemaining}d left`}
-						</span>
-					) : (
-						<span />
-					)}
-					{item.external_url && (
-						<button
-							type="button"
-							onClick={onApply}
-							className="cursor-pointer rounded-[8px] px-[11px] py-[5px] font-black text-[10px] transition-colors motion-reduce:transition-none"
-							style={{
-								color: accInk,
-								backgroundColor: withAlpha(accent, 0.14),
-								border: `1px solid ${withAlpha(accent, 0.3)}`,
-							}}
-						>
-							{isApplied ? "Applied" : "Apply"}
-						</button>
-					)}
-				</div>
-			</div>
-		</article>
-	);
-}
-
-// ── Full-width card ──────────────────────────────────────────────────────────
-
-function FullCard({
-	item,
-	index,
-	isSaved,
-	isApplied,
-	isSaving,
-	daysRemaining,
-	userFocusAreas,
-	onSave,
-	onApply,
-}: CardCommon) {
-	const accent = catColor(item.category_id);
-	const accInk = accentInk(accent);
-	const catLabel = catLabelFor(item.category_id);
-	const tags = item.focus_area_tags.slice(0, 4);
-	const urgent = daysRemaining != null && daysRemaining < 7;
-
-	return (
-		<article
-			tabIndex={-1}
-			className="opp-card relative mx-[18px] mb-3 cursor-pointer overflow-hidden rounded-[18px] outline-none focus-visible:ring-2 focus-visible:ring-[#F5C842]"
-			style={{
-				background: cardGradient(accent),
-				border: `1px solid ${withAlpha(accent, 0.2)}`,
-				animationDelay: `${Math.min(index, 8) * 60}ms`,
-			}}
-		>
-			<span
-				aria-hidden="true"
-				className="absolute top-0 bottom-0 left-0 w-[3px] rounded-l-[3px]"
-				style={{ backgroundColor: accent }}
-			/>
-
-			{/* Header */}
-			<div className="flex items-start justify-between gap-3 px-[14px] pt-[14px] pb-[10px]">
-				<div className="min-w-0">
-					{catLabel && (
-						<span
-							className="mb-1.5 inline-block rounded-full px-2 py-1 font-bold text-[8px] uppercase tracking-[0.1em]"
-							style={{
-								color: accInk,
-								backgroundColor: withAlpha(accent, 0.14),
-								border: `1px solid ${withAlpha(accent, 0.25)}`,
-							}}
-						>
-							{catLabel}
-						</span>
-					)}
-					<h3 className="mb-1 font-black text-[#0E1420] text-[15px] leading-[1.3]">
-						{item.title}
-					</h3>
-					<p className="text-[#0E1420]/65 text-[11px]">{item.org}</p>
-				</div>
-				<button
-					type="button"
-					onClick={onSave}
-					disabled={isSaving}
-					aria-label={isSaved ? "Remove from saved" : "Save opportunity"}
-					aria-pressed={isSaved}
-					className="flex h-[30px] w-[30px] shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors hover:bg-[#0E1420]/[0.06] disabled:opacity-50 motion-reduce:transition-none"
-					style={{
-						backgroundColor: isSaved ? withAlpha(accent, 0.16) : "#FFFFFF",
-						border: `1px solid ${isSaved ? withAlpha(accent, 0.35) : "rgba(14,20,32,0.10)"}`,
-					}}
-				>
-					<BookmarkIcon active={isSaved} accent={accent} />
-				</button>
-			</div>
-
-			{/* Why this */}
-			{item.why && (
-				<div
-					className="mx-[14px] mb-3 rounded-[10px] bg-[#F4F7FC] px-3 py-[9px]"
-					style={{ borderLeft: `2px solid ${withAlpha(accent, 0.4)}` }}
-				>
-					<p className="mb-1 font-bold text-[#0E1420]/55 text-[8px] uppercase tracking-[0.12em]">
-						Why this
-					</p>
-					<p className="text-[#0E1420]/70 text-[11px] leading-[1.5]">
-						{item.why}
-					</p>
-				</div>
-			)}
-
-			{/* Tags */}
-			{tags.length > 0 && (
-				<div className="flex flex-wrap gap-2 px-[14px] pb-3">
-					{tags.map((tag) => {
-						const matched = userFocusAreas.includes(tag);
-						return (
-							<span
-								key={tag}
-								className="rounded-full border px-2.5 py-1 font-semibold text-[10px]"
-								style={
-									matched
-										? {
-												color: "#0A8F7F",
-												backgroundColor: "rgba(62,207,191,0.14)",
-												borderColor: "rgba(62,207,191,0.3)",
-											}
-										: {
-												color: "rgba(14,20,32,0.65)",
-												backgroundColor: "#F4F7FC",
-												borderColor: "rgba(14,20,32,0.10)",
-											}
-								}
-							>
-								{FOCUS_LABELS[tag] ?? tag}
-							</span>
-						);
-					})}
-					{item.source && SOURCE_LABELS[item.source] && (
-						<span className="rounded-full border border-[#0E1420]/10 bg-[#F4F7FC] px-2.5 py-1 font-semibold text-[#0E1420]/65 text-[10px]">
-							{SOURCE_LABELS[item.source]}
-						</span>
-					)}
-				</div>
-			)}
-
-			{/* Bottom row */}
-			<div className="flex items-center justify-between gap-3 px-[14px] pt-1 pb-[14px]">
-				<div className="flex min-w-0 flex-wrap items-center gap-2 text-[#0E1420]/65 text-[10px]">
-					{item.location && (
-						<span className="flex items-center gap-1">
-							<PinIcon />
-							{item.location}
-						</span>
-					)}
-					{daysRemaining != null && (
-						<DaysPill days={daysRemaining} urgent={urgent} />
-					)}
-				</div>
-				{item.external_url && (
-					<button
-						type="button"
-						onClick={onApply}
-						className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-[10px] px-[15px] py-[7px] font-black text-[11px] transition-colors motion-reduce:transition-none"
-						style={{
-							color: accInk,
-							backgroundColor: withAlpha(accent, 0.14),
-							border: `1px solid ${withAlpha(accent, 0.3)}`,
-						}}
-					>
-						{isApplied && <CheckIcon />}
-						{isApplied ? "Applied" : "Apply now"}
-					</button>
-				)}
-			</div>
-		</article>
-	);
-}
-
-// ── Shared bits ──────────────────────────────────────────────────────────────
-
-function DaysPill({ days, urgent }: { days: number; urgent: boolean }) {
-	return (
-		<span
-			className="rounded-full px-3 py-1.5 font-bold text-[10px]"
-			style={
-				urgent
-					? {
-							color: "#DC2626",
-							backgroundColor: "rgba(248,113,113,0.14)",
-							border: "1px solid rgba(248,113,113,0.3)",
-						}
-					: {
-							color: "rgba(14,20,32,0.65)",
-							backgroundColor: "#F4F7FC",
-							border: "1px solid rgba(14,20,32,0.10)",
-						}
-			}
-		>
-			{days === 0 ? "Closes today" : `${days} day${days === 1 ? "" : "s"} left`}
-		</span>
-	);
-}
-
-function Dot() {
-	return (
-		<span
-			aria-hidden="true"
-			className="inline-block h-[3px] w-[3px] rounded-full"
-			style={{ backgroundColor: "rgba(14,20,32,0.25)" }}
-		/>
-	);
-}
-
-// Decorative compass rose — texture, not focus. Sits top-right of the card with
-// a faint echo bottom-left, tinted to the category accent.
-function CompassRose({ accent }: { accent: string }) {
-	return (
-		<div
-			aria-hidden="true"
-			className="pointer-events-none absolute inset-0 overflow-hidden"
-		>
-			<svg
-				width="240"
-				height="240"
-				viewBox="0 0 240 240"
-				fill="none"
-				className="absolute -top-12 -right-6"
-				aria-hidden="true"
-			>
-				<circle
-					cx="120"
-					cy="120"
-					r="90"
-					stroke={accent}
-					strokeOpacity="0.6"
-					strokeWidth="1"
-					strokeDasharray="2 7"
-				/>
-				<circle
-					cx="120"
-					cy="120"
-					r="60"
-					stroke={accent}
-					strokeOpacity="0.4"
-					strokeWidth="1"
-					strokeDasharray="2 7"
-				/>
-				<circle
-					cx="120"
-					cy="120"
-					r="32"
-					stroke={accent}
-					strokeOpacity="0.4"
-					strokeWidth="1"
-				/>
-				<g stroke={accent} strokeOpacity="0.2" strokeWidth="1">
-					<line x1="120" y1="14" x2="120" y2="226" />
-					<line x1="14" y1="120" x2="226" y2="120" />
-				</g>
-				<polygon
-					points="120,42 113,120 127,120"
-					fill={accent}
-					fillOpacity="0.7"
-				/>
-				<circle cx="120" cy="120" r="4" fill={accent} fillOpacity="0.85" />
-			</svg>
-			<svg
-				width="130"
-				height="130"
-				viewBox="0 0 130 130"
-				fill="none"
-				className="absolute -bottom-12 -left-10"
-				aria-hidden="true"
-			>
-				<circle
-					cx="65"
-					cy="65"
-					r="45"
-					stroke={accent}
-					strokeOpacity="0.2"
-					strokeWidth="1"
-					strokeDasharray="2 7"
-				/>
-			</svg>
-		</div>
-	);
-}
-
-// ── Filter pill ──────────────────────────────────────────────────────────────
-
-function CategoryPill({
-	label,
+function FilterPill({
 	active,
 	onClick,
+	label,
 }: {
-	label: string;
 	active: boolean;
 	onClick: () => void;
+	label: string;
 }) {
 	return (
 		<button
 			type="button"
 			onClick={onClick}
-			aria-pressed={active}
-			className={`shrink-0 cursor-pointer whitespace-nowrap rounded-full px-[14px] py-[7px] text-[11px] transition-all motion-reduce:transition-none ${
-				active ? "font-extrabold" : "font-bold hover:bg-[#0E1420]/[0.04]"
-			}`}
+			className="rounded-full border px-5 py-2 font-bold text-xs uppercase tracking-wider transition-colors"
 			style={
 				active
 					? {
-							backgroundColor: GOLD,
-							color: "#0E1420",
-							border: `1px solid ${GOLD}`,
-							transform: "scale(1.02)",
+							background: PRIMARY,
+							color: "#fff",
+							borderColor: PRIMARY,
+							boxShadow: "0 4px 12px rgba(0,90,194,0.25)",
 						}
-					: {
-							backgroundColor: "#FFFFFF",
-							border: "1px solid rgba(14,20,32,0.12)",
-							color: "rgba(14,20,32,0.65)",
-						}
+					: { color: ON_VARIANT, borderColor: "rgba(0,0,0,0.1)" }
 			}
 		>
 			{label}
@@ -887,173 +355,495 @@ function CategoryPill({
 	);
 }
 
-// Free-tier preview upsell — shown right after the one personalized pick.
-function UpsellCard() {
+function HeroCard({
+	item,
+	preview,
+	saved,
+	applied,
+	closes,
+	onSave,
+	onApply,
+}: {
+	item: Item;
+	preview: boolean;
+	saved: boolean;
+	applied: boolean;
+	closes: string;
+	onSave: () => void;
+	onApply: () => void;
+}) {
+	const cat = catMeta(item.category_id);
 	return (
-		<a
-			href="/api/billing/checkout"
-			className="mx-[18px] mb-3 block cursor-pointer overflow-hidden rounded-[18px] border p-4"
-			style={{
-				borderColor: "rgba(123,97,255,0.3)",
-				background:
-					"linear-gradient(135deg, rgba(123,97,255,0.12), rgba(123,97,255,0.04))",
-			}}
-		>
-			<p
-				className="mb-1 font-bold text-[9px] uppercase tracking-[0.15em]"
-				style={{ color: "#5B43E0" }}
-			>
-				Premium
-			</p>
-			<p className="font-black text-[#0E1420] text-[15px] leading-[1.35]">
-				That's your top match. Unlock the rest.
-			</p>
-			<p className="mt-1 text-[#0E1420]/70 text-[12px] leading-relaxed">
-				Premium ranks every opportunity to your goal, with a reason for each
-				pick.
-			</p>
-			<span
-				className="mt-3 inline-flex items-center rounded-[11px] px-[18px] py-[9px] font-extrabold text-[#0E1420] text-[13px]"
-				style={{ backgroundColor: GOLD }}
-			>
-				Upgrade to Premium
-			</span>
-		</a>
+		<section className="glass-card signal-glow relative overflow-hidden rounded-[2rem] p-8 sm:p-10 lg:p-12">
+			<div
+				aria-hidden="true"
+				className="absolute inset-0"
+				style={{
+					background: `radial-gradient(120% 100% at 100% 0%, ${cat.color}22, transparent 55%)`,
+				}}
+			/>
+			<div className="relative max-w-2xl">
+				<div className="mb-5 flex flex-wrap items-center gap-3">
+					<span
+						className="rounded-full border px-3 py-1 font-bold text-[10px] uppercase tracking-widest"
+						style={{
+							color: cat.color,
+							background: `${cat.color}14`,
+							borderColor: `${cat.color}33`,
+						}}
+					>
+						{preview ? "Your top match" : "Top match"}
+					</span>
+					<span className="flex items-center gap-1.5">
+						<span
+							className="pulse-signal h-2 w-2 rounded-full"
+							style={{ background: cat.color }}
+						/>
+						<span className="font-bold text-xs" style={{ color: cat.color }}>
+							{cat.label}
+						</span>
+					</span>
+				</div>
+
+				<h2
+					className="mb-3 font-bold text-3xl leading-tight tracking-tight sm:text-5xl"
+					style={{ fontFamily: SERIF }}
+				>
+					{item.title}
+				</h2>
+				<p className="mb-8 text-lg" style={{ color: ON_VARIANT }}>
+					{item.org}
+				</p>
+
+				{item.why && (
+					<p
+						className="mb-8 max-w-xl text-base leading-relaxed"
+						style={{ color: ON_VARIANT }}
+					>
+						{item.why}
+					</p>
+				)}
+
+				<div className="mb-9 flex flex-wrap items-center gap-x-10 gap-y-4">
+					<HeroStat label="Type" value={item.opportunity_type ?? cat.label} />
+					{item.location && <HeroStat label="Location" value={item.location} />}
+					<HeroStat label="Deadline" value={closes} accent={cat.color} />
+				</div>
+
+				<div className="flex flex-wrap gap-3">
+					<button
+						type="button"
+						onClick={onApply}
+						className="inline-flex items-center gap-2 rounded-full px-9 py-3.5 font-bold text-sm text-white uppercase tracking-wider transition-all active:scale-95"
+						style={{
+							background: PRIMARY,
+							boxShadow: "0 12px 30px rgba(0,90,194,0.3)",
+						}}
+					>
+						{applied ? "Applied" : "Apply"}
+						<span className="material-symbols-outlined text-base">
+							{applied ? "check" : "arrow_forward"}
+						</span>
+					</button>
+					<button
+						type="button"
+						onClick={onSave}
+						aria-pressed={saved}
+						className="inline-flex items-center gap-2 rounded-full border bg-white/60 px-7 py-3.5 font-bold text-sm transition-colors"
+						style={{
+							borderColor: saved ? PRIMARY : "rgba(0,0,0,0.1)",
+							color: saved ? PRIMARY : ON_SURFACE,
+						}}
+					>
+						<span
+							className="material-symbols-outlined text-lg"
+							style={{ fontVariationSettings: saved ? "'FILL' 1" : "'FILL' 0" }}
+						>
+							bookmark
+						</span>
+						{saved ? "Saved" : "Save for later"}
+					</button>
+				</div>
+			</div>
+		</section>
 	);
 }
 
-function EmptyState() {
+function HeroStat({
+	label,
+	value,
+	accent,
+}: {
+	label: string;
+	value: string;
+	accent?: string;
+}) {
 	return (
-		<div className="mt-16 px-8 text-center">
-			<CompassMark />
-			<p className="font-bold text-[#0E1420]/55 text-[16px]">
-				Nothing here yet
+		<div>
+			<p
+				className="mb-1 font-bold text-[10px] uppercase tracking-widest"
+				style={{ color: ON_VARIANT, opacity: 0.7 }}
+			>
+				{label}
 			</p>
-			<p className="mt-1 text-[#0E1420]/50 text-[13px]">
-				Try a different filter or check back soon
+			<p
+				className="font-bold text-lg tracking-tight"
+				style={{ color: accent ?? ON_SURFACE, fontFamily: SERIF }}
+			>
+				{value}
 			</p>
 		</div>
 	);
 }
 
-// ── Icons ────────────────────────────────────────────────────────────────────
-
-const svgBase = {
-	fill: "none",
-	stroke: "currentColor",
-	strokeWidth: 2,
-	strokeLinecap: "round" as const,
-	strokeLinejoin: "round" as const,
-};
-
-function SearchIcon() {
+function OppCard({
+	item,
+	locked,
+	saved,
+	applied,
+	closes,
+	userFocusAreas,
+	onSave,
+	onApply,
+}: {
+	item: Item;
+	locked: boolean;
+	saved: boolean;
+	applied: boolean;
+	closes: string;
+	userFocusAreas: string[];
+	onSave: () => void;
+	onApply: () => void;
+}) {
+	const cat = catMeta(item.category_id);
+	const matchedTags = item.focus_area_tags.filter((t) =>
+		userFocusAreas.includes(t),
+	);
 	return (
-		<svg
-			width="16"
-			height="16"
-			viewBox="0 0 24 24"
-			{...svgBase}
-			className="shrink-0 text-[#0E1420]/50"
-			aria-hidden="true"
-		>
-			<circle cx="11" cy="11" r="8" />
-			<path d="m21 21-4.35-4.35" />
-		</svg>
+		<article className="glass-card group flex flex-col overflow-hidden rounded-[2rem]">
+			{/* Accent header (replaces the mockup's stock photo) */}
+			<div
+				className="relative flex h-28 items-end p-5"
+				style={{
+					background: `linear-gradient(135deg, ${cat.color}24, ${cat.color}08)`,
+				}}
+			>
+				<span
+					aria-hidden="true"
+					className="material-symbols-outlined absolute top-3 right-3 text-[64px]"
+					style={{ color: cat.color, opacity: 0.18 }}
+				>
+					{cat.icon}
+				</span>
+				<span
+					className="rounded-full bg-white/80 px-3 py-1 font-bold text-[10px] uppercase tracking-wider backdrop-blur-sm"
+					style={{ color: cat.color }}
+				>
+					{cat.label}
+				</span>
+				<button
+					type="button"
+					onClick={onSave}
+					aria-label={saved ? "Saved" : "Save"}
+					className="absolute top-3 left-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm transition-colors"
+					style={{ color: saved ? PRIMARY : ON_VARIANT }}
+				>
+					<span
+						className="material-symbols-outlined text-xl"
+						style={{ fontVariationSettings: saved ? "'FILL' 1" : "'FILL' 0" }}
+					>
+						bookmark
+					</span>
+				</button>
+			</div>
+
+			<div className="flex flex-1 flex-col p-7">
+				<h4
+					className="mb-1 font-bold text-xl leading-snug tracking-tight transition-colors group-hover:text-[#005ac2]"
+					style={{ fontFamily: SERIF }}
+				>
+					{item.title}
+				</h4>
+				<p className="text-sm" style={{ color: ON_VARIANT, opacity: 0.8 }}>
+					{item.org}
+				</p>
+
+				{item.why ? (
+					<p
+						className="mt-4 line-clamp-2 text-sm leading-relaxed"
+						style={{ color: ON_VARIANT }}
+					>
+						{item.why}
+					</p>
+				) : (
+					matchedTags.length > 0 && (
+						<div className="mt-4 flex flex-wrap gap-1.5">
+							{matchedTags.slice(0, 3).map((t) => (
+								<span
+									key={t}
+									className="rounded-full px-2 py-0.5 font-bold text-[10px] uppercase tracking-wider"
+									style={{ background: "rgba(0,90,194,0.08)", color: PRIMARY }}
+								>
+									{FOCUS_LABELS[t] ?? t}
+								</span>
+							))}
+						</div>
+					)
+				)}
+
+				<div className="mt-auto grid grid-cols-2 gap-4 border-black/5 border-t pt-5">
+					<div className="min-w-0">
+						<p
+							className="font-bold text-[9px] uppercase tracking-widest"
+							style={{ color: ON_VARIANT, opacity: 0.6 }}
+						>
+							Location
+						</p>
+						<p className="truncate font-bold text-sm">
+							{item.location ?? "Flexible"}
+						</p>
+					</div>
+					<div>
+						<p
+							className="font-bold text-[9px] uppercase tracking-widest"
+							style={{ color: ON_VARIANT, opacity: 0.6 }}
+						>
+							Deadline
+						</p>
+						<p className="font-bold text-sm">{closes}</p>
+					</div>
+				</div>
+
+				<button
+					type="button"
+					onClick={onApply}
+					className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl py-3 font-bold text-sm uppercase tracking-wider transition-all active:scale-95"
+					style={
+						applied
+							? { background: "rgba(0,90,194,0.08)", color: PRIMARY }
+							: { background: PRIMARY, color: "#fff" }
+					}
+				>
+					{applied ? "Applied" : locked ? "Open" : "Apply"}
+					<span className="material-symbols-outlined text-base">
+						{applied ? "check" : "arrow_forward"}
+					</span>
+				</button>
+			</div>
+		</article>
 	);
 }
 
-function BookmarkIcon({ active, accent }: { active: boolean; accent: string }) {
+function UpgradeNote({ count }: { count: number }) {
 	return (
-		<svg
-			width="16"
-			height="16"
-			viewBox="0 0 24 24"
-			fill={active ? accent : "none"}
-			stroke={active ? accent : "rgba(14,20,32,0.45)"}
-			strokeWidth={1.2}
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			aria-hidden="true"
+		<div
+			className="mt-6 flex flex-col items-center gap-3 rounded-[2rem] border border-dashed p-8 text-center sm:flex-row sm:justify-between sm:text-left"
+			style={{ borderColor: "rgba(123,97,255,0.3)" }}
 		>
-			<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-		</svg>
+			<div>
+				<p className="font-bold text-lg" style={{ fontFamily: SERIF }}>
+					{count} more matches, ranked for you
+				</p>
+				<p className="text-sm" style={{ color: ON_VARIANT, opacity: 0.8 }}>
+					Premium ranks every opportunity to your direction, with a reason for
+					each.
+				</p>
+			</div>
+			<a
+				href="/api/billing/checkout"
+				className="shrink-0 rounded-xl px-6 py-3 font-bold text-sm text-white uppercase tracking-wider"
+				style={{ background: "#7B61FF" }}
+			>
+				Upgrade
+			</a>
+		</div>
 	);
 }
 
-function PinIcon() {
+function EmptyState({ onSubmit }: { onSubmit: () => void }) {
 	return (
-		<svg
-			width="11"
-			height="11"
-			viewBox="0 0 24 24"
-			{...svgBase}
-			className="shrink-0 text-[#0E1420]/55"
-			aria-hidden="true"
-		>
-			<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-			<circle cx="12" cy="10" r="3" />
-		</svg>
+		<div className="glass-card rounded-[2rem] p-14 text-center">
+			<span
+				className="material-symbols-outlined text-5xl"
+				style={{ color: PRIMARY, opacity: 0.35 }}
+			>
+				travel_explore
+			</span>
+			<p className="mt-3 font-bold text-2xl" style={{ fontFamily: SERIF }}>
+				Nothing matches yet
+			</p>
+			<p
+				className="mx-auto mt-1 max-w-sm text-sm"
+				style={{ color: ON_VARIANT, opacity: 0.8 }}
+			>
+				Try a different filter or search, or submit an opportunity you know
+				about.
+			</p>
+			<button
+				type="button"
+				onClick={onSubmit}
+				className="mt-6 rounded-xl px-7 py-3 font-bold text-sm text-white uppercase tracking-wider"
+				style={{ background: PRIMARY }}
+			>
+				Submit an opportunity
+			</button>
+		</div>
 	);
 }
 
-function CheckIcon() {
+function TopBar({
+	search,
+	onSearch,
+}: {
+	search: string;
+	onSearch: (v: string) => void;
+}) {
 	return (
-		<svg
-			width="13"
-			height="13"
-			viewBox="0 0 24 24"
-			{...svgBase}
-			aria-hidden="true"
+		<header
+			className="sticky top-0 z-40 px-5 py-3 backdrop-blur-md sm:px-6 lg:px-8"
+			style={{ background: "rgba(248,249,250,0.7)" }}
 		>
-			<path d="M20 6 9 17l-5-5" />
-		</svg>
+			<div className="mx-auto flex w-full max-w-[1280px] items-center justify-between gap-3">
+				<div className="relative w-full max-w-lg">
+					<span
+						className="material-symbols-outlined absolute top-1/2 left-4 -translate-y-1/2"
+						style={{ color: "rgba(95,99,104,0.6)" }}
+					>
+						search
+					</span>
+					<input
+						type="text"
+						value={search}
+						onChange={(e) => onSearch(e.target.value)}
+						placeholder="Search opportunities or organisations…"
+						className="w-full rounded-full border border-black/5 bg-white/90 py-2.5 pr-4 pl-12 font-medium text-sm outline-none transition-all focus:border-[#005ac2] focus:ring-2 focus:ring-[#005ac2]/20"
+					/>
+				</div>
+				<div className="flex shrink-0 items-center gap-4">
+					<a href="/profile" className="relative" aria-label="Notifications">
+						<span
+							className="material-symbols-outlined"
+							style={{ color: ON_VARIANT }}
+						>
+							notifications
+						</span>
+					</a>
+					<a
+						href="/profile"
+						aria-label="Your profile"
+						className="flex h-9 w-9 items-center justify-center rounded-full border border-black/5 bg-white shadow-sm"
+					>
+						<span
+							className="material-symbols-outlined text-xl"
+							style={{ color: ON_VARIANT }}
+						>
+							person
+						</span>
+					</a>
+				</div>
+			</div>
+		</header>
 	);
 }
 
-function PlusCircleIcon() {
+function Sidebar() {
 	return (
-		<svg
-			width="18"
-			height="18"
-			viewBox="0 0 24 24"
-			{...svgBase}
-			strokeWidth={1.6}
-			className="shrink-0"
-			style={{ color: "rgba(14,20,32,0.45)" }}
-			aria-hidden="true"
-		>
-			<circle cx="12" cy="12" r="10" />
-			<path d="M12 8v8M8 12h8" />
-		</svg>
+		<aside className="op-rail px-6 py-8">
+			<a
+				href="/for-you"
+				aria-label="North home"
+				className="mb-12 flex items-center gap-3 px-2"
+			>
+				<svg
+					className="h-9 w-9 shrink-0"
+					viewBox="0 0 100 100"
+					fill={PRIMARY}
+					aria-hidden="true"
+				>
+					<path d="M50 3 L58 42 L97 50 L58 58 L50 97 L42 58 L3 50 L42 42 Z" />
+				</svg>
+				<span
+					className="font-bold text-3xl tracking-tighter"
+					style={{ fontFamily: SERIF, color: ON_SURFACE }}
+				>
+					North
+				</span>
+			</a>
+			<nav className="flex-1 space-y-1">
+				{NAV.map((n) => {
+					const active = n.href === "/opportunities";
+					return (
+						<a
+							key={n.href}
+							href={n.href}
+							aria-current={active ? "page" : undefined}
+							className="flex items-center gap-4 rounded-xl px-4 py-3 transition-colors"
+							style={
+								active
+									? {
+											color: PRIMARY,
+											fontWeight: 700,
+											background: "rgba(0,90,194,0.05)",
+										}
+									: { color: ON_VARIANT }
+							}
+						>
+							<span
+								className="material-symbols-outlined"
+								style={
+									active
+										? { fontVariationSettings: "'FILL' 1, 'wght' 700" }
+										: undefined
+								}
+							>
+								{n.icon}
+							</span>
+							<span
+								className="text-sm"
+								style={{ fontWeight: active ? 700 : 500 }}
+							>
+								{n.label}
+							</span>
+						</a>
+					);
+				})}
+			</nav>
+			<div className="border-black/5 border-t pt-8">
+				<a
+					href="/api/billing/checkout"
+					className="flex items-center justify-between rounded-xl px-4 py-3 font-bold text-sm transition-colors hover:bg-black/5"
+					style={{ color: ON_SURFACE }}
+				>
+					Go Beyond
+					<span
+						className="material-symbols-outlined"
+						style={{ color: PRIMARY }}
+					>
+						arrow_forward
+					</span>
+				</a>
+			</div>
+		</aside>
 	);
 }
 
-function CompassMark() {
-	return (
-		<svg
-			width="48"
-			height="48"
-			viewBox="0 0 32 32"
-			fill="none"
-			stroke="#0E1420"
-			aria-hidden="true"
-			className="mx-auto mb-4 opacity-20"
-		>
-			<circle cx="16" cy="16" r="14" strokeWidth="0.8" />
-			<circle cx="16" cy="16" r="9" strokeWidth="0.6" strokeDasharray="1.5 3" />
-			<polygon points="16,4 13.5,16 18.5,16" fill="#0E1420" />
-			<polygon
-				points="16,28 13.5,16 18.5,16"
-				fill="#0E1420"
-				fillOpacity="0.5"
-			/>
-			<circle cx="16" cy="16" r="1.8" fill="#0E1420" />
-		</svg>
-	);
+const SCOPED_CSS = `
+.material-symbols-outlined {
+	font-family: 'Material Symbols Outlined';
+	font-weight: normal; font-style: normal; line-height: 1; letter-spacing: normal;
+	text-transform: none; display: inline-block; white-space: nowrap; word-wrap: normal;
+	direction: ltr; -webkit-font-feature-settings: 'liga'; font-feature-settings: 'liga';
+	-webkit-font-smoothing: antialiased; width: 1em; overflow: hidden;
 }
-
-const ANIM = `
-@keyframes oppIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-.opp-card { animation: oppIn 280ms ease-out both; }
-@media (prefers-reduced-motion: reduce) { .opp-card { animation: none; } }
+.glass-card { position: relative; background: rgba(255,255,255,0.7); backdrop-filter: blur(20px); border: 1px solid rgba(0,0,0,0.05); box-shadow: 0 4px 24px -1px rgba(0,0,0,0.04); transition: border-color .25s, box-shadow .25s, transform .25s; }
+.glass-card:hover { border-color: rgba(0,90,194,0.25); box-shadow: 0 16px 38px rgba(0,0,0,0.07); transform: translateY(-2px); }
+.signal-glow { box-shadow: 0 20px 50px -10px rgba(0,90,194,0.14); }
+@keyframes pulse-signal { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.25); opacity: 0.7; } }
+.pulse-signal { animation: pulse-signal 2s infinite ease-in-out; }
+/* Critical layout, server-rendered: fixed sidebar + content offset before fonts
+   load. Phones use the bottom tab bar. */
+.op-rail { position: fixed; left: 0; top: 0; height: 100%; width: 280px; z-index: 50; display: none; flex-direction: column; background: rgba(255,255,255,0.85); border-right: 1px solid rgba(0,0,0,0.06); backdrop-filter: blur(12px); }
+.op-main { margin-left: 0; padding-bottom: 7rem; }
+@media (min-width: 768px) { .op-rail { display: flex; } .op-main { margin-left: 280px; padding-bottom: 2.5rem; } }
+@media (prefers-reduced-motion: reduce) { .glass-card { transition: none; } .pulse-signal { animation: none; } }
 `;

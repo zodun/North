@@ -939,7 +939,7 @@ function SidebarNav() {
 			<div className="space-y-1 border-black/5 border-t pt-4 md:pt-8">
 				<a
 					href="/api/billing/checkout"
-					aria-label="Go Beyond — upgrade"
+					aria-label="Go Beyond, upgrade"
 					className="mt-4 flex items-center justify-center gap-2 rounded-xl px-0 py-3 text-center font-bold text-white text-xs uppercase tracking-wider shadow-lg transition-all hover:brightness-110 active:scale-[0.98] md:mt-6 md:px-6 md:py-4"
 					style={{
 						background: PRIMARY,
