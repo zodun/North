@@ -13,8 +13,10 @@
 //   supabase functions deploy plan-month
 
 import { createClient } from "@supabase/supabase-js";
+import { corsHeaders, preflight } from "../_shared/cors.ts";
 
 import { captureServer } from "../_shared/posthog.ts";
+import { escapeHtml, sendMessage, telegramToken } from "../_shared/telegram.ts";
 import { stripDashes } from "../_shared/text.ts";
 import {
 	buildSuggestPrompt,
@@ -66,6 +68,8 @@ function monthDays(monthStart: string): string[] {
 
 if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 	Deno.serve(async (req: Request) => {
+		const pf = preflight(req);
+		if (pf) return pf;
 		// ── Auth ─────────────────────────────────────────────────────────
 		const authHeader = req.headers.get("Authorization");
 		if (!authHeader?.startsWith("Bearer ")) {
@@ -213,13 +217,17 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 				.maybeSingle<{ id: string; focus_area_id: string | null }>(),
 			userClient
 				.from("profiles")
-				.select("time_budget_label, career_stage, fields, country")
+				.select(
+					"time_budget_label, career_stage, fields, country, telegram_chat_id, telegram_opt_in",
+				)
 				.eq("user_id", user.id)
 				.maybeSingle<{
 					time_budget_label: string | null;
 					career_stage: string | null;
 					fields: string[] | null;
 					country: string | null;
+					telegram_chat_id: string | null;
+					telegram_opt_in: boolean | null;
 				}>(),
 		]);
 
@@ -323,17 +331,25 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 				sort_order: w,
 			});
 		}
-		// One daily step per calendar day, each with its own distinct task. Days map
-		// into 7-day week buckets; within a bucket each day takes the matching task,
-		// cycling if the final bucket runs longer than seven days.
-		const days = monthDays(monthStart);
+		// Lay the 4-week arc onto the days REMAINING in the month, starting today.
+		// Setting a goal mid-month then gives a real first step TODAY (week 1,
+		// action 1) and still reaches the finish by month-end — instead of
+		// stranding the opening steps on past dates and dropping the user into the
+		// middle of the arc. When the goal is set on the 1st, this is the whole
+		// month, unchanged.
+		const todayIso = new Date().toISOString().slice(0, 10);
+		const firstDay = monthStart > todayIso ? monthStart : todayIso;
+		const days = monthDays(monthStart).filter((d) => d >= firstDay);
 		days.forEach((due, offset) => {
-			const w = Math.min(3, Math.floor(offset / DAYS_PER_WEEK));
+			// Progress through the remaining span: 0 today → ~1 at month end.
+			const p = days.length <= 1 ? 0 : offset / days.length;
+			const w = Math.min(3, Math.floor(p * 4));
 			const actions = plan.weeks[w].daily_actions;
+			// Sequential step within the week, proportional to position in its slice.
+			const within = Math.floor((p * 4 - w) * DAYS_PER_WEEK);
+			const idx = Math.min(actions.length - 1, Math.max(0, within));
 			const dayTask =
-				actions.length > 0
-					? actions[(offset % DAYS_PER_WEEK) % actions.length]
-					: plan.weeks[w].milestone;
+				actions.length > 0 ? actions[idx] : plan.weeks[w].milestone;
 			rows.push({
 				monthly_mission_id: missionId,
 				user_id: user.id,
@@ -365,6 +381,28 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 			used_ai: usedAi,
 			prompt_version: PROMPT_VERSION,
 		});
+
+		// Goal-set confirmation on Telegram (NOTIF-03) — a one-time kickoff message
+		// separate from the daily/weekly reminder cron. Only for connected,
+		// opted-in users; weekly users get this week's focus, daily users get their
+		// first step. Best-effort: a send failure never fails the goal-set.
+		const tgChatId = profileRes.data?.telegram_chat_id;
+		const tgToken = telegramToken();
+		if (tgChatId && profileRes.data?.telegram_opt_in && tgToken) {
+			const focus =
+				cadence === "weekly"
+					? `This week's focus: ${plan.weeks[0]?.milestone ?? ""}`
+					: `Your first step today: ${
+							plan.weeks[0]?.daily_actions?.[0] ??
+							plan.weeks[0]?.milestone ??
+							""
+						}`;
+			const text =
+				`🎯 Your goal is set:\n<b>${escapeHtml(goalTitle)}</b>\n\n` +
+				`${escapeHtml(focus)}\n\n` +
+				`I'll send your reminder here each ${cadence === "weekly" ? "week" : "morning"}. Turn it off any time in Profile.`;
+			await sendMessage(tgToken, tgChatId, text);
+		}
 
 		return json({
 			ok: true,
@@ -423,6 +461,6 @@ async function callClaudeJson(
 function json(body: unknown, status = 200): Response {
 	return new Response(JSON.stringify(body), {
 		status,
-		headers: { "content-type": "application/json" },
+		headers: { "content-type": "application/json", ...corsHeaders },
 	});
 }

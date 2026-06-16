@@ -136,27 +136,89 @@ export async function runNotificationJob(
 		}
 	}
 
-	// Today's tasks per user (label + done) — the basis for every channel's
-	// digest and the evening "any done?" check. Tasks are the daily steps of the
-	// user's monthly mission, due today (monthly_mission_steps.due_date). A user
-	// with Telegram but no push token is still covered (this is step-centric, not
-	// token-centric).
-	const { data: stepRows, error: stepErr } = await supabase
-		.from("monthly_mission_steps")
-		.select("user_id, title, done")
-		.eq("due_date", today);
-
-	if (stepErr) throw new Error(`load steps: ${stepErr.message}`);
+	// Per-user "what to focus on now" — the basis for every channel's digest and
+	// the evening "any done?" check. Daily-cadence users get today's daily steps
+	// (monthly_mission_steps.due_date = today); weekly-cadence users get this
+	// week's milestone instead, so weekly people get a meaningful focus rather
+	// than a daily micro-step. Step-centric, so a Telegram-only user (no push
+	// token) is still covered.
+	const cadenceByUser = new Map<string, "daily" | "weekly">();
+	{
+		const { data: profRows } = await supabase
+			.from("profiles")
+			.select("user_id, mission_cadence");
+		for (const p of (profRows ?? []) as {
+			user_id: string;
+			mission_cadence: string | null;
+		}[]) {
+			cadenceByUser.set(
+				p.user_id,
+				p.mission_cadence === "weekly" ? "weekly" : "daily",
+			);
+		}
+	}
 
 	const tasksByUser = new Map<string, Task[]>();
-	for (const s of (stepRows ?? []) as {
+
+	// Daily steps due today (for daily-cadence users).
+	const { data: dailyRows, error: stepErr } = await supabase
+		.from("monthly_mission_steps")
+		.select("user_id, title, done")
+		.eq("cadence", "daily")
+		.eq("due_date", today);
+	if (stepErr) throw new Error(`load daily steps: ${stepErr.message}`);
+	for (const s of (dailyRows ?? []) as {
 		user_id: string;
 		title: string;
 		done: boolean;
 	}[]) {
+		if (cadenceByUser.get(s.user_id) === "weekly") continue;
 		const arr = tasksByUser.get(s.user_id) ?? [];
 		arr.push({ label: s.title, done: s.done });
 		tasksByUser.set(s.user_id, arr);
+	}
+
+	// Weekly-cadence users: this week's milestone from their current mission. The
+	// current phase (0..3) is derived the same way the Mission view does it.
+	const monthStart = `${today.slice(0, 7)}-01`;
+	const { data: missionRows } = await supabase
+		.from("monthly_missions")
+		.select("id, user_id, month_start")
+		.eq("month_start", monthStart);
+	const weeklyMissions = (
+		(missionRows ?? []) as {
+			id: string;
+			user_id: string;
+			month_start: string;
+		}[]
+	).filter((m) => cadenceByUser.get(m.user_id) === "weekly");
+	if (weeklyMissions.length > 0) {
+		const { data: weeklyRows } = await supabase
+			.from("monthly_mission_steps")
+			.select("monthly_mission_id, week_index, title, done")
+			.eq("cadence", "weekly")
+			.in(
+				"monthly_mission_id",
+				weeklyMissions.map((m) => m.id),
+			);
+		const weekly = (weeklyRows ?? []) as {
+			monthly_mission_id: string;
+			week_index: number;
+			title: string;
+			done: boolean;
+		}[];
+		for (const m of weeklyMissions) {
+			const elapsed =
+				(Date.parse(today) - Date.parse(m.month_start)) / 86_400_000;
+			const wk = Math.min(3, Math.max(0, Math.floor(elapsed / 7)));
+			const step =
+				weekly.find(
+					(s) => s.monthly_mission_id === m.id && s.week_index === wk,
+				) ?? weekly.find((s) => s.monthly_mission_id === m.id);
+			if (step) {
+				tasksByUser.set(m.user_id, [{ label: step.title, done: step.done }]);
+			}
+		}
 	}
 
 	// Push tokens for those users only. No token → no push for that user, but
