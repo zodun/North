@@ -22,6 +22,9 @@ export type PlanPayload = {
 export type PlanWeek = {
 	// What to reach by the end of the week (3–7 words).
 	milestone: string;
+	// 2–3 sentences: what this week is about and how to approach it. The depth
+	// behind the milestone, written to the user. Shown to weekly-cadence users.
+	summary: string;
 	// Seven distinct daily tasks, one per day, that ladder up to the milestone.
 	daily_actions: string[];
 };
@@ -42,6 +45,7 @@ Shape it as a 4-week arc where each week is a phase that visibly moves them clos
 
 For each week:
 - "milestone": the concrete checkpoint reached by the end of that week, phrased as an outcome they could tick off (3–7 words). Each milestone must follow logically from the previous week's, and week 4's milestone must mean the goal is essentially achieved.
+- "summary": two or three plain sentences, written to the user, that say what this week is really about and how to approach it — the reasoning and shape of the week, not a list of tasks. This is what a weekly-cadence user reads instead of the daily steps, so it must stand on its own and give them enough to act on for the whole week. Specific to their goal, calm, no hype.
 - "daily_actions": exactly 7 ordered tasks, one per day, that together complete that week's milestone. Each is one short imperative sentence, concrete and doable in 10 to 20 minutes. They must be SEQUENTIAL — each day continues from the day before, like steps in a recipe — not seven interchangeable variations, and none may merely restate the milestone.
 
 Every task must be TARGETED to this exact person — their field, their region, their goal — not generic advice. Name a concrete action on a concrete thing: a real platform or tool, a specific section of a document, a named type of company or contact, a particular search. Ban vague verbs used on their own ("research", "work on", "explore", "learn about", "prepare" with no object). A task should be something they could do today and tick off, and someone with a different goal could not.
@@ -84,6 +88,11 @@ export const PLAN_TOOL = {
 							description:
 								"The checkpoint reached by the end of this week, as a tickable outcome (3–7 words). Follows from the prior week; week 4 means the goal is achieved.",
 						},
+						summary: {
+							type: "string",
+							description:
+								"Two or three sentences, written to the user, on what this week is about and how to approach it — the depth behind the milestone, enough for a weekly-cadence user to act on the whole week. Specific to their goal, calm, no hype.",
+						},
 						daily_actions: {
 							type: "array",
 							minItems: 7,
@@ -97,7 +106,7 @@ export const PLAN_TOOL = {
 								"Exactly 7 sequential daily tasks, ordered day 1 to day 7, that together complete this week's milestone.",
 						},
 					},
-					required: ["milestone", "daily_actions"],
+					required: ["milestone", "summary", "daily_actions"],
 					additionalProperties: false,
 				},
 			},
@@ -183,6 +192,7 @@ export function fallbackPlan(goalTitle: string): PlanResult {
 		weeks: [
 			{
 				milestone: "Set the foundation",
+				summary: `This week is about getting set up for ${goal}. Get clear on what done looks like, surface the unknowns that could slow you down, and make your first real bit of progress so the month starts with momentum.`,
 				daily_actions: dayTasks([
 					(g) => `Write down exactly what done looks like for ${g}.`,
 					(g) => `List the three biggest unknowns about ${g}.`,
@@ -195,6 +205,7 @@ export function fallbackPlan(goalTitle: string): PlanResult {
 			},
 			{
 				milestone: "Build the core",
+				summary: `This week you do the main work ${goal} depends on. Spend your time on the few things that actually move it forward, clear obstacles as they come up, and aim to have one solid, visible piece of progress by the end of the week.`,
 				daily_actions: dayTasks([
 					(g) => `Do the first concrete step toward ${g}.`,
 					(g) => `Spend 15 minutes building on ${g}.`,
@@ -207,6 +218,7 @@ export function fallbackPlan(goalTitle: string): PlanResult {
 			},
 			{
 				milestone: "Push through the hard part",
+				summary: `This is the messy middle of ${goal}, where it gets harder and easy to stall. Take on the toughest part in small pieces, get one outside perspective, and protect your progress by cutting anything that is not moving it forward.`,
 				daily_actions: dayTasks([
 					(g) => `Tackle the hardest part of ${g} for 20 minutes.`,
 					(g) => `Keep going on ${g}, even a little.`,
@@ -219,6 +231,7 @@ export function fallbackPlan(goalTitle: string): PlanResult {
 			},
 			{
 				milestone: "Finish and reach the goal",
+				summary: `This week you bring ${goal} home. Complete the last pieces, polish the rough edges, and put it in front of someone so it is genuinely done rather than almost done. End by noting what you learned and what comes next.`,
 				daily_actions: dayTasks([
 					(g) => `Complete the next-to-last step of ${g}.`,
 					(g) => `Polish one rough edge of ${g}.`,

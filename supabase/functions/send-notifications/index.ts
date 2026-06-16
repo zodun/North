@@ -29,7 +29,7 @@ type TokenRow = {
 	platform: "ios" | "android";
 };
 
-type Task = { label: string; done: boolean };
+type Task = { label: string; done: boolean; detail?: string };
 
 type RunResult = {
 	type: NotificationType;
@@ -71,8 +71,16 @@ async function sendTelegramReminders(
 		telegram_chat_id: string;
 	}[]) {
 		if (!r.telegram_chat_id) continue;
-		const labels = (tasksByUser.get(r.user_id) ?? []).map((t) => t.label);
-		const body = buildBody("morning", labels);
+		const tasks = tasksByUser.get(r.user_id) ?? [];
+		// Weekly focus carries a description (the week's depth) — show milestone
+		// then description. Daily is the bullet list of today's steps.
+		const weeklyDetail = tasks.length === 1 ? tasks[0].detail : undefined;
+		const body = weeklyDetail
+			? `${tasks[0].label}\n\n${weeklyDetail}`
+			: buildBody(
+					"morning",
+					tasks.map((t) => t.label),
+				);
 		const text = `<b>${escapeHtml(title)}</b>\n\n${escapeHtml(body)}`;
 		const res = await sendMessage(token, r.telegram_chat_id, text);
 		if (res.ok) result.telegram_sent++;
@@ -195,7 +203,7 @@ export async function runNotificationJob(
 	if (weeklyMissions.length > 0) {
 		const { data: weeklyRows } = await supabase
 			.from("monthly_mission_steps")
-			.select("monthly_mission_id, week_index, title, done")
+			.select("monthly_mission_id, week_index, title, detail, done")
 			.eq("cadence", "weekly")
 			.in(
 				"monthly_mission_id",
@@ -205,6 +213,7 @@ export async function runNotificationJob(
 			monthly_mission_id: string;
 			week_index: number;
 			title: string;
+			detail: string | null;
 			done: boolean;
 		}[];
 		for (const m of weeklyMissions) {
@@ -216,7 +225,13 @@ export async function runNotificationJob(
 					(s) => s.monthly_mission_id === m.id && s.week_index === wk,
 				) ?? weekly.find((s) => s.monthly_mission_id === m.id);
 			if (step) {
-				tasksByUser.set(m.user_id, [{ label: step.title, done: step.done }]);
+				tasksByUser.set(m.user_id, [
+					{
+						label: step.title,
+						done: step.done,
+						detail: step.detail ?? undefined,
+					},
+				]);
 			}
 		}
 	}

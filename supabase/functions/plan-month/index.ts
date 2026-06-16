@@ -288,6 +288,7 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 		goalIntent = stripDashes(goalIntent);
 		for (const wk of plan.weeks) {
 			wk.milestone = stripDashes(wk.milestone);
+			wk.summary = stripDashes(wk.summary ?? "");
 			wk.daily_actions = (wk.daily_actions ?? []).map(stripDashes);
 		}
 
@@ -326,7 +327,7 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 				week_index: w,
 				due_date: null,
 				title: plan.weeks[w].milestone,
-				detail: `Your focus for week ${w + 1}.`,
+				detail: plan.weeks[w].summary || `Your focus for week ${w + 1}.`,
 				estimate_label: "This week",
 				sort_order: w,
 			});
@@ -391,7 +392,9 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 		if (tgChatId && profileRes.data?.telegram_opt_in && tgToken) {
 			const focus =
 				cadence === "weekly"
-					? `This week's focus: ${plan.weeks[0]?.milestone ?? ""}`
+					? `This week: ${plan.weeks[0]?.milestone ?? ""}\n${
+							plan.weeks[0]?.summary ?? ""
+						}`
 					: `Your first step today: ${
 							plan.weeks[0]?.daily_actions?.[0] ??
 							plan.weeks[0]?.milestone ??
