@@ -1,41 +1,21 @@
-// Premium entitlement check (BILLING-01, BILLING-02).
-// Server-side helper used by premium-gated features (AI personalization of the
-// feed + opportunities). Reads the caller's own rows (RLS allows owner-read).
-// Mirrors the public.is_premium() SQL function: a paying/trialing subscription
-// (active, trialing, or canceled-but-not-yet-expired) OR an unexpired free
-// trial (profiles.trial_ends_at) counts as premium.
+// Premium entitlement (BILLING-01, BILLING-02).
+// Server-side gate for premium features (AI personalization of the feed +
+// opportunities). The free tier is a monthly allowance: 10 premium days per
+// calendar month, then it locks until the month resets or the user subscribes.
+//
+// getIsPremium claims today's premium for the caller via claim_premium_day():
+// it returns whether they have premium today and, for a free user, spends one of
+// their monthly day-credits the first time it is called that day (idempotent
+// within a day, deduped across the feed + opportunities surfaces). Paying
+// subscribers always return true and never spend a credit. The quota logic lives
+// in the SQL function so there is a single source of truth.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
-
-const ENTITLED = new Set(["active", "trialing", "canceled"]);
 
 export async function getIsPremium(
 	supabase: SupabaseClient,
 	userId: string,
 ): Promise<boolean> {
-	const [{ data: sub }, { data: profile }] = await Promise.all([
-		supabase
-			.from("subscriptions")
-			.select("status, current_period_end")
-			.eq("user_id", userId)
-			.maybeSingle<{ status: string; current_period_end: string | null }>(),
-		supabase
-			.from("profiles")
-			.select("trial_ends_at")
-			.eq("user_id", userId)
-			.maybeSingle<{ trial_ends_at: string | null }>(),
-	]);
-
-	// Paid (or paid-style) entitlement.
-	if (sub && ENTITLED.has(sub.status)) {
-		if (!sub.current_period_end) return true;
-		if (new Date(sub.current_period_end) > new Date()) return true;
-	}
-
-	// Free trial still running.
-	if (profile?.trial_ends_at && new Date(profile.trial_ends_at) > new Date()) {
-		return true;
-	}
-
-	return false;
+	const { data } = await supabase.rpc("claim_premium_day", { p_user: userId });
+	return data === true;
 }
