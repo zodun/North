@@ -9,7 +9,6 @@ export default function Header() {
 		{ to: "/admin", label: "Admin" },
 		{ to: "/admin/content", label: "Content" },
 		{ to: "/admin/opportunities", label: "Opportunities" },
-		{ to: "/north", label: "Prototype" },
 	] as const;
 
 	return (
