@@ -347,7 +347,7 @@ async function isLiveImage(url: string): Promise<boolean> {
 		const ct = res.headers.get("content-type") ?? "";
 		// A declared length under ~1.5KB is a pixel/spacer, never a real share image.
 		const len = Number.parseInt(res.headers.get("content-length") ?? "", 10);
-		// Don't download the body — headers are enough to confirm it's an image.
+		// Don't download the body, headers are enough to confirm it's an image.
 		await res.body?.cancel();
 		if (!res.ok || !ct.startsWith("image/")) return false;
 		if (Number.isFinite(len) && len > 0 && len < 1500) return false;

@@ -7,7 +7,7 @@ import { getServerSupabase } from "@/lib/supabase-server";
 // Promotes a content_item to cleared and sets published_at = now().
 // The DB constraint (0009_content_licensing.sql) rejects the update if
 // attribution_text or a media reference (external_url / cloudinary_public_id)
-// is missing — the constraint error is returned to the caller as-is.
+// is missing, the constraint error is returned to the caller as-is.
 export async function clearContent(id: string) {
 	const supabase = await getServerSupabase();
 	const {

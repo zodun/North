@@ -62,7 +62,7 @@ export function JournalCard({
 	);
 	const recognitionRef = useRef<Recognition | null>(null);
 
-	// Resolve on the client only — window.SpeechRecognition isn't available
+	// Resolve on the client only, window.SpeechRecognition isn't available
 	// during SSR, and computing it in render would mismatch on hydration.
 	const [voiceSupported, setVoiceSupported] = useState(false);
 	useEffect(() => {

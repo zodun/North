@@ -149,7 +149,7 @@ function makeClaudeStub(): typeof fetch {
 							name: "weekly_summary",
 							input: {
 								summary:
-									"You moved on craft this week — three saves and a finish in your focus area. Tasks held in rhythm.",
+									"You moved on craft this week, three saves and a finish in your focus area. Tasks held in rhythm.",
 								callouts: [
 									{
 										label: "Held the deep-work block",

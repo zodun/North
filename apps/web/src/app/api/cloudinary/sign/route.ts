@@ -3,7 +3,7 @@
 // Receives a `paramsToSign` object from the Upload Widget, signs it
 // with the server-only API secret, returns the signature + timestamp +
 // API key + cloud name. The Widget then uploads the asset directly to
-// Cloudinary using that signature — the secret never leaves the
+// Cloudinary using that signature, the secret never leaves the
 // server, the client never holds it.
 //
 // Gated by Supabase admin allow-list (admins table). Non-admin or

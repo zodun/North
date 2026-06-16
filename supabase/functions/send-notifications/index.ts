@@ -42,7 +42,7 @@ type RunResult = {
 	telegram_errors: number;
 };
 
-// Telegram reminder channel (NOTIF-03). Fires only on the morning run — one ping
+// Telegram reminder channel (NOTIF-03). Fires only on the morning run, one ping
 // a day is enough; the evening nudge stays push-only. Each opted-in, connected
 // chat gets a digest of that user's own tasks for today. Skips entirely when the
 // bot isn't configured. Honors the user's choice: only telegram_opt_in chats.
@@ -72,7 +72,7 @@ async function sendTelegramReminders(
 	}[]) {
 		if (!r.telegram_chat_id) continue;
 		const tasks = tasksByUser.get(r.user_id) ?? [];
-		// Weekly focus carries a description (the week's depth) — show milestone
+		// Weekly focus carries a description (the week's depth), show milestone
 		// then description. Daily is the bullet list of today's steps.
 		const weeklyDetail = tasks.length === 1 ? tasks[0].detail : undefined;
 		const body = weeklyDetail
@@ -144,7 +144,7 @@ export async function runNotificationJob(
 		}
 	}
 
-	// Per-user "what to focus on now" — the basis for every channel's digest and
+	// Per-user "what to focus on now", the basis for every channel's digest and
 	// the evening "any done?" check. Daily-cadence users get today's daily steps
 	// (monthly_mission_steps.due_date = today); weekly-cadence users get this
 	// week's milestone instead, so weekly people get a meaningful focus rather

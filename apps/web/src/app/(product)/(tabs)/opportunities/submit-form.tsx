@@ -75,7 +75,7 @@ export function SubmitOpportunityForm({ onClose }: { onClose: () => void }) {
 		"mb-1 block font-semibold text-[11px] text-[#0E1420]/55 uppercase tracking-widest";
 
 	return (
-		// biome-ignore lint/a11y/useKeyWithClickEvents lint/a11y/noStaticElementInteractions: backdrop dismiss — keyboard users can press Escape or use the close button
+		// biome-ignore lint/a11y/useKeyWithClickEvents lint/a11y/noStaticElementInteractions: backdrop dismiss, keyboard users can press Escape or use the close button
 		<div
 			className="fixed inset-0 z-50 flex items-end justify-center bg-[#0E1420]/40"
 			onClick={onClose}

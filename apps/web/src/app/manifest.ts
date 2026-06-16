@@ -8,8 +8,12 @@ export default function manifest(): MetadataRoute.Manifest {
 		start_url: "/",
 		display: "standalone",
 		orientation: "portrait",
-		background_color: "#0a0a0a",
-		theme_color: "#0a0a0a",
+		// Soft Sky, not the abandoned dark theme. background_color paints the
+		// install splash; theme_color tints the Android toolbar, both match the
+		// in-app cool-sky base (see the (product) layout viewport) so launching
+		// the installed app is a seamless light field, never a black flash.
+		background_color: "#EDF1F8",
+		theme_color: "#EDF1F8",
 		categories: ["lifestyle", "education", "productivity"],
 		icons: [
 			{

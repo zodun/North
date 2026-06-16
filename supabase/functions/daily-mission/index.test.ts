@@ -30,12 +30,12 @@ Deno.test("pickTemplate returns a template for an unknown focus area", () => {
 	assertEquals(tmpl.tasks.length, 3);
 });
 
-Deno.test("pickTemplate rotates by day — different dates give different templates for large sets", () => {
+Deno.test("pickTemplate rotates by day, different dates give different templates for large sets", () => {
 	// craft has 3 templates; dates 3 apart should differ.
 	const t1 = pickTemplate("craft", "2026-06-01");
 	const t2 = pickTemplate("craft", "2026-06-02");
 	const t3 = pickTemplate("craft", "2026-06-03");
-	// Not all three should be identical — rotation is working.
+	// Not all three should be identical, rotation is working.
 	const titles = new Set([t1.title, t2.title, t3.title]);
 	assertEquals(titles.size > 1, true);
 });

@@ -1,7 +1,7 @@
 // Edge Function: plan-month (MONTH-02)
 // Accepts a user's self-written monthly goal + cadence, calls Claude to break
 // it into a 4-week plan (milestone + daily action per week), then rewrites the
-// month's mission and steps to match — marking the goal as user-authored.
+// month's mission and steps to match, marking the goal as user-authored.
 //
 // Auth: user JWT via Authorization header (supabase.functions.invoke sends it
 // automatically). An authenticated client verifies identity and reads context;
@@ -334,7 +334,7 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 		}
 		// Lay the 4-week arc onto the days REMAINING in the month, starting today.
 		// Setting a goal mid-month then gives a real first step TODAY (week 1,
-		// action 1) and still reaches the finish by month-end — instead of
+		// action 1) and still reaches the finish by month-end, instead of
 		// stranding the opening steps on past dates and dropping the user into the
 		// middle of the arc. When the goal is set on the 1st, this is the whole
 		// month, unchanged.
@@ -383,7 +383,7 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 			prompt_version: PROMPT_VERSION,
 		});
 
-		// Goal-set confirmation on Telegram (NOTIF-03) — a one-time kickoff message
+		// Goal-set confirmation on Telegram (NOTIF-03), a one-time kickoff message
 		// separate from the daily/weekly reminder cron. Only for connected,
 		// opted-in users; weekly users get this week's focus, daily users get their
 		// first step. Best-effort: a send failure never fails the goal-set.

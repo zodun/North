@@ -6,7 +6,7 @@ export async function proxy(request: NextRequest) {
 
 	const supabase = createServerClient(
 		// Server-side: talk to Supabase directly (local), not the public browser
-		// URL — which may be a tunnel proxy (see next.config.ts /sb rewrite).
+		// URL, which may be a tunnel proxy (see next.config.ts /sb rewrite).
 		process.env.SUPABASE_URL ?? process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
 		process.env.SUPABASE_ANON_KEY ??
 			process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
@@ -35,7 +35,7 @@ export async function proxy(request: NextRequest) {
 	// data. They MUST bypass the auth/onboarding redirects: an <img> (for /api/img)
 	// or fetch (for /api/og-image) cannot follow a 307 into a sign-in HTML page, so
 	// gating them silently breaks every card image. /api/img is the same-origin
-	// image proxy every For You card loads through — keeping it public is what makes
+	// image proxy every For You card loads through, keeping it public is what makes
 	// real images actually render.
 	if (
 		pathname.startsWith("/api/img") ||
@@ -57,7 +57,7 @@ export async function proxy(request: NextRequest) {
 		return NextResponse.redirect(url);
 	}
 
-	// Not signed in — protect all product routes
+	// Not signed in, protect all product routes
 	if (!session && !isSignIn && !isAuthRoute) {
 		const url = request.nextUrl.clone();
 		url.pathname = "/sign-in";
@@ -74,14 +74,14 @@ export async function proxy(request: NextRequest) {
 
 		const isOnboarded = !!profile?.onboarded_at;
 
-		// Already signed in but not yet onboarded — go to onboarding
+		// Already signed in but not yet onboarded, go to onboarding
 		if (!isOnboarded && !isOnboarding && !isSignIn && !isAuthRoute) {
 			const url = request.nextUrl.clone();
 			url.pathname = "/onboarding";
 			return NextResponse.redirect(url);
 		}
 
-		// Onboarding complete but still on onboarding/sign-in — go to feed
+		// Onboarding complete but still on onboarding/sign-in, go to feed
 		if (isOnboarded && (isOnboarding || isSignIn)) {
 			const url = request.nextUrl.clone();
 			url.pathname = "/for-you";

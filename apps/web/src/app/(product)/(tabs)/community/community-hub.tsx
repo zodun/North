@@ -4,8 +4,8 @@ import { useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/auth-client";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Community Hub — Stitch "Signal & Noise" editorial design, WIRED to the real
-// peer-community backend. Light canvas, gradient-border composer, glass cards —
+// Community Hub, Stitch "Signal & Noise" editorial design, WIRED to the real
+// peer-community backend. Light canvas, gradient-border composer, glass cards,
 // the same visual language as the Journal screen. Every action hits Supabase:
 //   • feed  → peer_posts (server-fetched, prepended on post)
 //   • like  → peer_likes (insert/delete, optimistic)
@@ -201,7 +201,7 @@ export function CommunityHub({
 
 			<div className="ch-main relative min-h-screen">
 				<TopBar memberCount={memberCount} samePathCount={samePathCount} />
-				{/* Soft Sky colour wash — blue, teal and a whisper of gold light the
+				{/* Soft Sky colour wash, blue, teal and a whisper of gold light the
 				    top of the canvas without competing with the cards. */}
 				<div aria-hidden="true" className="cm-aura" />
 				<div className="relative z-[1] px-5 pb-6 sm:px-6 lg:px-8">
@@ -498,7 +498,7 @@ export function CommunityHub({
 				</div>
 			</div>
 
-			{/* Floating compose (mobile) — jumps to the inline composer. */}
+			{/* Floating compose (mobile), jumps to the inline composer. */}
 			<button
 				type="button"
 				onClick={focusComposer}
@@ -867,7 +867,7 @@ const SCOPED_CSS = `
 		radial-gradient(42% 60% at 62% -22%, rgba(245,200,66,0.12), transparent 55%);
 }
 /* A little flair, calm by default: cards rise in on load, the like pops, and
-   presence dots breathe — all disabled under reduced-motion. */
+   presence dots breathe, all disabled under reduced-motion. */
 @keyframes cm-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 .cm-rise { animation: cm-rise .55s cubic-bezier(0.22,1,0.36,1) both; }
 @keyframes cm-pop { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }

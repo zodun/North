@@ -1,7 +1,7 @@
 // Server-side helper for premium AI personalization (AI-07).
 // Calls the `personalize` edge function with candidate items and returns the
 // personalized order + per-item reasons. The function gates on premium, ranks
-// with Claude, and caches per user/surface/day — callers should still gate on
+// with Claude, and caches per user/surface/day, callers should still gate on
 // getIsPremium() to avoid the round-trip for free users. Any failure returns
 // null so pages fall back to their default ordering.
 

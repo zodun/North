@@ -1,4 +1,4 @@
-// North product UI primitives — the "Soft Sky" system: a calm, airy LIGHT
+// North product UI primitives, the "Soft Sky" system: a calm, airy LIGHT
 // theme (cool sky base, white cards, teal-forward). Colors keep their three
 // rationed meanings: gold = next action, teal = on-course, violet = drift.
 // See DESIGN.md. The vivid accent hues are fine as fills/progress; for TEXT or
@@ -8,7 +8,7 @@
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from "react";
 
 export const colors = {
-	// Brand accent hues — fills, progress bars, icons-on-fill.
+	// Brand accent hues, fills, progress bars, icons-on-fill.
 	gold: "#F5C842",
 	teal: "#3ECFBF",
 	violet: "#7B61FF",

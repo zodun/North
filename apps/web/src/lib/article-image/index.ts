@@ -1,15 +1,15 @@
-// Article-image cascade — resolves a cover for an article that carries no real
+// Article-image cascade, resolves a cover for an article that carries no real
 // image (no og:image, no YouTube thumb). Designed as a pluggable seam so the
 // paid generation engine drops in later without touching callers.
 //
-//   Tier A  AI cover (gated)        — a TEXT-TO-IMAGE provider renders an
+//   Tier A  AI cover (gated), a TEXT-TO-IMAGE provider renders an
 //                                     on-brand cover; Cloudinary is the sink
 //                                     (upload + CDN + transforms). NB: Cloudinary
-//                                     itself has no from-scratch text-to-image —
+//                                     itself has no from-scratch text-to-image,
 //                                     all its generative transforms need a source
-//                                     image — so the model must be external
+//                                     image, so the model must be external
 //                                     (gpt-image-1 / Imagen / Flux). Gated off.
-//   Tier B  Deterministic cover     — zero-cost procedural Soft Sky art. Always
+//   Tier B  Deterministic cover, zero-cost procedural Soft Sky art. Always
 //                                     succeeds, so the cascade never returns null.
 //
 // Resolution happens ONCE at ingestion / in the nightly cron (never at render,
@@ -36,7 +36,7 @@ export type ArticleImageResult = {
 };
 
 // A generation engine. Returns null when it cannot (or should not) produce an
-// image — the cascade then falls to the next tier. Engines MUST be side-effect
+// image, the cascade then falls to the next tier. Engines MUST be side-effect
 // free beyond their own asset creation and MUST be safe to call concurrently.
 export interface ArticleImageGenerator {
 	readonly name: ArticleImageResult["source"];
@@ -57,12 +57,12 @@ export const deterministicGenerator: ArticleImageGenerator = {
 
 // ── Tier A: AI cover via external text-to-image + Cloudinary sink (gated stub)─
 // Enabled only when the flag is on AND a text-to-image provider key is present
-// AND Cloudinary (the sink) is configured — so the free tier ships today and the
+// AND Cloudinary (the sink) is configured, so the free tier ships today and the
 // paid engine is a config flip plus the TODO below.
 // Implementation plan (kept out of the hot path on purpose):
 //   1. Claude distils {title, body, category} into an ABSTRACT visual concept
 //      prompt (Soft Sky palette, no text, no faces, no real scenes).
-//   2. An external text-to-image model (gpt-image-1 / Imagen / Flux) renders it —
+//   2. An external text-to-image model (gpt-image-1 / Imagen / Flux) renders it,
 //      Cloudinary has no from-scratch text-to-image, so generation lives here.
 //   3. Upload the result to Cloudinary (CDN + transforms); capture public_id.
 //   4. Claude vision QAs on-brand + safe; reject → return null (fall to Tier B).
@@ -114,7 +114,7 @@ export async function resolveArticleImage(
 				return result;
 			}
 		} catch {
-			// Engine failure must never break the cascade — fall through.
+			// Engine failure must never break the cascade, fall through.
 		}
 	}
 	// deterministic always returns, so this is the guaranteed floor.

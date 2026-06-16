@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 
 // 5-tab warm bottom nav: For You · Mission · Opportunities · Journal · Community.
-// The old centre video-upload button and the Profile tab are gone — upload now
+// The old centre video-upload button and the Profile tab are gone, upload now
 // lives in the For You header (see ProductShell) and Profile is reached via the
 // top-right avatar present on every tab page.
 
@@ -85,7 +85,7 @@ function base(color: string) {
 function StarIcon({ color }: { color: string }) {
 	return (
 		<svg {...base(color)} aria-hidden="true">
-			{/* North Star — a four-point star/sparkle. */}
+			{/* North Star, a four-point star/sparkle. */}
 			<path d="M12 3.2 13.9 10.1 20.8 12 13.9 13.9 12 20.8 10.1 13.9 3.2 12 10.1 10.1Z" />
 		</svg>
 	);

@@ -4,7 +4,7 @@
 // sends individual messages via the FCM v1 messages:send endpoint.
 // Token is obtained once per job run and reused for all messages.
 //
-// Required secret: FIREBASE_SERVICE_ACCOUNT_JSON — the full JSON content
+// Required secret: FIREBASE_SERVICE_ACCOUNT_JSON, the full JSON content
 // of a Firebase service account key file (downloadable from the Firebase
 // console → Project settings → Service accounts).
 

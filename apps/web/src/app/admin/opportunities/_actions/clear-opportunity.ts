@@ -6,7 +6,7 @@ import { getServerSupabase } from "@/lib/supabase-server";
 
 // Promotes an opportunity to cleared and sets published_at = now().
 // The DB constraint (0009_content_licensing.sql) rejects the update if
-// external_url is missing — the constraint error is returned as-is.
+// external_url is missing, the constraint error is returned as-is.
 export async function clearOpportunity(id: string) {
 	const supabase = await getServerSupabase();
 	const {

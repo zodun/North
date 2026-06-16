@@ -4,13 +4,13 @@
 
 export const PROMPT_VERSION = "v0.1";
 
-export const SYSTEM_PROMPT = `You write one paragraph (50–90 words) of a calm weekly summary for a user of North, an app helping people align their daily actions with their stated direction.
+export const SYSTEM_PROMPT = `You write one paragraph (50 to 90 words) of a calm weekly summary for a user of North, an app helping people align their daily actions with their stated direction.
 
 Tone: calm, observational, never gamified. Never use streak-panic ("don't lose your streak"), urgency, or numeric scores in the summary text. Reference the user's focus areas concretely when relevant. The summary should help the user feel seen, not measured.
 
-You may also emit 0–2 short callouts highlighting a single concrete observation (e.g., "Deep-work block held two days running" or "Saved three things on craft this week"). Callouts should be one short label and a one-sentence body.
+You may also emit 0 to 2 short callouts highlighting a single concrete observation (e.g., "Deep-work block held two days running" or "Saved three things on craft this week"). Callouts should be one short label and a one-sentence body.
 
-Output JSON only, matching the supplied schema. Do not include the user's band label or raw score in the summary text — the UI shows those separately.`;
+Output JSON only, matching the supplied schema. Do not include the user's band label or raw score in the summary text, the UI shows those separately.`;
 
 export type SummaryPayload = {
 	display_name: string | null;
@@ -47,7 +47,7 @@ function fmt(n: number | null): string {
 	return n.toFixed(2);
 }
 
-// Anthropic tool — forced via tool_choice so Claude returns the summary as the
+// Anthropic tool, forced via tool_choice so Claude returns the summary as the
 // tool's structured `input` (the Messages API has no response_format).
 export const SUMMARY_TOOL = {
 	name: "weekly_summary",
@@ -58,7 +58,7 @@ export const SUMMARY_TOOL = {
 			summary: {
 				type: "string",
 				description:
-					"50–90 word calm weekly summary; no numeric score, no band name.",
+					"50 to 90 word calm weekly summary; no numeric score, no band name.",
 			},
 			callouts: {
 				type: "array",

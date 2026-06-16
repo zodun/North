@@ -66,7 +66,7 @@ export default async function MissionPage() {
 		profileRes.data?.mission_cadence === "weekly" ? "weekly" : "daily";
 
 	// The week the user is actually on follows the plan's daily steps, which start
-	// the day the goal was set — not the calendar month. So a goal set mid-month
+	// the day the goal was set, not the calendar month. So a goal set mid-month
 	// still opens on week 1. Use today's step, else the next step still ahead or
 	// undone, else the first step.
 	const dailySteps = (

@@ -131,7 +131,7 @@ export function SetGoalModal({
 		: "Your current goal. Tap to edit it";
 
 	return (
-		// biome-ignore lint/a11y/useKeyWithClickEvents lint/a11y/noStaticElementInteractions: backdrop dismiss — keyboard users can use the close button
+		// biome-ignore lint/a11y/useKeyWithClickEvents lint/a11y/noStaticElementInteractions: backdrop dismiss, keyboard users can use the close button
 		<div
 			className="fixed inset-0 z-50 flex items-end justify-center bg-black/60"
 			onClick={dismiss}

@@ -6,7 +6,7 @@
 //   needs_human → unsure: left pending for a person to review
 //
 // Conservative by design: anything the model is not confident about, and any AI
-// failure, falls back to needs_human — nothing borderline auto-publishes, and a
+// failure, falls back to needs_human, nothing borderline auto-publishes, and a
 // submission is never silently lost.
 //
 // Operator setup: supabase secrets set ANTHROPIC_API_KEY=sk-ant-...

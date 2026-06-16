@@ -150,7 +150,7 @@ export default async function OpportunitiesPage() {
 	// AI re-ranks opportunities to the user's direction with a personalized
 	// "why this fits you". Premium gets the full ranking (folded into matchScore,
 	// which the list already sorts by) + a reason on every pick. Free users get a
-	// one-pick preview — their single best match as the hero + reason — and an
+	// one-pick preview, their single best match as the hero + reason, and an
 	// upgrade card to unlock the rest; everything else stays in focus order.
 	const isPremium = user ? await getIsPremium(supabase, user.id) : false;
 	let listItems = scored;

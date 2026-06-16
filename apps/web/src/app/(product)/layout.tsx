@@ -9,7 +9,7 @@ export const viewport: Viewport = {
 	themeColor: "#EDF1F8",
 	width: "device-width",
 	initialScale: 1,
-	// Pinch-zoom intentionally left enabled (WCAG 1.4.4 / 1.4.10) — no
+	// Pinch-zoom intentionally left enabled (WCAG 1.4.4 / 1.4.10), no
 	// maximumScale or userScalable lock.
 	viewportFit: "cover",
 };

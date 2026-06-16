@@ -14,6 +14,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 
+import { corsHeaders, preflight } from "../_shared/cors.ts";
 import { captureServer } from "../_shared/posthog.ts";
 import {
 	buildUserPrompt,
@@ -35,6 +36,8 @@ type Ranked = { id: string; why: string };
 
 if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 	Deno.serve(async (req: Request) => {
+		const pf = preflight(req);
+		if (pf) return pf;
 		const authHeader = req.headers.get("Authorization");
 		if (!authHeader?.startsWith("Bearer ")) {
 			return json({ error: "missing authorization" }, 401);
@@ -122,34 +125,56 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 
 		// ── Context ──────────────────────────────────────────────────────
 		const monthStart = `${day.slice(0, 7)}-01`;
-		const [focusRes, profileRes, missionRes] = await Promise.all([
-			userClient
-				.from("user_focus_areas")
-				.select("focus_areas(label)")
-				.eq("user_id", user.id),
-			userClient
-				.from("profiles")
-				.select(
-					"statement_of_intent, season_label, preferred_opportunity_categories, career_stage, fields, country, open_to_remote, open_to_relocate",
-				)
-				.eq("user_id", user.id)
-				.maybeSingle<{
-					statement_of_intent: string | null;
-					season_label: string | null;
-					preferred_opportunity_categories: string[] | null;
-					career_stage: string | null;
-					fields: string[] | null;
-					country: string | null;
-					open_to_remote: boolean | null;
-					open_to_relocate: boolean | null;
-				}>(),
-			userClient
-				.from("monthly_missions")
-				.select("goal_title")
-				.eq("user_id", user.id)
-				.eq("month_start", monthStart)
-				.maybeSingle<{ goal_title: string }>(),
-		]);
+		// Last 7 days of journal entries feed live signal/noise into the rank.
+		const since = isoDaysBefore(day, 7);
+		const [focusRes, profileRes, missionRes, reflectionRes] = await Promise.all(
+			[
+				userClient
+					.from("user_focus_areas")
+					.select("focus_areas(label)")
+					.eq("user_id", user.id),
+				userClient
+					.from("profiles")
+					.select(
+						"statement_of_intent, season_label, preferred_opportunity_categories, career_stage, fields, country, open_to_remote, open_to_relocate",
+					)
+					.eq("user_id", user.id)
+					.maybeSingle<{
+						statement_of_intent: string | null;
+						season_label: string | null;
+						preferred_opportunity_categories: string[] | null;
+						career_stage: string | null;
+						fields: string[] | null;
+						country: string | null;
+						open_to_remote: boolean | null;
+						open_to_relocate: boolean | null;
+					}>(),
+				userClient
+					.from("monthly_missions")
+					.select("goal_title")
+					.eq("user_id", user.id)
+					.eq("month_start", monthStart)
+					.maybeSingle<{ goal_title: string }>(),
+				userClient
+					.from("user_reflections")
+					.select("analysis")
+					.eq("user_id", user.id)
+					.gte("entry_date", since)
+					.order("entry_date", { ascending: false })
+					.limit(14),
+			],
+		);
+
+		// Aggregate signal/noise phrases across recent reflections, most-recent
+		// first; topUnique dedupes case-insensitively and caps the list.
+		const recentSignal: string[] = [];
+		const recentNoise: string[] = [];
+		for (const row of (reflectionRes.data ?? []) as {
+			analysis: { signal?: string[]; noise?: string[] } | null;
+		}[]) {
+			if (row.analysis?.signal) recentSignal.push(...row.analysis.signal);
+			if (row.analysis?.noise) recentNoise.push(...row.analysis.noise);
+		}
 
 		const ctx: PersonalizeContext = {
 			focus_areas: (
@@ -166,6 +191,8 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 			country: profileRes.data?.country ?? "",
 			open_to_remote: profileRes.data?.open_to_remote ?? false,
 			open_to_relocate: profileRes.data?.open_to_relocate ?? false,
+			recent_signal: topUnique(recentSignal, 8),
+			recent_noise: topUnique(recentNoise, 8),
 		};
 
 		// ── Rank with Claude (fallback = original order, uncached) ───────
@@ -189,7 +216,7 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 		}
 
 		if (!ranking) {
-			// No AI — return original order without caching, so we retry later.
+			// No AI, return original order without caching, so we retry later.
 			return json({
 				ok: true,
 				ranking: items.map((i) => ({ id: i.id, why: "" })),
@@ -277,9 +304,31 @@ async function callClaude(
 	return block.input;
 }
 
+// "YYYY-MM-DD" n days before the given day, computed in UTC so it stays a pure
+// calendar date (matches user_reflections.entry_date).
+function isoDaysBefore(day: string, n: number): string {
+	const ms = Date.parse(`${day}T00:00:00Z`) - n * 86_400_000;
+	return new Date(ms).toISOString().slice(0, 10);
+}
+
+// Dedupe phrases case-insensitively (keeping first/most-recent casing) and cap.
+function topUnique(arr: string[], max: number): string[] {
+	const seen = new Set<string>();
+	const out: string[] = [];
+	for (const s of arr) {
+		const trimmed = s.trim();
+		const key = trimmed.toLowerCase();
+		if (!trimmed || seen.has(key)) continue;
+		seen.add(key);
+		out.push(trimmed);
+		if (out.length >= max) break;
+	}
+	return out;
+}
+
 function json(body: unknown, status = 200): Response {
 	return new Response(JSON.stringify(body), {
 		status,
-		headers: { "content-type": "application/json" },
+		headers: { "content-type": "application/json", ...corsHeaders },
 	});
 }

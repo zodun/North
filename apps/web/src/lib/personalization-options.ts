@@ -1,6 +1,6 @@
 // Shared option lists for the "who you are" personalization fields
 // (profiles.career_stage / fields / country). Used by both the onboarding flow
-// and the editable Preferences section on Profile so the two never drift — the
+// and the editable Preferences section on Profile so the two never drift, the
 // stored value must round-trip identically between where it's set and where
 // it's edited.
 
@@ -14,7 +14,7 @@ export const CAREER_STAGES: { value: string; sub: string }[] = [
 	{ value: "Building my own thing", sub: "Self-employed or founder" },
 ];
 
-// Multi-select up to 2 — the biggest relevance lever for a global audience, so
+// Multi-select up to 2, the biggest relevance lever for a global audience, so
 // we keep it focused. Stored in profiles.fields (text[]).
 export const FIELDS = [
 	"Tech / Engineering",
@@ -28,7 +28,7 @@ export const FIELDS = [
 ];
 export const MAX_FIELDS = 2;
 
-// Stored in profiles.country. Curated rather than exhaustive — "Somewhere else"
+// Stored in profiles.country. Curated rather than exhaustive, "Somewhere else"
 // catches the long tail. A native <select> gives the OS picker on mobile.
 export const COUNTRIES = [
 	"United States",

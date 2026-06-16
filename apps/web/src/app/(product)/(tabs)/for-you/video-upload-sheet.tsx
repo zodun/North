@@ -174,7 +174,7 @@ export function VideoUploadSheet({ onClose, onPosted }: Props) {
 	}
 
 	return (
-		// biome-ignore lint/a11y/useKeyWithClickEvents lint/a11y/noStaticElementInteractions: backdrop dismiss — keyboard users can press Escape or use the close button
+		// biome-ignore lint/a11y/useKeyWithClickEvents lint/a11y/noStaticElementInteractions: backdrop dismiss, keyboard users can press Escape or use the close button
 		<div
 			className="fixed inset-0 z-50 flex items-end justify-center bg-black/60"
 			onClick={showCamera ? undefined : onClose}

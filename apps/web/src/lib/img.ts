@@ -1,5 +1,5 @@
 // Same-origin image proxy URL builder (see /api/img). Routes remote http(s)
-// images through our own domain so they always load — no third-party hotlink or
+// images through our own domain so they always load, no third-party hotlink or
 // CORS failures. Local/relative assets (e.g. /fallbacks/*) pass through untouched.
 //
 // The `v` cache-buster is intentional: an earlier build gated /api/img behind

@@ -2,7 +2,7 @@
 // AI-01: Generate one daily mission + 3 tasks per onboarded user from
 //        their onboarding context and focus areas.
 // AI-02: Falls back to a curated template if OpenAI fails or key is absent.
-// AI-03: Cost controls — cache check before each call; logs model name,
+// AI-03: Cost controls, cache check before each call; logs model name,
 //        prompt version, and token count to the missions row.
 //
 // Triggered daily by pg_cron via net.http_post (see 0019_daily_mission_cron.sql).
@@ -51,7 +51,7 @@ type RunDeps = {
 
 // ─────────────────────────────────────────────────────────────────────
 // todayInAST: current calendar date in Jamaica time (UTC-4, no DST).
-// Mission assignment doesn't apply the 03:59 grace cutoff — that cutoff
+// Mission assignment doesn't apply the 03:59 grace cutoff, that cutoff
 // is only for classifying when a task was *completed* (ast_day in 0007).
 // ─────────────────────────────────────────────────────────────────────
 export function todayInAST(now = new Date()): string {
@@ -204,7 +204,7 @@ export async function runMissionJob(
 			else result.fallback++;
 
 			if (status !== "cached") {
-				// Best-effort analytics — never raise.
+				// Best-effort analytics, never raise.
 				await captureServer(
 					"daily_mission_assigned",
 					row.user_id,

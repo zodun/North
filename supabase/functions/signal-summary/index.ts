@@ -6,7 +6,7 @@
 // row yet, builds a prompt from their inputs, calls Claude, UPSERTs into
 // signal_summaries.
 //
-// Idempotent — re-running mid-week is a no-op.
+// Idempotent, re-running mid-week is a no-op.
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 

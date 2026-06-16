@@ -2,10 +2,14 @@ import type { Metadata } from "next";
 import { getIsPremium } from "@/lib/entitlement";
 import { applyOrder, personalize } from "@/lib/personalize";
 import { getServerSupabase } from "@/lib/supabase-server";
-import { ForYouFeed } from "./feed";
+import { SleekForYou } from "./sleek-feed";
 
 export const metadata: Metadata = { title: "For You" };
 
+// Server component: fetches the real personalised feed and hands it to the
+// "Sleek Light" presentation (./sleek-feed). Same data pipeline the editorial
+// feed used, content_items + onboarding focus/format ranking + AI re-rank,
+// so the redesign is wired to the backend, not static.
 export default async function ForYouPage() {
 	const supabase = await getServerSupabase();
 
@@ -40,39 +44,23 @@ export default async function ForYouPage() {
 			.filter((r) => r.action === "save")
 			.map((r) => r.content_item_id),
 	);
-	const initialMatters = new Set(
-		(existingInteractions ?? [])
-			.filter((r) => r.action === "matters")
-			.map((r) => r.content_item_id),
-	);
 
 	const { data: categories } = await supabase
 		.from("content_categories")
 		.select("id, label")
 		.order("sort_order");
 
-	// Aspiration captured in onboarding — personalises the "Chosen with you in
-	// mind" line on each card.
+	// Aspiration captured in onboarding, personalises the hero's reason line.
 	const { data: profile } = user
 		? await supabase
 				.from("profiles")
-				.select("aspiration, content_formats")
+				.select("aspiration, content_formats, fields")
 				.eq("user_id", user.id)
 				.maybeSingle()
 		: { data: null };
 
-	// Peer stories ("someone on your path used this") — real, optionally-sourced
-	// rows; the feed falls back to its built-in set per focus area when empty.
-	const { data: peerStories } = await supabase
-		.from("peer_stories")
-		.select("focus_area, name, who, quote, outcome, source_name, source_url")
-		.order("sort_order");
-
-	// Onboarding focus areas → keep the feed specific to the topics the user
-	// actually chose. Curated cards carry their source category as the eyebrow
-	// (Career/Mindset/Money/Skills/Entrepreneurship); we match against that. Falls
-	// back to the full pool if the user has no focus areas or too few on-topic
-	// cards, so the feed is never thin.
+	// Onboarding focus areas → keep the feed specific to chosen topics. Falls back
+	// to the full pool when the user has no focus areas or too few on-topic cards.
 	const { data: focusRows } = user
 		? await supabase
 				.from("user_focus_areas")
@@ -97,9 +85,10 @@ export default async function ForYouPage() {
 		? allItems.filter((i) => i.eyebrow && focusEyebrows.has(i.eyebrow))
 		: allItems;
 
-	// Onboarding "how do you like to learn" → gently float the user's preferred
-	// formats (read/watch/listen) to the top. Stable sort: order within a group is
-	// preserved, so it nudges rather than overrides relevance.
+	// Rules-based ranking from onboarding (works without the AI personalize layer,
+	// which needs the LLM API): honour the chosen format (listen/watch/read) and
+	// surface items whose text overlaps the user's aspiration + fields, so the hero
+	// reflects onboarding even when the edge function is unavailable.
 	const formats = new Set(
 		((profile?.content_formats as string[] | null) ?? []) as string[],
 	);
@@ -110,22 +99,75 @@ export default async function ForYouPage() {
 		video: "watch",
 		voice: "listen",
 	};
-	const ranked = formats.size
-		? [...onTopic].sort(
-				(a, b) =>
-					(formats.has(KIND_FORMAT[a.kind] ?? "read") ? 0 : 1) -
-					(formats.has(KIND_FORMAT[b.kind] ?? "read") ? 0 : 1),
-			)
-		: onTopic;
+	// Drop generic + "still figuring it out"-style filler so only meaningful
+	// aspiration/field words drive the boost.
+	const STOP = new Set([
+		"still",
+		"figuring",
+		"out",
+		"the",
+		"and",
+		"for",
+		"you",
+		"your",
+		"with",
+		"about",
+		"into",
+		"want",
+		"would",
+		"really",
+		"more",
+		"some",
+		"thing",
+		"things",
+		"stuff",
+		"just",
+		"able",
+	]);
+	const intentWords = [
+		...new Set(
+			`${profile?.aspiration ?? ""} ${(
+				(profile?.fields as string[] | null) ?? []
+			).join(" ")}`
+				.toLowerCase()
+				.match(/[a-z]{3,}/g) ?? [],
+		),
+	].filter((w) => !STOP.has(w));
+	const formatOf = (kind: string) => KIND_FORMAT[kind] ?? "read";
+	// A "listen"/"watch" person doesn't want a wall of text; when their exact
+	// format is missing (e.g. no audio in the pool), video is the closest match.
+	const prefersNonRead = formats.has("listen") || formats.has("watch");
+	const scoreItem = (it: {
+		kind: string;
+		title: string;
+		body: string | null;
+	}) => {
+		let s = 0;
+		const fmt = formatOf(it.kind);
+		if (formats.size && formats.has(fmt)) s += 5;
+		else if (prefersNonRead && fmt === "watch") s += 3;
+		if (intentWords.length) {
+			// Whole-word match so "an app" doesn't spuriously hit "application".
+			const words = new Set(
+				`${it.title} ${it.body ?? ""}`.toLowerCase().match(/[a-z]{3,}/g) ?? [],
+			);
+			for (const w of intentWords) if (words.has(w)) s += 2;
+		}
+		return s;
+	};
+	const ranked = [...onTopic].sort((a, b) => scoreItem(b) - scoreItem(a));
 
-	// AI re-ranks the feed around the user's direction. Premium sees the full
-	// personalized order + a reason on every card; free users get a one-pick
-	// preview — their single best match with its reason, then the default order
-	// — and an upgrade prompt to unlock the rest.
+	// AI re-ranks around the user's direction. Premium sees the full order + a
+	// reason on the hero; free users get a one-pick preview (their best match
+	// surfaced as the hero) plus an upgrade prompt.
 	const isPremium = user ? await getIsPremium(supabase, user.id) : false;
+	const onTopicIds = new Set(onTopic.map((i) => i.id));
 	let feedItems: (NonNullable<typeof items>[number] & {
 		why?: string | null;
-	})[] = onTopic.length >= 6 ? ranked : allItems;
+	})[] =
+		onTopic.length > 0
+			? [...ranked, ...allItems.filter((i) => !onTopicIds.has(i.id))]
+			: allItems;
 	let preview = false;
 	if (user && feedItems.length > 0) {
 		const res = await personalize(
@@ -159,23 +201,75 @@ export default async function ForYouPage() {
 		}
 	}
 
+	// ── Bento blocks ────────────────────────────────────────────────────────────
+	// The Stitch mockup's "Mentorship Match" and "Masterclass" cards have no
+	// backing tables, so they're replaced with two real North surfaces: the
+	// current monthly mission (with step progress) and a featured opportunity.
+	const today = new Date().toISOString().slice(0, 10);
+
+	const { data: missionRow } = user
+		? await supabase
+				.from("monthly_missions")
+				.select("id, goal_title, goal_intent")
+				.eq("user_id", user.id)
+				.order("month_start", { ascending: false })
+				.limit(1)
+				.maybeSingle()
+		: { data: null };
+	const { data: missionSteps } = missionRow
+		? await supabase
+				.from("monthly_mission_steps")
+				.select("done")
+				.eq("monthly_mission_id", missionRow.id)
+		: { data: [] };
+	const mission = missionRow
+		? {
+				title: missionRow.goal_title as string,
+				intent: (missionRow.goal_intent as string | null) ?? null,
+				done: (missionSteps ?? []).filter((s) => s.done).length,
+				total: (missionSteps ?? []).length,
+			}
+		: null;
+
+	// Featured opportunity: soonest upcoming deadline, else most recent.
+	const { data: oppRows } = await supabase
+		.from("opportunities")
+		.select(
+			"id, title, org, opportunity_type, location, deadline, external_url",
+		)
+		.order("scraped_at", { ascending: false, nullsFirst: false })
+		.order("created_at", { ascending: false })
+		.limit(40);
+	const upcoming = (oppRows ?? [])
+		.filter((o) => o.deadline && (o.deadline as string) >= today)
+		.sort((a, b) => (a.deadline as string).localeCompare(b.deadline as string));
+	const oppRow = upcoming[0] ?? (oppRows ?? [])[0] ?? null;
+	const opportunity = oppRow
+		? {
+				id: oppRow.id as string,
+				title: oppRow.title as string,
+				org: (oppRow.org as string | null) ?? null,
+				opportunity_type: (oppRow.opportunity_type as string | null) ?? null,
+				location: (oppRow.location as string | null) ?? null,
+				deadlineLabel: oppRow.deadline
+					? new Date(oppRow.deadline as string).toLocaleDateString("en-US", {
+							month: "short",
+							day: "numeric",
+						})
+					: null,
+				external_url: (oppRow.external_url as string | null) ?? null,
+			}
+		: null;
+
 	return (
-		<ForYouFeed
+		<SleekForYou
 			items={feedItems}
 			categories={categories ?? []}
 			initialSaved={[...initialSaved]}
-			initialMatters={[...initialMatters]}
 			preview={preview}
 			aspiration={(profile?.aspiration as string | null) ?? null}
-			stories={(peerStories ?? []).map((s) => ({
-				focusArea: s.focus_area as string,
-				name: s.name as string,
-				who: s.who as string,
-				quote: s.quote as string,
-				outcome: s.outcome as string,
-				sourceName: (s.source_name as string | null) ?? null,
-				sourceUrl: (s.source_url as string | null) ?? null,
-			}))}
+			mission={mission}
+			opportunity={opportunity}
 		/>
 	);
 }

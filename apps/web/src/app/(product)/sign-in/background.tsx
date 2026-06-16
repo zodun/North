@@ -84,7 +84,7 @@ export function SignInBackground() {
 
 			ctx.clearRect(0, 0, w, h);
 
-			// Grid — vertical + horizontal lines
+			// Grid, vertical + horizontal lines
 			ctx.setLineDash([]);
 			ctx.strokeStyle = "rgba(14,20,32,0.04)";
 			ctx.lineWidth = 0.5;
@@ -163,7 +163,7 @@ export function SignInBackground() {
 			ctx.closePath();
 			ctx.fill();
 
-			// Center dot — gold outer, dark inner
+			// Center dot, gold outer, dark inner
 			ctx.beginPath();
 			ctx.arc(cx, cy, 5, 0, Math.PI * 2);
 			ctx.fillStyle = "rgba(245,200,66,1)";
@@ -173,7 +173,7 @@ export function SignInBackground() {
 			ctx.fillStyle = "#05050E";
 			ctx.fill();
 
-			// Particles — move, bounce, draw
+			// Particles, move, bounce, draw
 			for (const p of particles) {
 				p.x += p.dx;
 				p.y += p.dy;
@@ -185,7 +185,7 @@ export function SignInBackground() {
 				ctx.fill();
 			}
 
-			// Particle connections — hairlines between particles < 90px apart
+			// Particle connections, hairlines between particles < 90px apart
 			ctx.strokeStyle = "rgba(14,20,32,0.05)";
 			ctx.lineWidth = 0.5;
 			for (let i = 0; i < particles.length; i++) {
@@ -225,7 +225,7 @@ export function SignInBackground() {
 				className="pointer-events-none fixed inset-0 z-0 h-full w-full"
 			/>
 
-			{/* Radial light leaks — Soft Sky wash */}
+			{/* Radial light leaks, Soft Sky wash */}
 			<div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0">
 				<div
 					className="absolute inset-0"

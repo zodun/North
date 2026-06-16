@@ -9,7 +9,7 @@
 
 export const runtime = "nodejs";
 
-// Block non-http(s) and obvious private/loopback hosts (basic SSRF guard — the
+// Block non-http(s) and obvious private/loopback hosts (basic SSRF guard, the
 // `url` arrives from the client even though it originates from curated content).
 function safeUrl(raw: string): URL | null {
 	let u: URL;

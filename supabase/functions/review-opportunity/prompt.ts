@@ -3,7 +3,7 @@
 // Bump PROMPT_VERSION when changing wording.
 
 export const PROMPT_VERSION = "v1";
-// Cheap/fast tier — moderation is a short structured-JSON decision.
+// Cheap/fast tier, moderation is a short structured-JSON decision.
 export const MODEL_NAME = "claude-haiku-4-5";
 
 export type OpportunityInput = {
@@ -30,13 +30,13 @@ export const SYSTEM_PROMPT = `You are the gatekeeper for North's Opportunities f
 Choose exactly one outcome:
 - "publish": a real, specific, legitimate opportunity that is clearly relevant and safe for this audience, from a plausible real organization, with a real-looking link and enough detail to be useful.
 - "reject": spam, scams, pyramid or MLM schemes, pay-to-apply exploitation, adult, illegal, hateful or misleading content, advertising of unrelated products, gibberish, or anything clearly fake or unsafe.
-- "needs_human": plausibly legitimate but you cannot be confident — an organization you cannot place, too vague to judge, borderline relevance, or missing key details. When you are genuinely unsure, choose this, never "publish".
+- "needs_human": plausibly legitimate but you cannot be confident, an organization you cannot place, too vague to judge, borderline relevance, or missing key details. When you are genuinely unsure, choose this, never "publish".
 
 Be conservative. Only "publish" when you are confident it is legitimate, useful, and safe. Only "reject" when it is clearly bad. Everything in between is "needs_human". You cannot open the link, so judge from the text and the plausibility of the organization and the URL.
 
 Always return:
 - "reason": one short, plain sentence explaining the decision. On a reject it is shown to the person who submitted it, so be kind and specific, never harsh.
-- "why": for "publish" only, one calm sentence (about 16 words max) on why this matters to someone — direction over hype, no exclamation marks, no sales language. Empty string otherwise.
+- "why": for "publish" only, one calm sentence (about 16 words max) on why this matters to someone, direction over hype, no exclamation marks, no sales language. Empty string otherwise.
 - "tags": for "publish" only, 2 to 4 short lowercase tags (for example: remote, scholarship, design, paid, africa). Empty array otherwise.
 
 Never use dashes in any text you write. Keep everything calm and plain.`;
@@ -57,7 +57,7 @@ export function buildUserPrompt(o: OpportunityInput): string {
 		.join("\n");
 }
 
-// Anthropic tool — forcing this via tool_choice makes Claude return the verdict
+// Anthropic tool, forcing this via tool_choice makes Claude return the verdict
 // as structured `input` (the Messages API has no response_format).
 export const REVIEW_TOOL = {
 	name: "opportunity_review",

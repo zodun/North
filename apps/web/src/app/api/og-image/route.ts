@@ -1,12 +1,12 @@
 // GET /api/og-image?url=<encoded article url>
 // Server-side fetches the article and extracts its share image (og:image →
 // twitter:image → first large <img>). Returns { imageUrl: string | null }.
-// Additive enhancement for the For You feed — the existing feed query is
+// Additive enhancement for the For You feed, the existing feed query is
 // untouched. Errors are swallowed and return null so the card falls back.
 
 export const runtime = "nodejs";
 
-// Block non-http(s) and obvious private/loopback hosts (basic SSRF guard — the
+// Block non-http(s) and obvious private/loopback hosts (basic SSRF guard, the
 // `url` arrives from the client, even though it originates from curated content).
 function safeUrl(raw: string): URL | null {
 	let u: URL;
@@ -32,7 +32,7 @@ function safeUrl(raw: string): URL | null {
 // Decode the common entities so the result is a usable image URL.
 function decodeEntities(s: string): string {
 	let out = s;
-	// Some sites double-encode (&amp;amp;) — decode until stable (bounded).
+	// Some sites double-encode (&amp;amp;), decode until stable (bounded).
 	for (let i = 0; i < 4 && out.includes("&amp;"); i++) {
 		out = out.replace(/&amp;/g, "&");
 	}

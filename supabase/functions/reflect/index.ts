@@ -14,6 +14,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 
+import { corsHeaders, preflight } from "../_shared/cors.ts";
 import { captureServer } from "../_shared/posthog.ts";
 import { stripDashes } from "../_shared/text.ts";
 import {
@@ -32,6 +33,8 @@ const MAX_BODY_LENGTH = 1000;
 
 if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 	Deno.serve(async (req: Request) => {
+		const pf = preflight(req);
+		if (pf) return pf;
 		// ── Auth ─────────────────────────────────────────────────────────
 		const authHeader = req.headers.get("Authorization");
 		if (!authHeader?.startsWith("Bearer ")) {
@@ -125,7 +128,7 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 		// ── Call Claude ──────────────────────────────────────────────────
 		let analysis: ReflectionAnalysis;
 		if (!anthropicKey) {
-			// No key configured — return a stub analysis so the UI isn't blocked.
+			// No key configured, return a stub analysis so the UI isn't blocked.
 			analysis = {
 				signal: ["showed up and reflected"],
 				noise: [],
@@ -196,6 +199,17 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 			})
 			.eq("id", reflectionId);
 
+		// Today's For You / Opportunities rankings were built from the user's
+		// signal/noise; a fresh reflection changes that input, so drop the cached
+		// rankings for this day and let the next page load re-rank. Best-effort,
+		// a failure here must not block the journal response.
+		const today = new Date().toISOString().slice(0, 10);
+		await serviceClient
+			.from("user_personalization")
+			.delete()
+			.eq("user_id", user.id)
+			.in("day", [...new Set([entryDate, today])]);
+
 		// ── Analytics (best-effort) ──────────────────────────────────────
 		await captureServer("journal_analyzed", user.id, {
 			entry_date: entryDate,
@@ -212,6 +226,6 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 function json(body: unknown, status = 200): Response {
 	return new Response(JSON.stringify(body), {
 		status,
-		headers: { "content-type": "application/json" },
+		headers: { "content-type": "application/json", ...corsHeaders },
 	});
 }

@@ -8,20 +8,28 @@ import { TabBar } from "./tab-bar";
 // Pre-login / onboarding screens aren't part of the 5-tab loop, so the bottom
 // tab bar shouldn't appear there.
 const NO_TABS = /^\/(sign-in|sign-up|onboarding)(\/|$)/;
-// For You and Community render their own profile entry point in-header, so the
+// For You, Community, Journal and Profile render their own header/nav, so the
 // shell's fallback top-right avatar is suppressed there to avoid duplication.
-const HAS_OWN_PROFILE_LINK = /^\/(for-you|community)(\/|$)/;
+const HAS_OWN_PROFILE_LINK =
+	/^\/(for-you|community|journal|profile|mission|opportunities)(\/|$)/;
 const IS_FOR_YOU = /^\/for-you(\/|$)/;
+// Full-screen mockup takeovers render their own sidebar nav, so the shell's
+// bottom tab bar is hidden on these routes. For You ships the "Sleek Light"
+// layout whose left nav is an always-visible icon rail (full 280px panel on
+// desktop), so it owns navigation and the shell's bottom tab bar is suppressed.
+const MOCKUP_TAKEOVER =
+	/^\/(for-you|community|journal|profile|mission|opportunities)(\/|$)/;
 
 export function ProductShell({ children }: { children: React.ReactNode }) {
 	const pathname = usePathname();
 	const hideTabs = NO_TABS.test(pathname);
 	const onForYou = IS_FOR_YOU.test(pathname);
+	const onTakeover = MOCKUP_TAKEOVER.test(pathname);
 	const [showUpload, setShowUpload] = useState(false);
 
 	return (
 		<div className="relative flex h-svh flex-col overflow-hidden bg-[#EDF1F8] text-[#0E1420]">
-			{/* Soft Sky atmosphere — an airy light field, the daytime counterpart
+			{/* Soft Sky atmosphere, an airy light field, the daytime counterpart
 			    to the Night Compass. A clean white lift up top, a faint teal
 			    breath bottom-right and a whisper of gold top-left carry the
 			    brand's meanings without muddying the light. Fixed, so it stays
@@ -37,7 +45,7 @@ export function ProductShell({ children }: { children: React.ReactNode }) {
 				}}
 			/>
 
-			{/* Profile moved off the tab bar — keep it reachable via a fixed
+			{/* Profile moved off the tab bar, keep it reachable via a fixed
 			    top-right avatar on tab pages that don't provide their own. */}
 			{!hideTabs && !HAS_OWN_PROFILE_LINK.test(pathname) && (
 				<a
@@ -65,7 +73,7 @@ export function ProductShell({ children }: { children: React.ReactNode }) {
 			)}
 
 			<main
-				className={`relative z-10 flex-1 overflow-y-auto ${hideTabs ? "" : "pb-20"}`}
+				className={`relative z-10 flex-1 overflow-y-auto ${hideTabs || onTakeover ? "" : "pb-20"}`}
 			>
 				{children}
 			</main>
@@ -99,7 +107,17 @@ export function ProductShell({ children }: { children: React.ReactNode }) {
 				</button>
 			)}
 
-			{!hideTabs && <TabBar />}
+			{!hideTabs &&
+				(onTakeover ? (
+					// Takeover routes own desktop nav via their sidebar; on phones the
+					// sidebar is hidden, so the standard bottom tab bar (with labels)
+					// carries navigation.
+					<div className="md:hidden">
+						<TabBar />
+					</div>
+				) : (
+					<TabBar />
+				))}
 			{showUpload && (
 				<VideoUploadSheet
 					onClose={() => setShowUpload(false)}

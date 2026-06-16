@@ -57,7 +57,7 @@ export default async function ProfilePage() {
 		supabase
 			.from("profiles")
 			.select(
-				"display_name, statement_of_intent, season_label, time_budget_label, mission_cadence, career_stage, fields, country, open_to_remote, open_to_relocate",
+				"display_name, statement_of_intent, season_label, time_budget_label, mission_cadence, career_stage, fields, country, open_to_remote, open_to_relocate, telegram_chat_id, telegram_opt_in",
 			)
 			.eq("user_id", user.id)
 			.single(),
@@ -214,6 +214,10 @@ export default async function ProfilePage() {
 			country={profile?.country ?? null}
 			openToRemote={profile?.open_to_remote ?? false}
 			openToRelocate={profile?.open_to_relocate ?? false}
+			telegramLinked={Boolean(profile?.telegram_chat_id)}
+			telegramEnabled={
+				Boolean(profile?.telegram_opt_in) && Boolean(profile?.telegram_chat_id)
+			}
 		/>
 	);
 }

@@ -7,7 +7,7 @@ export const MODEL_NAME = "gpt-4o-mini";
 
 export type MissionContext = {
 	display_name: string | null;
-	focus_area_labels: string[]; // 1–3 human-readable labels
+	focus_area_labels: string[]; // 1 to 3 human-readable labels
 	time_budget_label: string | null; // e.g. "30 minutes"
 	season_label: string | null; // one of the 4 season options
 	avoid_note: string | null; // what the user wants to avoid
@@ -32,11 +32,11 @@ Generate exactly one focused daily mission with exactly three tasks.
 
 Rules:
 - Make the mission concrete and completable within the user's stated time budget for today.
-- Each task must be specific — not generic ("check your email"). It should matter for the user's stated focus.
+- Each task must be specific, not generic ("check your email"). It should matter for the user's stated focus.
 - If they noted something to avoid, honour it. Frame the mission to sidestep that tendency.
 - Tone: purposeful and calm. Never urgent, gamified, or motivational-poster.
 - Task kinds: read, write, do, connect, reflect, or commit.
-- Mission title: 5–12 words, action-oriented.
+- Mission title: 5 to 12 words, action-oriented.
 - Mission intent: one sentence explaining why this mission matters today.
 
 Output JSON only, matching the supplied schema. Do not include the user's name in the output.`;

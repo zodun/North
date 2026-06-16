@@ -13,7 +13,7 @@ import {
 const TEAL = colors.teal;
 
 // Editable "who you are" fields that steer For You + Opportunities. Lives on
-// Profile because career stage and field change over time — an honest mirror has
+// Profile because career stage and field change over time, an honest mirror has
 // to be correctable, or the personalization silently rots. Same control
 // vocabulary as onboarding; optimistic local update with a quiet save status.
 

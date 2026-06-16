@@ -1,12 +1,42 @@
 import type { Metadata } from "next";
 import { getServerSupabase } from "@/lib/supabase-server";
-import { JournalCard } from "../signal/journal-card";
-import { loadSignalData } from "../signal/load-signal-data";
+import { type JournalEntry, JournalView } from "./journal-view";
 
 export const metadata: Metadata = { title: "Journal" };
 
-// The Signal-and-Noise journal, promoted to its own tab. Same component and
-// data the Mission tab uses — just reached directly here.
+const MONTHS = [
+	"January",
+	"February",
+	"March",
+	"April",
+	"May",
+	"June",
+	"July",
+	"August",
+	"September",
+	"October",
+	"November",
+	"December",
+];
+
+// Format a "YYYY-MM-DD" date string without going through the Date timezone
+// machinery (entry_date is a calendar day, not an instant).
+function formatDay(iso: string): string {
+	const [y, m, d] = iso.split("-").map(Number);
+	if (!y || !m || !d) return iso;
+	return `${MONTHS[m - 1]} ${d}, ${y}`;
+}
+
+type ReflectionRow = {
+	id: string;
+	body: string;
+	entry_date: string;
+	analysis: { signal?: string[]; noise?: string[]; read?: string } | null;
+};
+
+// Server component: fetches the viewer's real reflections and hands them to the
+// "Signal & Noise" journal view, which is wired to write new entries through
+// the reflect Edge Function (user_reflections + AI analysis).
 export default async function JournalPage() {
 	const supabase = await getServerSupabase();
 	const {
@@ -21,26 +51,69 @@ export default async function JournalPage() {
 		);
 	}
 
+	const [{ data: me }, { data: reflectionRows }, { data: scoreRow }] =
+		await Promise.all([
+			supabase
+				.from("public_profiles")
+				.select("display_name")
+				.eq("user_id", user.id)
+				.maybeSingle(),
+			supabase
+				.from("user_reflections")
+				.select("id, body, entry_date, analysis")
+				.eq("user_id", user.id)
+				.order("entry_date", { ascending: false })
+				.order("created_at", { ascending: false })
+				.limit(40),
+			supabase
+				.from("signal_scores")
+				.select("band")
+				.eq("user_id", user.id)
+				.order("week_ending", { ascending: false })
+				.limit(1)
+				.maybeSingle<{ band: string }>(),
+		]);
+
+	const rows = (reflectionRows ?? []) as ReflectionRow[];
+	const initialEntries: JournalEntry[] = rows.map((r) => ({
+		id: r.id,
+		dateLabel: formatDay(r.entry_date),
+		body: r.body,
+		read: r.analysis?.read ?? "",
+		signal: r.analysis?.signal ?? [],
+		noise: r.analysis?.noise ?? [],
+	}));
+
+	// Greet by first name + time of day (Jamaica, UTC-5), matching Community.
+	const firstName = (me?.display_name ?? "there").split(/\s+/)[0];
+	const hour = (new Date().getUTCHours() + 19) % 24; // UTC-5
+	const greeting =
+		hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+	const partOfDay = hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening";
+
 	const today = new Date().toISOString().slice(0, 10);
-	const signal = await loadSignalData(supabase, user.id);
+
+	// How many distinct days the person reflected over the last 7 (rhythm, not a
+	// streak to chase), entry_date is a "YYYY-MM-DD" string, so lexical compare
+	// against the cutoff is correct.
+	const cutoff = new Date(Date.now() - 6 * 86_400_000)
+		.toISOString()
+		.slice(0, 10);
+	const daysThisWeek = new Set(
+		rows.filter((r) => r.entry_date >= cutoff).map((r) => r.entry_date),
+	).size;
 
 	return (
-		<div
-			className="min-h-full px-[18px] pt-16 pb-24 font-jakarta"
-			style={{ background: "#EDF1F8" }}
-		>
-			<header className="mb-4">
-				<p className="font-bold text-[#0E1420]/50 text-[10px] uppercase tracking-[0.12em]">
-					Signal &amp; Noise
-				</p>
-				<h1 className="font-black text-[#0E1420] text-[22px] tracking-tight">
-					Journal
-				</h1>
-				<p className="text-[#0E1420]/55 text-[12px]">
-					Talk through your day. We'll surface what mattered and what didn't.
-				</p>
-			</header>
-			<JournalCard entryDate={today} initialEntry={signal.lastJournal} />
-		</div>
+		<JournalView
+			firstName={firstName}
+			greeting={greeting}
+			partOfDay={partOfDay}
+			todayLabel={formatDay(today)}
+			entryDate={today}
+			band={scoreRow?.band ?? null}
+			entryCount={initialEntries.length}
+			daysThisWeek={daysThisWeek}
+			initialEntries={initialEntries}
+		/>
 	);
 }

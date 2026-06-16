@@ -5,10 +5,10 @@ import { supabase } from "@/lib/auth-client";
 import { SubmitOpportunityForm } from "./submit-form";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Opportunities — Stitch "Discovery Hub" design, WIRED to the real backend.
+// Opportunities, Stitch "Discovery Hub" design, WIRED to the real backend.
 // Sleek-light language (glass cards, blue/serif), consistent with the other
 // tabs. Every action hits Supabase; the fabricated finance content (Quantum
-// Equity, IRR%, $250k allocations) is dropped — cards show real opportunity
+// Equity, IRR%, $250k allocations) is dropped, cards show real opportunity
 // fields (type, org, location, deadline) + the AI match reason.
 //   • filter / search → client-side over the server-ranked list
 //   • save            → user_saved_opportunities (upsert/delete, optimistic)

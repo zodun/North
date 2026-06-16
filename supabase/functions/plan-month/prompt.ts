@@ -6,7 +6,7 @@
 export const PROMPT_VERSION = "v0.5";
 // Days planned per week (one distinct daily task each).
 export const DAYS_PER_WEEK = 7;
-// Anthropic's cheap/fast tier — ideal for short structured JSON generation.
+// Anthropic's cheap/fast tier, ideal for short structured JSON generation.
 export const MODEL_NAME = "claude-haiku-4-5";
 
 export type PlanPayload = {
@@ -20,9 +20,9 @@ export type PlanPayload = {
 };
 
 export type PlanWeek = {
-	// What to reach by the end of the week (3–7 words).
+	// What to reach by the end of the week (3 to 7 words).
 	milestone: string;
-	// 2–3 sentences: what this week is about and how to approach it. The depth
+	// 2 to 3 sentences: what this week is about and how to approach it. The depth
 	// behind the milestone, written to the user. Shown to weekly-cadence users.
 	summary: string;
 	// Seven distinct daily tasks, one per day, that ladder up to the milestone.
@@ -38,19 +38,19 @@ export const SYSTEM_PROMPT = `You plan a single month for a user of North, an ap
 You are given the goal the user wrote for this month (in their own words) and their focus areas. Turn it into ONE clear, connected path that carries them from where they are now to achieving the goal by the end of the month. Every week and every day should be an obvious next step on that path, never a loose collection of related ideas.
 
 Shape it as a 4-week arc where each week is a phase that visibly moves them closer, and the phases connect end to end. Adapt these phases to the user's actual goal:
-- Week 1 — Foundation: get set up, resolve the unknowns, and make the first real progress.
-- Week 2 — Build: do the core work the goal depends on.
-- Week 3 — Push: get through the hard middle; extend, refine, and handle the messy parts.
-- Week 4 — Finish: complete, polish, and reach the goal.
+- Week 1, Foundation: get set up, resolve the unknowns, and make the first real progress.
+- Week 2, Build: do the core work the goal depends on.
+- Week 3, Push: get through the hard middle; extend, refine, and handle the messy parts.
+- Week 4, Finish: complete, polish, and reach the goal.
 
 For each week:
-- "milestone": the concrete checkpoint reached by the end of that week, phrased as an outcome they could tick off (3–7 words). Each milestone must follow logically from the previous week's, and week 4's milestone must mean the goal is essentially achieved.
-- "summary": two or three plain sentences, written to the user, that say what this week is really about and how to approach it — the reasoning and shape of the week, not a list of tasks. This is what a weekly-cadence user reads instead of the daily steps, so it must stand on its own and give them enough to act on for the whole week. Specific to their goal, calm, no hype.
-- "daily_actions": exactly 7 ordered tasks, one per day, that together complete that week's milestone. Each is one short imperative sentence, concrete and doable in 10 to 20 minutes. They must be SEQUENTIAL — each day continues from the day before, like steps in a recipe — not seven interchangeable variations, and none may merely restate the milestone.
+- "milestone": the concrete checkpoint reached by the end of that week, phrased as an outcome they could tick off (3 to 7 words). Each milestone must follow logically from the previous week's, and week 4's milestone must mean the goal is essentially achieved.
+- "summary": two or three plain sentences, written to the user, that say what this week is really about and how to approach it, the reasoning and shape of the week, not a list of tasks. This is what a weekly-cadence user reads instead of the daily steps, so it must stand on its own and give them enough to act on for the whole week. Specific to their goal, calm, no hype.
+- "daily_actions": exactly 7 ordered tasks, one per day, that together complete that week's milestone. Each is one short imperative sentence, concrete and doable in 10 to 20 minutes. They must be SEQUENTIAL, each day continues from the day before, like steps in a recipe, not seven interchangeable variations, and none may merely restate the milestone.
 
-Every task must be TARGETED to this exact person — their field, their region, their goal — not generic advice. Name a concrete action on a concrete thing: a real platform or tool, a specific section of a document, a named type of company or contact, a particular search. Ban vague verbs used on their own ("research", "work on", "explore", "learn about", "prepare" with no object). A task should be something they could do today and tick off, and someone with a different goal could not.
+Every task must be TARGETED to this exact person, their field, their region, their goal, not generic advice. Name a concrete action on a concrete thing: a real platform or tool, a specific section of a document, a named type of company or contact, a particular search. Ban vague verbs used on their own ("research", "work on", "explore", "learn about", "prepare" with no object). A task should be something they could do today and tick off, and someone with a different goal could not.
 
-By the last day, following the path step by step should leave the goal done. Stay faithful to the user's actual goal — do not redirect it. Keep the language calm, direct, and encouraging without hype. No numbering, no day or week labels inside the text, no emoji.
+By the last day, following the path step by step should leave the goal done. Stay faithful to the user's actual goal, do not redirect it. Keep the language calm, direct, and encouraging without hype. No numbering, no day or week labels inside the text, no emoji.
 
 Output JSON only, matching the schema: exactly 4 weeks (week 1 to week 4), each with exactly 7 daily_actions ordered day 1 to day 7.`;
 
@@ -68,7 +68,7 @@ export function buildUserPrompt(p: PlanPayload): string {
 		.join("\n");
 }
 
-// Anthropic tool — forcing this via tool_choice makes Claude return the plan as
+// Anthropic tool, forcing this via tool_choice makes Claude return the plan as
 // the tool's structured `input` (the Messages API has no response_format).
 export const PLAN_TOOL = {
 	name: "month_plan",
@@ -86,12 +86,12 @@ export const PLAN_TOOL = {
 						milestone: {
 							type: "string",
 							description:
-								"The checkpoint reached by the end of this week, as a tickable outcome (3–7 words). Follows from the prior week; week 4 means the goal is achieved.",
+								"The checkpoint reached by the end of this week, as a tickable outcome (3 to 7 words). Follows from the prior week; week 4 means the goal is achieved.",
 						},
 						summary: {
 							type: "string",
 							description:
-								"Two or three sentences, written to the user, on what this week is about and how to approach it — the depth behind the milestone, enough for a weekly-cadence user to act on the whole week. Specific to their goal, calm, no hype.",
+								"Two or three sentences, written to the user, on what this week is about and how to approach it, the depth behind the milestone, enough for a weekly-cadence user to act on the whole week. Specific to their goal, calm, no hype.",
 						},
 						daily_actions: {
 							type: "array",
@@ -135,7 +135,7 @@ export type GoalSuggestion = {
 
 export const SUGGEST_SYSTEM_PROMPT = `You propose ONE monthly goal for a user of North, an app that helps people align their daily actions with their stated direction.
 
-Using what the app knows about them — their focus areas, the intent they wrote during onboarding, the season they're in, and the kinds of opportunities they're interested in — suggest a single goal for THIS month that:
+Using what the app knows about them, their focus areas, the intent they wrote during onboarding, the season they're in, and the kinds of opportunities they're interested in, suggest a single goal for THIS month that:
 - is specific and concrete (something they could actually finish in a month),
 - builds directly on their stated direction and interests (don't invent unrelated topics),
 - is encouraging and plain, not hype.
@@ -181,7 +181,7 @@ export const SUGGEST_TOOL = {
 	},
 } as const;
 
-// Deterministic fallback when the model is unavailable — keeps the user's goal as
+// Deterministic fallback when the model is unavailable, keeps the user's goal as
 // the through-line so the month is never left unplanned. Each week still gets 7
 // distinct daily tasks (one per day) that move through a setup → build → review arc.
 export function fallbackPlan(goalTitle: string): PlanResult {

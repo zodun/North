@@ -7,9 +7,9 @@
 // card reads as a *designed* backdrop, never generic AI filler.
 //
 // Used two ways:
-//   • coverUrl()        — build the same-origin /api/cover URL (client-safe; the
+//   • coverUrl(), build the same-origin /api/cover URL (client-safe; the
 //                         feed points an image-less card's <img> at it).
-//   • renderCoverSvg()  — render the SVG bytes server-side (the /api/cover route).
+//   • renderCoverSvg(), render the SVG bytes server-side (the /api/cover route).
 
 // ── Category palette (mirrors the feed's CAT_STYLES) ─────────────────────────
 type Palette = { accent: string; from: string; mid: string; to: string };
@@ -47,7 +47,7 @@ function hash(s: string): number {
 	}
 	return h >>> 0;
 }
-// Deterministic PRNG seeded by the hash — successive calls vary one cover's
+// Deterministic PRNG seeded by the hash, successive calls vary one cover's
 // composition without ever depending on Math.random (so the art is reproducible).
 function mulberry(seed: number): () => number {
 	let a = seed >>> 0;
@@ -81,7 +81,7 @@ export function renderCoverSvg(catRaw: string, seedRaw: string): string {
 	const W = 1080;
 	const H = 1920;
 
-	// Compass hub lives in the UPPER third — that's the part of a feed card the
+	// Compass hub lives in the UPPER third, that's the part of a feed card the
 	// image actually shows (the text gradient washes the lower half to the card
 	// colour). Needle points along a seeded angle; it always points somewhere.
 	const cx = W * (0.3 + rnd() * 0.4);
@@ -94,7 +94,7 @@ export function renderCoverSvg(catRaw: string, seedRaw: string): string {
 	const tx = cx - Math.cos(angle) * needleLen * 0.32;
 	const ty = cy - Math.sin(angle) * needleLen * 0.32;
 
-	// Topographic rings — concentric, accent stroke, opacity ramping outward.
+	// Topographic rings, concentric, accent stroke, opacity ramping outward.
 	const ringCount = 7 + Math.floor(rnd() * 4);
 	const ringStep = Math.min(W, H) * 0.072 + rnd() * 26;
 	let rings = "";

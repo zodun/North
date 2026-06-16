@@ -56,8 +56,8 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 				503,
 			);
 		}
-		// Normalize however the secret was set — strip whitespace, a leading @, and
-		// any pasted t.me/ or https://t.me/ prefix — so the deep link is always a
+		// Normalize however the secret was set, strip whitespace, a leading @, and
+		// any pasted t.me/ or https://t.me/ prefix, so the deep link is always a
 		// valid https://t.me/<handle> URL. A stray @ or prefix makes Safari reject
 		// the address ("the address is invalid") and the link never opens.
 		const username = rawUsername

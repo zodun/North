@@ -81,17 +81,17 @@ function CompassLogo() {
 				stroke="rgba(245,200,66,0.2)"
 				strokeWidth="0.5"
 			/>
-			{/* North needle — gold */}
+			{/* North needle, gold */}
 			<polygon points="16,5 13,16 19,16" fill="rgba(245,200,66,1)" />
-			{/* South needle — teal 80% */}
+			{/* South needle, teal 80% */}
 			<polygon points="16,27 13,16 19,16" fill="rgba(62,207,191,0.8)" />
-			{/* East needle — ink 35% */}
+			{/* East needle, ink 35% */}
 			<polygon points="27,16 16,13 16,19" fill="rgba(14,20,32,0.35)" />
-			{/* West needle — ink 35% */}
+			{/* West needle, ink 35% */}
 			<polygon points="5,16 16,13 16,19" fill="rgba(14,20,32,0.35)" />
-			{/* Center dot — gold */}
+			{/* Center dot, gold */}
 			<circle cx="16" cy="16" r="2.2" fill="rgba(245,200,66,1)" />
-			{/* Center dot — dark inner */}
+			{/* Center dot, dark inner */}
 			<circle cx="16" cy="16" r="0.9" fill="#05050E" />
 		</svg>
 	);

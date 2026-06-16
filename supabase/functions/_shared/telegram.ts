@@ -1,5 +1,5 @@
 // Telegram Bot API helper (NOTIF-03).
-// Free, no templates, no geo restrictions — just a bot token from @BotFather.
+// Free, no templates, no geo restrictions, just a bot token from @BotFather.
 
 export function telegramToken(): string | null {
 	return Deno.env.get("TELEGRAM_BOT_TOKEN") || null;

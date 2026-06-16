@@ -5,7 +5,7 @@ import { supabase } from "@/lib/auth-client";
 import { type GoalSetResult, SetGoalModal } from "./set-goal-modal";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Mission — Stitch "Dashboard" editorial design, WIRED to the real monthly
+// Mission, Stitch "Dashboard" editorial design, WIRED to the real monthly
 // mission backend. Same sleek-light language as the other tabs. All actions hit
 // Supabase (completion logic + cadence + goal-set are unchanged):
 //   • hero      → monthly_missions goal + macro progress
@@ -14,7 +14,7 @@ import { type GoalSetResult, SetGoalModal } from "./set-goal-modal";
 //   • plan      → the 4 weekly milestones, toggled done
 //   • set goal  → SetGoalModal (plan-month edge function)
 // The finance-mockup content (velocity, syndicates, "Sovereign Expansion") is
-// dropped, and the journal lives on its own tab now — every value here is the
+// dropped, and the journal lives on its own tab now, every value here is the
 // user's real mission data.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -148,7 +148,7 @@ export function MonthlyMissionView({
 	const streak = streakState != null ? computeStreak(daily, today) : 0;
 
 	// Daily steps unlock one at a time: the active step is the FIRST undone day
-	// this week — you can't jump ahead until it's done. Weekly: this week's
+	// this week, you can't jump ahead until it's done. Weekly: this week's
 	// milestone. Direction over a to-do list.
 	const firstUndoneIdx = weekDays.findIndex((s) => !s.done);
 	const focalStep =
@@ -291,7 +291,7 @@ export function MonthlyMissionView({
 										</div>
 									</div>
 
-									{/* Today — one micro-step in focus */}
+									{/* Today, one micro-step in focus */}
 									<div className="glass-card flex flex-col rounded-[2rem] p-7 lg:col-span-4">
 										<div className="mb-1 flex items-center justify-between gap-3">
 											<span

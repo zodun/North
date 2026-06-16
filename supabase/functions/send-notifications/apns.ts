@@ -2,10 +2,10 @@
 //
 // Uses the APNs Provider API with JWT authentication (ES256).
 // Required secrets:
-//   APNS_TEAM_ID   — 10-character Apple Developer team ID
-//   APNS_KEY_ID    — 10-character key ID from Apple Developer portal
-//   APNS_PRIVATE_KEY — content of the .p8 file (ES256 private key)
-//   APNS_BUNDLE_ID — e.g. com.north.app
+//   APNS_TEAM_ID, 10-character Apple Developer team ID
+//   APNS_KEY_ID, 10-character key ID from Apple Developer portal
+//   APNS_PRIVATE_KEY, content of the .p8 file (ES256 private key)
+//   APNS_BUNDLE_ID, e.g. com.north.app
 //
 // Tokens are raw APNs device tokens (hex strings) stored by
 // getDevicePushTokenAsync() on the native client.
@@ -27,7 +27,7 @@ function pemToDer(pem: string): ArrayBuffer {
 	return bytes.buffer;
 }
 
-// Cache the JWT per key — valid for up to 1 hour, APNs allows reuse.
+// Cache the JWT per key, valid for up to 1 hour, APNs allows reuse.
 let _cachedJWT: { jwt: string; issuedAt: number } | null = null;
 
 export async function getAPNsJWT(

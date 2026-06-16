@@ -4,10 +4,10 @@
 // the web feed AND the native app (which reads thumbnail_url directly) always
 // have an image. Mirrors the web cascade in lib/article-image:
 //
-//   Tier A  AI cover (gated)        — external text-to-image model renders it,
+//   Tier A  AI cover (gated), external text-to-image model renders it,
 //                                     Cloudinary is the sink (TODO below). NB:
 //                                     Cloudinary has no from-scratch text-to-image.
-//   Tier B  Deterministic cover     — zero-cost /api/cover SVG. Always succeeds.
+//   Tier B  Deterministic cover, zero-cost /api/cover SVG. Always succeeds.
 //
 // Idempotent: only rows with an empty thumbnail_url are touched, so re-runs are
 // cheap and safe. Paid generation is budget-capped per run.
@@ -91,14 +91,14 @@ async function run(
 	for (const row of rows) {
 		let url: string | null = null;
 
-		// Tier A — AI cover (gated). TODO(article-image): Claude concept prompt →
+		// Tier A, AI cover (gated). TODO(article-image): Claude concept prompt →
 		// external text-to-image model → Cloudinary upload (sink) → Claude vision
 		// QA; on success set url to the secure_url and decrement genBudget.
 		if (genEnabled && genBudget > 0) {
 			// url = await generateCloudinaryCover(row); if (url) genBudget--; …
 		}
 
-		// Tier B — deterministic cover (always succeeds).
+		// Tier B, deterministic cover (always succeeds).
 		if (!url) url = coverUrl(appBase, row);
 
 		const { error: upErr } = await db

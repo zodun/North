@@ -5,7 +5,7 @@
 // bad JSON, network) degrades gracefully to { suggestion: null } so the page
 // simply shows the task title with no suggestion pill.
 //
-// This route is additive — it does not touch the mission query or routing.
+// This route is additive, it does not touch the mission query or routing.
 
 import Anthropic from "@anthropic-ai/sdk";
 import { type NextRequest, NextResponse } from "next/server";
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
 			// Model explicitly chosen for this lightweight suggestion task.
 			model: "claude-sonnet-4-6",
 			max_tokens: 400,
-			// Quick, scoped JSON generation — no extended thinking needed.
+			// Quick, scoped JSON generation, no extended thinking needed.
 			thinking: { type: "disabled" },
 			messages: [
 				{

@@ -2,7 +2,7 @@
 //
 // Refreshes the For You content pool with real, reputable resources. Fetches from
 // approved RSS feeds + the YouTube Data API (see lib/curated-feed) and UPSERTS
-// them into content_items, which the existing feed already reads — so the feed,
+// them into content_items, which the existing feed already reads, so the feed,
 // card saves (uuid FK), personalization, and category styling keep working with
 // zero component or visual change. Throttled to one live fetch per 30 minutes per
 // focus-key (curated_feed_runs); a healthy batch hides the previous non-curated

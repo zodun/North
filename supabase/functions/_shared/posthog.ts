@@ -18,7 +18,7 @@ export type CaptureDeps = {
 
 /**
  * Fire a single event into PostHog. Returns true if the call was made
- * (regardless of success — we don't await retries), false if the
+ * (regardless of success, we don't await retries), false if the
  * helper was skipped because no API key is configured.
  */
 export async function captureServer(
@@ -49,7 +49,7 @@ export async function captureServer(
 		});
 		return true;
 	} catch {
-		// Server events are best-effort by design — never let analytics
+		// Server events are best-effort by design, never let analytics
 		// failure surface to the user.
 		return false;
 	}

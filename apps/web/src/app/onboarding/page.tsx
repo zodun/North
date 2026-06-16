@@ -10,7 +10,7 @@ import {
 	MAX_FIELDS,
 } from "@/lib/personalization-options";
 
-// ── Data (stored values unchanged — visual labels/colors only) ──────────────
+// ── Data (stored values unchanged, visual labels/colors only) ──────────────
 
 const GOLD = "#F5C842";
 const TEAL = "#3ECFBF";
@@ -59,7 +59,7 @@ const FOCUS_META: Record<
 	},
 };
 
-// Maps to public.opportunity_categories.id — kept as-is so
+// Maps to public.opportunity_categories.id, kept as-is so
 // preferred_opportunity_categories stays valid for feed matching.
 const OPPORTUNITY_TYPES = [
 	{ id: "scholarship", label: "Scholarships" },
@@ -157,7 +157,7 @@ export default function OnboardingPage() {
 		});
 	}, []);
 
-	// Prefill name from OAuth metadata — run once on mount only.
+	// Prefill name from OAuth metadata, run once on mount only.
 	useEffect(() => {
 		supabase.auth.getSession().then(({ data }) => {
 			const meta = data.session?.user.user_metadata ?? {};

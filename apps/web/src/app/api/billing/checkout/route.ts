@@ -1,6 +1,6 @@
 // Premium checkout (BILLING-01).
 // Starts a Polar Checkout for the signed-in user. We inject the identity
-// server-side — `customerExternalId = user.id` — so the webhook can map the
+// server-side, `customerExternalId = user.id`, so the webhook can map the
 // resulting subscription back to the right account (never trust a client-set id).
 
 import { env } from "@north/env/server";

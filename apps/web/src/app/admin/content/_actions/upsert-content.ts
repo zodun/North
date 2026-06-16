@@ -50,7 +50,7 @@ export async function upsertContent(input: UpsertContentInput) {
 			external_url: input.externalUrl ?? null,
 			attribution_text: input.attributionText ?? null,
 			license_type: licenseType,
-			// Always draft on creation — admin promotes to 'cleared'
+			// Always draft on creation, admin promotes to 'cleared'
 			// once attribution + permission evidence are confirmed.
 			license_status: "draft",
 		})

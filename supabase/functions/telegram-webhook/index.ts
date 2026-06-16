@@ -1,7 +1,7 @@
 // Edge Function: telegram-webhook (NOTIF-03)
 // Receives Telegram bot updates. On "/start <token>", looks up the one-time
 // token (issued by telegram-link), links that chat to the North user, and turns
-// the channel on. Public endpoint — Telegram sends no JWT — secured by the
+// the channel on. Public endpoint, Telegram sends no JWT, secured by the
 // X-Telegram-Bot-Api-Secret-Token header set at setWebhook time.
 //
 // Operator setup (once), point Telegram at this function:

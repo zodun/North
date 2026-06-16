@@ -1,7 +1,7 @@
 // GET /api/cover?cat=<key>&seed=<n>
 // Renders a deterministic, on-brand Soft Sky cover for an article that has no
-// real image (see lib/article-image/cover). Pure function of the query params —
-// no user data, no upstream fetch — so it's public (exempt in proxy.ts) and
+// real image (see lib/article-image/cover). Pure function of the query params,
+// no user data, no upstream fetch, so it's public (exempt in proxy.ts) and
 // cached hard. The For You feed points an image-less card's <img> straight here.
 
 import { renderCoverSvg } from "@/lib/article-image/cover";

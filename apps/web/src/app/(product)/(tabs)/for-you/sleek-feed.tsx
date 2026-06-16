@@ -6,7 +6,7 @@ import { supabase } from "@/lib/auth-client";
 import { proxiedImage } from "@/lib/img";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// For You — "Sleek Light" (Stitch: Elite Interface Design).
+// For You, "Sleek Light" (Stitch: Elite Interface Design).
 //
 // The owner chose to keep this design's literal blue/glass skin (#005ac2 primary,
 // Sora + Libre Caslon, glass panels + drop shadows) rather than port it to North's
@@ -70,7 +70,7 @@ const FONT_SHEET =
 const ICON_SHEET =
 	"https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block";
 
-// Hero accent by category/eyebrow — tints the hero's aurora so each featured
+// Hero accent by category/eyebrow, tints the hero's aurora so each featured
 // pick feels distinct. Falls back to the primary blue.
 const HERO_ACCENT: Record<string, string> = {
 	Money: "#3ECFBF",
@@ -426,7 +426,7 @@ export function SleekForYou({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Hero — featured insight (the personalised #1 pick)
+// Hero, featured insight (the personalised #1 pick)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function Hero({
@@ -443,7 +443,7 @@ function Hero({
 	const conf = kindConf(item.kind);
 	// An always-engaging hero: a dark aurora backdrop with drifting colour blobs,
 	// a North compass-constellation motif, and an accent tint chosen by category so
-	// each featured pick feels distinct. Article images aren't used — North's
+	// each featured pick feels distinct. Article images aren't used, North's
 	// covers/OG images bake in text that would collide with the headline.
 	const accent = HERO_ACCENT[(categoryLabel ?? "").trim()] ?? "#4d8eff";
 	const why = (
@@ -699,7 +699,7 @@ function GrowthCard({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Bento — Today's Focus (mission) + Featured Opportunity
+// Bento, Today's Focus (mission) + Featured Opportunity
 // ─────────────────────────────────────────────────────────────────────────────
 
 function MissionCard({ mission }: { mission: MissionBlock }) {
@@ -855,7 +855,7 @@ function OpportunityCard({ opportunity }: { opportunity: OpportunityBlock }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Chrome — sidebar (desktop) + top bar
+// Chrome, sidebar (desktop) + top bar
 // ─────────────────────────────────────────────────────────────────────────────
 
 const NAV = [

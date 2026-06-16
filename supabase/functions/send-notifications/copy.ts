@@ -4,7 +4,7 @@
 //   - No loss-framing ("your streak will break", "don't miss out")
 //   - No urgency language ("hurry", "last chance", "act now")
 //   - No gamification ("you're on a roll", "level up")
-//   - One sentence max per body — clarity, not persuasion
+//   - One sentence max per body, clarity, not persuasion
 
 export type NotificationType = "morning" | "evening";
 
@@ -20,7 +20,7 @@ export function getCopy(type: NotificationType): NotificationCopy {
 			body: "Your three tasks for today are ready.",
 		};
 	}
-	// Evening: sent only to users with 0 tasks done — a gentle presence, not pressure.
+	// Evening: sent only to users with 0 tasks done, a gentle presence, not pressure.
 	return {
 		title: "Still time today",
 		body: "Your mission is here when you're ready.",
@@ -29,7 +29,7 @@ export function getCopy(type: NotificationType): NotificationCopy {
 
 // Per-user digest body. Morning lists today's actual tasks so the reminder is
 // about the user's own work, not a generic ping. Falls back to the calm generic
-// line when we have no labels. Evening keeps its single gentle sentence — a
+// line when we have no labels. Evening keeps its single gentle sentence, a
 // digest there would read as pressure on a day already left unfinished.
 export function buildBody(
 	type: NotificationType,

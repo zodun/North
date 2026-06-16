@@ -235,7 +235,7 @@ function extractLink(block: string): string {
 	// Atom-style href
 	const atom = block.match(/href="(https?:\/\/[^"]+)"/i);
 	if (atom) return atom[1];
-	// RSS <link> — may be plain text between tags
+	// RSS <link>, may be plain text between tags
 	const linkTag = block.match(/<link[^>]*>\s*(https?:\/\/[^\s<]+)\s*<\/link>/i);
 	if (linkTag) return linkTag[1];
 	// Guid with URL
@@ -382,7 +382,7 @@ Deno.serve(async (req: Request) => {
 			});
 
 			if (error) {
-				// 23505 = unique_violation — item already exists, not a real error
+				// 23505 = unique_violation, item already exists, not a real error
 				if (error.code !== "23505") insertErrors.push(error.message);
 			} else {
 				added++;

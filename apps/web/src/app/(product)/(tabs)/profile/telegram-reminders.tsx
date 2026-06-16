@@ -8,8 +8,8 @@ import { supabase } from "@/lib/auth-client";
 // (t.me/<bot>?start=<token>). We show it as a QR code so the user can open it
 // on whichever device actually has Telegram (usually their phone), plus an
 // open-here button and a copy fallback. Once the link is shown we poll the
-// profile in the background, so the moment they tap Start in Telegram — and the
-// webhook links the chat — this flips to "On" on its own, no extra tap.
+// profile in the background, so the moment they tap Start in Telegram, and the
+// webhook links the chat, this flips to "On" on its own, no extra tap.
 // Connected users just toggle the channel (a plain profiles update, RLS-allowed).
 
 const PRIMARY = "#005ac2";
