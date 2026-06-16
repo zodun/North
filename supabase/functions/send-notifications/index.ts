@@ -137,23 +137,26 @@ export async function runNotificationJob(
 	}
 
 	// Today's tasks per user (label + done) — the basis for every channel's
-	// digest and the evening "any done?" check. Mission-centric so a user with
-	// Telegram but no push token is still covered.
-	const { data: missionRows, error: missionErr } = await supabase
-		.from("missions")
-		.select("user_id, user_mission_tasks(label, done)")
-		.eq("mission_date", today);
+	// digest and the evening "any done?" check. Tasks are the daily steps of the
+	// user's monthly mission, due today (monthly_mission_steps.due_date). A user
+	// with Telegram but no push token is still covered (this is step-centric, not
+	// token-centric).
+	const { data: stepRows, error: stepErr } = await supabase
+		.from("monthly_mission_steps")
+		.select("user_id, title, done")
+		.eq("due_date", today);
 
-	if (missionErr) throw new Error(`load missions: ${missionErr.message}`);
+	if (stepErr) throw new Error(`load steps: ${stepErr.message}`);
 
 	const tasksByUser = new Map<string, Task[]>();
-	for (const m of (missionRows ?? []) as {
+	for (const s of (stepRows ?? []) as {
 		user_id: string;
-		user_mission_tasks: Task[];
+		title: string;
+		done: boolean;
 	}[]) {
-		const arr = tasksByUser.get(m.user_id) ?? [];
-		arr.push(...(m.user_mission_tasks ?? []));
-		tasksByUser.set(m.user_id, arr);
+		const arr = tasksByUser.get(s.user_id) ?? [];
+		arr.push({ label: s.title, done: s.done });
+		tasksByUser.set(s.user_id, arr);
 	}
 
 	// Push tokens for those users only. No token → no push for that user, but
