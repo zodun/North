@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { colors, Pill } from "@/components/product/north-ui";
+import { colors } from "@/components/product/north-ui";
 import { supabase } from "@/lib/auth-client";
 
 type Step = {
@@ -35,7 +35,6 @@ export function SetGoalModal({
 	monthName,
 	monthStart,
 	initialGoal,
-	initialIntent,
 	initialCadence,
 	autosuggest = false,
 	onDismiss,
@@ -50,15 +49,16 @@ export function SetGoalModal({
 	onDismiss: () => void;
 	onGoalSet: (result: GoalSetResult) => void;
 }) {
-	const [goal, setGoal] = useState(autosuggest ? "" : initialGoal);
-	const [intent, setIntent] = useState(initialIntent);
+	const [goal, setGoal] = useState("");
 	const [cadence, setCadence] = useState<"daily" | "weekly">(initialCadence);
 	const [submitting, setSubmitting] = useState(false);
 	const [suggesting, setSuggesting] = useState(autosuggest);
+	const [suggestion, setSuggestion] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
-	// When the user hasn't authored a goal yet, propose one from their focus
-	// areas + onboarding answers. We never clobber anything they start typing.
+	// Propose a goal from the user's focus areas + onboarding answers, but never
+	// touch the input. The suggestion is offered as a tap-to-use hint below the
+	// field so the field always stays the user's own to type in.
 	useEffect(() => {
 		if (!autosuggest) return;
 		let cancelled = false;
@@ -67,21 +67,14 @@ export function SetGoalModal({
 				body: { mode: "suggest", month_start: monthStart },
 			});
 			if (cancelled) return;
-			const s = data?.suggestion as
-				| { goal_title?: string; goal_intent?: string }
-				| undefined;
-			if (s?.goal_title) {
-				setGoal((g) => (g.trim() ? g : (s.goal_title ?? "")));
-				setIntent((i) => (i.trim() ? i : (s.goal_intent ?? "")));
-			} else {
-				setGoal((g) => (g.trim() ? g : initialGoal));
-			}
+			const s = data?.suggestion as { goal_title?: string } | undefined;
+			if (s?.goal_title) setSuggestion(s.goal_title);
 			setSuggesting(false);
 		})();
 		return () => {
 			cancelled = true;
 		};
-	}, [autosuggest, monthStart, initialGoal]);
+	}, [autosuggest, monthStart]);
 
 	// Persist that the prompt was dismissed this month, then close. profiles is
 	// owner-updatable (same path as the cadence toggle), so this is a plain write.
@@ -108,7 +101,7 @@ export function SetGoalModal({
 		const { data, error: err } = await supabase.functions.invoke("plan-month", {
 			body: {
 				goal_title: title,
-				goal_intent: intent.trim() || null,
+				goal_intent: null,
 				cadence,
 				month_start: monthStart,
 			},
@@ -126,9 +119,16 @@ export function SetGoalModal({
 	}
 
 	const inputCls =
-		"w-full rounded-xl border border-[#0E1420]/10 bg-[#F4F7FC] px-4 py-3 text-[14px] text-[#0E1420] placeholder:text-[#0E1420]/40 focus:outline-none focus:ring-1 focus:ring-[#F5C842]/50";
+		"w-full rounded-2xl border border-black/10 bg-white px-4 py-3.5 text-[15px] text-[#131313] placeholder:text-black/35 transition-colors focus:border-[#005ac2]/40 focus:outline-none focus:ring-2 focus:ring-[#005ac2]/20";
 	const labelCls =
 		"mb-1.5 block font-semibold text-[11px] text-[#0E1420]/55 uppercase tracking-widest";
+
+	// Tap-to-use pre-fill, never auto-inserted into the box: the AI idea when
+	// setting a new goal, or the current goal when editing an existing one.
+	const preset = autosuggest ? suggestion : initialGoal.trim() || null;
+	const presetLabel = autosuggest
+		? "Need an idea? Tap to use"
+		: "Your current goal. Tap to edit it";
 
 	return (
 		// biome-ignore lint/a11y/useKeyWithClickEvents lint/a11y/noStaticElementInteractions: backdrop dismiss — keyboard users can use the close button
@@ -181,7 +181,8 @@ export function SetGoalModal({
 				<form onSubmit={submit} className="flex flex-col gap-4 p-5">
 					<p className="text-[#0E1420]/65 text-[13px] leading-relaxed">
 						Name one thing you want to make happen this month. We'll break it
-						into weekly milestones and a different small step for each day.
+						down into small steps you can actually do, so you always know your
+						next move.
 					</p>
 
 					<div>
@@ -189,23 +190,14 @@ export function SetGoalModal({
 							<label htmlFor="goal-title" className={labelCls}>
 								Your goal
 							</label>
-							{suggesting ? (
+							{suggesting && (
 								<span className="flex items-center gap-1.5 font-semibold text-[#0E1420]/55 text-[10px]">
 									<span
 										className="inline-block h-2.5 w-2.5 animate-spin rounded-full border border-[#0E1420]/15 border-t-[#0E1420]/55 motion-reduce:animate-none"
 										aria-hidden="true"
 									/>
-									Finding a goal that fits you…
+									Finding an idea for you…
 								</span>
-							) : (
-								autosuggest && (
-									<span
-										className="font-semibold text-[10px]"
-										style={{ color: colors.goldInk }}
-									>
-										Suggested · edit freely
-									</span>
-								)
 							)}
 						</div>
 						<textarea
@@ -213,51 +205,95 @@ export function SetGoalModal({
 							required
 							rows={2}
 							maxLength={140}
-							placeholder={
-								suggesting
-									? "Suggesting a goal from your profile…"
-									: "e.g. Ship the first version of my side project"
-							}
+							placeholder="e.g. Ship the first version of my side project"
 							value={goal}
 							onChange={(e) => setGoal(e.target.value)}
 							className={`${inputCls} resize-none`}
 						/>
-					</div>
-
-					<div>
-						<label htmlFor="goal-intent" className={labelCls}>
-							Why it matters (optional)
-						</label>
-						<textarea
-							id="goal-intent"
-							rows={2}
-							maxLength={400}
-							placeholder="What makes this worth it right now?"
-							value={intent}
-							onChange={(e) => setIntent(e.target.value)}
-							className={`${inputCls} resize-none`}
-						/>
-					</div>
-
-					<div>
-						<span className={labelCls}>How should tasks show up?</span>
-						<div className="flex gap-2">
-							{(["daily", "weekly"] as const).map((c) => (
-								<Pill
-									key={c}
-									active={cadence === c}
-									onClick={() => setCadence(c)}
+						{preset && goal.trim() !== preset && (
+							<button
+								type="button"
+								onClick={() => setGoal(preset)}
+								className="mt-2 flex w-full flex-col gap-0.5 rounded-2xl border border-black/10 bg-white px-4 py-3 text-left transition-colors hover:border-[#005ac2]/30"
+							>
+								<span
+									className="font-bold text-[10px] uppercase tracking-widest"
+									style={{ color: "#005ac2" }}
 								>
-									{c}
-								</Pill>
-							))}
-						</div>
-						<p className="mt-1.5 text-[#0E1420]/55 text-[11px]">
-							{cadence === "daily"
-								? "One small step each day."
-								: "One focus to reach each week."}
-						</p>
+									{presetLabel}
+								</span>
+								<span className="text-[#131313] text-[13px] leading-snug">
+									{preset}
+								</span>
+							</button>
+						)}
 					</div>
+
+					<fieldset>
+						<legend className={labelCls}>How do you want to work on it?</legend>
+						<div className="flex flex-col gap-2">
+							{(
+								[
+									{
+										value: "daily",
+										title: "A step a day",
+										desc: "One small task to do each day.",
+									},
+									{
+										value: "weekly",
+										title: "A focus a week",
+										desc: "One thing to reach by the end of each week.",
+									},
+								] as const
+							).map((opt) => {
+								const active = cadence === opt.value;
+								return (
+									<label
+										key={opt.value}
+										className="flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition-colors focus-within:ring-1 focus-within:ring-[#F5C842]/60"
+										style={{
+											borderColor: active ? GOLD : "rgba(14,20,32,0.10)",
+											backgroundColor: active
+												? "rgba(245,200,66,0.10)"
+												: "#F4F7FC",
+										}}
+									>
+										<input
+											type="radio"
+											name="cadence"
+											value={opt.value}
+											checked={active}
+											onChange={() => setCadence(opt.value)}
+											className="sr-only"
+										/>
+										<span
+											className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border"
+											style={{
+												borderColor: active
+													? colors.goldInk
+													: "rgba(14,20,32,0.28)",
+											}}
+										>
+											{active && (
+												<span
+													className="h-2 w-2 rounded-full"
+													style={{ backgroundColor: colors.goldInk }}
+												/>
+											)}
+										</span>
+										<span>
+											<span className="block font-semibold text-[#0E1420] text-[14px]">
+												{opt.title}
+											</span>
+											<span className="block text-[#0E1420]/55 text-[12px]">
+												{opt.desc}
+											</span>
+										</span>
+									</label>
+								);
+							})}
+						</div>
+					</fieldset>
 
 					{error && <p className="text-[#DC2626] text-[12px]">{error}</p>}
 
