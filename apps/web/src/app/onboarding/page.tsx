@@ -7,6 +7,7 @@ import {
 	CAREER_STAGES,
 	COUNTRIES,
 	FIELDS,
+	INTEREST_OPTIONS,
 	MAX_FIELDS,
 } from "@/lib/personalization-options";
 
@@ -59,19 +60,6 @@ const FOCUS_META: Record<
 	},
 };
 
-// Maps to public.opportunity_categories.id, kept as-is so
-// preferred_opportunity_categories stays valid for feed matching.
-const OPPORTUNITY_TYPES = [
-	{ id: "scholarship", label: "Scholarships" },
-	{ id: "internship", label: "Fellowships" },
-	{ id: "job", label: "Jobs" },
-	{ id: "grant", label: "Grants" },
-	{ id: "accelerator", label: "Accelerators" },
-	{ id: "event", label: "Competitions" },
-	{ id: "community", label: "Communities" },
-	{ id: "creator-programme", label: "Creator Programmes" },
-];
-
 // Career-stage / field / country option lists are shared with the Profile
 // editor (see @/lib/personalization-options) so a stored value round-trips
 // identically. Icons are onboarding-only chrome, keyed by the shared value.
@@ -97,20 +85,24 @@ const CONSENT_ROWS = [
 ];
 
 const CTA_LABELS = [
-	"That's me",
-	"This is my stage",
-	"These are my fields",
-	"These are my focus areas",
-	"That's how I learn",
-	"That's my aim",
-	"Show me these",
-	"That's where I am",
-	"That's my level",
-	"This is my pace",
-	"Take me to North",
+	"That's me", // 0 welcome / name
+	"These are my focus areas", // 1 focus
+	"These are my fields", // 2 fields
+	"This is my stage", // 3 career
+	"These are my interests", // 4 interests
+	"That's my direction", // 5 direction
+	"That's where I am", // 6 location
+	"That's my level", // 7 education
+	"That's how I learn", // 8 learn-format
+	"That's my aim", // 9 aim
+	"This is my pace", // 10 time
+	"Take me to North", // 11 consent
 ];
 
-const TOTAL_STEPS = 11;
+// 12 steps: a welcome (name) + 10 questions + consent. The counter shows the 10
+// questions; the welcome and consent are framing steps.
+const TOTAL_STEPS = 12;
+const QUESTION_COUNT = 10;
 
 // How the user likes to consume content → For You can favour matching kinds.
 const CONTENT_FORMATS = [
@@ -142,7 +134,9 @@ export default function OnboardingPage() {
 	const [openToRelocate, setOpenToRelocate] = useState(false);
 	const [focus, setFocus] = useState<string[]>([]);
 	const [contentFormats, setContentFormats] = useState<string[]>([]);
-	const [oppTypes, setOppTypes] = useState<string[]>([]);
+	const [interests, setInterests] = useState<string[]>([]);
+	const [interestOther, setInterestOther] = useState("");
+	const [direction, setDirection] = useState("");
 	const [time, setTime] = useState<string | null>(null);
 	const [educationLevel, setEducationLevel] = useState<string | null>(null);
 	const [aspiration, setAspiration] = useState("");
@@ -192,13 +186,9 @@ export default function OnboardingPage() {
 		);
 	}
 
-	function toggleOppType(id: string) {
-		setOppTypes((prev) =>
-			prev.includes(id)
-				? prev.filter((t) => t !== id)
-				: prev.length < 4
-					? [...prev, id]
-					: prev,
+	function toggleInterest(id: string) {
+		setInterests((prev) =>
+			prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
 		);
 	}
 
@@ -212,8 +202,8 @@ export default function OnboardingPage() {
 		if (!userId) return;
 		setError(null);
 
-		// 0 name · 1 career · 2 fields · 3 focus · 4 learn-format · 5 goal ·
-		// 6 opportunity types · 7 location · 8 education · 9 time
+		// 0 welcome/name · 1 focus · 2 fields · 3 career · 4 interests ·
+		// 5 direction · 6 location · 7 education · 8 learn-format · 9 aim · 10 time
 		if (step === 0) {
 			const { error: err } = await supabase
 				.from("profiles")
@@ -221,12 +211,11 @@ export default function OnboardingPage() {
 				.eq("user_id", userId);
 			if (err) throw new Error(err.message);
 		}
-		if (step === 1 && careerStage) {
-			const { error: err } = await supabase
-				.from("profiles")
-				.update({ career_stage: careerStage })
-				.eq("user_id", userId);
-			if (err) throw new Error(err.message);
+		if (step === 1 && focus.length > 0) {
+			await supabase.from("user_focus_areas").delete().eq("user_id", userId);
+			await supabase
+				.from("user_focus_areas")
+				.insert(focus.map((id) => ({ user_id: userId, focus_area_id: id })));
 		}
 		if (step === 2) {
 			const { error: err } = await supabase
@@ -235,34 +224,34 @@ export default function OnboardingPage() {
 				.eq("user_id", userId);
 			if (err) throw new Error(err.message);
 		}
-		if (step === 3 && focus.length > 0) {
-			await supabase.from("user_focus_areas").delete().eq("user_id", userId);
-			await supabase
-				.from("user_focus_areas")
-				.insert(focus.map((id) => ({ user_id: userId, focus_area_id: id })));
-		}
-		if (step === 4) {
+		if (step === 3 && careerStage) {
 			const { error: err } = await supabase
 				.from("profiles")
-				.update({ content_formats: contentFormats })
+				.update({ career_stage: careerStage })
+				.eq("user_id", userId);
+			if (err) throw new Error(err.message);
+		}
+		if (step === 4) {
+			// Chips plus any comma-separated "other" the user typed, deduped.
+			const extra = interestOther
+				.split(",")
+				.map((s) => s.trim())
+				.filter(Boolean);
+			const all = Array.from(new Set([...interests, ...extra]));
+			const { error: err } = await supabase
+				.from("profiles")
+				.update({ interests: all })
 				.eq("user_id", userId);
 			if (err) throw new Error(err.message);
 		}
 		if (step === 5) {
 			const { error: err } = await supabase
 				.from("profiles")
-				.update({ aspiration: aspiration.trim() || null })
+				.update({ statement_of_intent: direction.trim() || null })
 				.eq("user_id", userId);
 			if (err) throw new Error(err.message);
 		}
 		if (step === 6) {
-			const { error: err } = await supabase
-				.from("profiles")
-				.update({ preferred_opportunity_categories: oppTypes })
-				.eq("user_id", userId);
-			if (err) throw new Error(err.message);
-		}
-		if (step === 7) {
 			const { error: err } = await supabase
 				.from("profiles")
 				.update({
@@ -273,14 +262,28 @@ export default function OnboardingPage() {
 				.eq("user_id", userId);
 			if (err) throw new Error(err.message);
 		}
-		if (step === 8 && educationLevel) {
+		if (step === 7 && educationLevel) {
 			const { error: err } = await supabase
 				.from("profiles")
 				.update({ education_level: educationLevel })
 				.eq("user_id", userId);
 			if (err) throw new Error(err.message);
 		}
-		if (step === 9 && time) {
+		if (step === 8) {
+			const { error: err } = await supabase
+				.from("profiles")
+				.update({ content_formats: contentFormats })
+				.eq("user_id", userId);
+			if (err) throw new Error(err.message);
+		}
+		if (step === 9) {
+			const { error: err } = await supabase
+				.from("profiles")
+				.update({ aspiration: aspiration.trim() || null })
+				.eq("user_id", userId);
+			if (err) throw new Error(err.message);
+		}
+		if (step === 10 && time) {
 			await supabase
 				.from("profiles")
 				.update({ time_budget_label: time })
@@ -329,18 +332,20 @@ export default function OnboardingPage() {
 		}
 	}
 
+	// Steps 4 (interests), 5 (direction) and 9 (aim) are optional/skippable.
 	const canContinue = (() => {
 		if (step === 0) return name.trim().length > 0;
-		if (step === 1) return careerStage !== null;
+		if (step === 1) return focus.length > 0;
 		if (step === 2) return fields.length > 0;
-		if (step === 3) return focus.length > 0;
-		if (step === 4) return contentFormats.length > 0;
-		if (step === 5) return true; // goal is optional (skippable)
-		if (step === 6) return oppTypes.length > 0;
-		if (step === 7) return country !== "";
-		if (step === 8) return educationLevel !== null;
-		if (step === 9) return time !== null;
-		if (step === 10) return focus.length > 0 && consent;
+		if (step === 3) return careerStage !== null;
+		if (step === 4) return true; // interests optional
+		if (step === 5) return true; // direction optional
+		if (step === 6) return country !== "";
+		if (step === 7) return educationLevel !== null;
+		if (step === 8) return contentFormats.length > 0;
+		if (step === 9) return true; // aim optional
+		if (step === 10) return time !== null;
+		if (step === 11) return focus.length > 0 && consent;
 		return false;
 	})();
 
@@ -366,7 +371,11 @@ export default function OnboardingPage() {
 				/>
 			</div>
 			<p className="fixed top-3 right-4 z-50 font-bold text-[#0E1420]/55 text-[10px] uppercase tracking-[0.1em]">
-				Step {step + 1} of {TOTAL_STEPS}
+				{step === 0
+					? "Welcome"
+					: step === TOTAL_STEPS - 1
+						? "Last step"
+						: `Question ${step} of ${QUESTION_COUNT}`}
 			</p>
 
 			{/* Back button */}
@@ -387,24 +396,23 @@ export default function OnboardingPage() {
 				className="step-in relative z-10 mx-auto flex min-h-svh max-w-[420px] flex-col justify-center px-6 pt-16 pb-10"
 			>
 				{step === 0 && <StepName value={name} onChange={setName} />}
-				{step === 1 && (
+				{step === 1 && <StepFocus value={focus} onToggle={toggleFocus} />}
+				{step === 2 && <StepFields value={fields} onToggle={toggleField} />}
+				{step === 3 && (
 					<StepCareerStage value={careerStage} onSelect={setCareerStage} />
 				)}
-				{step === 2 && <StepFields value={fields} onToggle={toggleField} />}
-				{step === 3 && <StepFocus value={focus} onToggle={toggleFocus} />}
 				{step === 4 && (
-					<StepLearnFormat
-						value={contentFormats}
-						onToggle={toggleContentFormat}
+					<StepInterests
+						value={interests}
+						onToggle={toggleInterest}
+						other={interestOther}
+						onOther={setInterestOther}
 					/>
 				)}
 				{step === 5 && (
-					<StepAspiration value={aspiration} onChange={setAspiration} />
+					<StepDirection value={direction} onChange={setDirection} />
 				)}
 				{step === 6 && (
-					<StepOpportunityTypes value={oppTypes} onToggle={toggleOppType} />
-				)}
-				{step === 7 && (
 					<StepLocation
 						country={country}
 						onCountry={setCountry}
@@ -414,11 +422,20 @@ export default function OnboardingPage() {
 						onRelocate={setOpenToRelocate}
 					/>
 				)}
-				{step === 8 && (
+				{step === 7 && (
 					<StepEducation value={educationLevel} onSelect={setEducationLevel} />
 				)}
-				{step === 9 && <StepTime value={time} onSelect={setTime} />}
-				{step === 10 && (
+				{step === 8 && (
+					<StepLearnFormat
+						value={contentFormats}
+						onToggle={toggleContentFormat}
+					/>
+				)}
+				{step === 9 && (
+					<StepAspiration value={aspiration} onChange={setAspiration} />
+				)}
+				{step === 10 && <StepTime value={time} onSelect={setTime} />}
+				{step === 11 && (
 					<StepConsent consent={consent} onConsent={setConsent} />
 				)}
 
@@ -437,7 +454,7 @@ export default function OnboardingPage() {
 					>
 						{CTA_LABELS[step]}
 					</CtaButton>
-					{step === 5 && (
+					{(step === 4 || step === 5 || step === 9) && (
 						<button
 							type="button"
 							onClick={handleNext}
@@ -446,7 +463,7 @@ export default function OnboardingPage() {
 							Skip for now
 						</button>
 					)}
-					{step === 10 && !consent && (
+					{step === 11 && !consent && (
 						<p className="mt-2 text-center text-[#0E1420]/50 text-[11px]">
 							You must agree to continue
 						</p>
@@ -964,36 +981,40 @@ function StepFocus({
 	);
 }
 
-function StepOpportunityTypes({
+function StepInterests({
 	value,
 	onToggle,
+	other,
+	onOther,
 }: {
 	value: string[];
 	onToggle: (id: string) => void;
+	other: string;
+	onOther: (v: string) => void;
 }) {
 	return (
 		<div>
 			<StepHead
-				eyebrow="Opportunities for you"
-				headline="What kinds of opportunities should we surface?"
-				sub="Pick up to four. You can change this anytime."
+				eyebrow="The real you"
+				headline="What do you love outside work or study?"
+				sub="Pick what's yours. This is how North surfaces opportunities beyond the academic, from poetry slams to art residencies to film grants."
 			/>
 			<div className="flex flex-wrap gap-2">
-				{OPPORTUNITY_TYPES.map((opt) => {
-					const selected = value.includes(opt.id);
+				{INTEREST_OPTIONS.map((label) => {
+					const selected = value.includes(label);
 					return (
 						<button
-							key={opt.id}
+							key={label}
 							type="button"
 							aria-pressed={selected}
-							onClick={() => onToggle(opt.id)}
+							onClick={() => onToggle(label)}
 							className={`cursor-pointer rounded-full border px-4 py-2.5 font-bold text-[12px] transition-all hover:bg-[#F4F7FC] ${selectableRing()} motion-reduce:transition-none`}
 							style={
 								selected
 									? {
-											backgroundColor: "rgba(62,207,191,0.14)",
-											borderColor: "rgba(62,207,191,0.55)",
-											color: "#0A8F7F",
+											backgroundColor: "rgba(14,20,32,0.06)",
+											borderColor: "rgba(14,20,32,0.45)",
+											color: "#0E1420",
 										}
 									: {
 											backgroundColor: "#ffffff",
@@ -1002,17 +1023,50 @@ function StepOpportunityTypes({
 										}
 							}
 						>
-							{opt.label}
+							{label}
 						</button>
 					);
 				})}
 			</div>
-			<p className="mt-4 text-center text-[#0E1420]/55 text-[11px]">
-				<span style={{ color: value.length > 0 ? "#0A8F7F" : undefined }}>
-					{value.length}
-				</span>{" "}
-				of 4 selected
-			</p>
+			<label htmlFor="onb-interest-other" className="sr-only">
+				Other interests
+			</label>
+			<input
+				id="onb-interest-other"
+				value={other}
+				onChange={(e) => onOther(e.target.value)}
+				placeholder="Anything else? e.g. chess, birdwatching"
+				className="mt-3 w-full rounded-[14px] border border-[#0E1420]/10 bg-white px-4 py-3 font-medium text-[#0E1420] text-[14px] outline-none transition-all placeholder:text-[#0E1420]/35 focus:border-[#0E1420]/40"
+			/>
+		</div>
+	);
+}
+
+function StepDirection({
+	value,
+	onChange,
+}: {
+	value: string;
+	onChange: (v: string) => void;
+}) {
+	return (
+		<div>
+			<StepHead
+				eyebrow="Your direction"
+				headline="Who do you want to become?"
+				sub="A line about the person you're working toward. North uses it to point everything in your direction."
+			/>
+			<label htmlFor="onb-direction" className="sr-only">
+				Who you want to become
+			</label>
+			<textarea
+				id="onb-direction"
+				value={value}
+				onChange={(e) => onChange(e.target.value)}
+				maxLength={200}
+				placeholder="e.g. a self-taught designer building a studio of my own"
+				className="h-[110px] w-full resize-none rounded-[14px] border border-[#0E1420]/10 bg-white px-4 py-3.5 font-medium text-[#0E1420] text-[14px] outline-none transition-all placeholder:text-[#0E1420]/35 focus:border-[#F5C842] focus:bg-[rgba(245,200,66,0.04)]"
+			/>
 		</div>
 	);
 }

@@ -99,7 +99,7 @@ export default async function OpportunitiesPage() {
 				? supabase
 						.from("profiles")
 						.select(
-							"preferred_opportunity_categories, country, open_to_relocate, education_level",
+							"preferred_opportunity_categories, interests, country, open_to_relocate, education_level",
 						)
 						.eq("user_id", user.id)
 						.maybeSingle()
@@ -111,14 +111,18 @@ export default async function OpportunitiesPage() {
 	const userFocusAreas = (focusRes.data ?? []).map((r) => r.focus_area_id);
 	const preferredCategories: string[] =
 		profileRes.data?.preferred_opportunity_categories ?? [];
+	const interests: string[] =
+		(profileRes.data?.interests as string[] | null) ?? [];
 	const country = (profileRes.data?.country as string | null) ?? null;
 	const openToRelocate = Boolean(profileRes.data?.open_to_relocate);
 	const educationLevel =
 		(profileRes.data?.education_level as string | null) ?? null;
 
-	// Compute a match score per item: focus-area overlap, a boost when the item's
-	// category is one the user asked for in onboarding, plus eligibility from their
-	// onboarding location + education answers so reachable, qualifying picks lead.
+	// Compute a match score per item: focus-area overlap, a boost when the item
+	// matches a stated interest (so creative and non-academic picks surface, not
+	// just scholarships) or a category the user asked for, plus eligibility from
+	// their onboarding location + education answers so reachable, qualifying picks
+	// lead.
 	const scored = items.map((item) => {
 		const tags: string[] = item.focus_area_tags ?? [];
 		const focusScore = userFocusAreas.length
@@ -128,6 +132,13 @@ export default async function OpportunitiesPage() {
 			item.category_id && preferredCategories.includes(item.category_id)
 				? 2
 				: 0;
+		const haystack =
+			`${item.title} ${item.org} ${item.why ?? ""} ${item.opportunity_type ?? ""} ${item.category_id ?? ""}`.toLowerCase();
+		const interestScore = interests.some(
+			(i) => i && haystack.includes(i.toLowerCase()),
+		)
+			? 3
+			: 0;
 		const locScore = locationScore(item.location, country, openToRelocate);
 		const eduScore = educationScore(
 			`${item.title} ${item.why ?? ""} ${item.opportunity_type ?? ""}`,
@@ -135,7 +146,8 @@ export default async function OpportunitiesPage() {
 		);
 		return {
 			...item,
-			matchScore: focusScore + categoryScore + locScore + eduScore,
+			matchScore:
+				focusScore + categoryScore + interestScore + locScore + eduScore,
 		};
 	});
 

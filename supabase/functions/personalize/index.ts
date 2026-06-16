@@ -136,13 +136,13 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 				userClient
 					.from("profiles")
 					.select(
-						"statement_of_intent, season_label, preferred_opportunity_categories, career_stage, fields, country, open_to_remote, open_to_relocate",
+						"statement_of_intent, season_label, interests, career_stage, fields, country, open_to_remote, open_to_relocate",
 					)
 					.eq("user_id", user.id)
 					.maybeSingle<{
 						statement_of_intent: string | null;
 						season_label: string | null;
-						preferred_opportunity_categories: string[] | null;
+						interests: string[] | null;
 						career_stage: string | null;
 						fields: string[] | null;
 						country: string | null;
@@ -185,7 +185,7 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 			statement_of_intent: profileRes.data?.statement_of_intent ?? "",
 			season_label: profileRes.data?.season_label ?? "",
 			goal_title: missionRes.data?.goal_title ?? "",
-			interests: profileRes.data?.preferred_opportunity_categories ?? [],
+			interests: profileRes.data?.interests ?? [],
 			career_stage: profileRes.data?.career_stage ?? "",
 			fields: profileRes.data?.fields ?? [],
 			country: profileRes.data?.country ?? "",

@@ -28,6 +28,28 @@ export const FIELDS = [
 ];
 export const MAX_FIELDS = 2;
 
+// Topical / creative interests beyond work or study. Stored in profiles.interests
+// (text[]); the user can add their own via a free-text "other" field. Drives
+// non-academic opportunity matching and feed personalization.
+export const INTEREST_OPTIONS = [
+	"Poetry",
+	"Writing",
+	"Music",
+	"Visual art",
+	"Photography",
+	"Film",
+	"Fashion",
+	"Dance",
+	"Theatre",
+	"Sport",
+	"Gaming",
+	"Activism",
+	"Faith",
+	"Cooking",
+	"Travel",
+	"Nature",
+];
+
 // Stored in profiles.country. Curated rather than exhaustive, "Somewhere else"
 // catches the long tail. A native <select> gives the OS picker on mobile.
 export const COUNTRIES = [
