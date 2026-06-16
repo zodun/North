@@ -1,18 +1,21 @@
 "use client";
 
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { supabase } from "@/lib/auth-client";
 import { type GoalSetResult, SetGoalModal } from "./set-goal-modal";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Mission / Task page — AI-powered task intelligence over the existing monthly
-// mission. Visual + AI enhancement only: the data the page passes in (mission,
-// steps, cadence, streak, week index) and the completion logic (setStepDone /
-// changeCadence → supabase) are UNCHANGED. A Daily / Weekly tab switcher (driven
-// by the existing `cadence` state, which still persists) flips between the Daily
-// view (hero "Up Next" card with AI suggestion, collapsed task list, 7-day week
-// dots, and the Signal-and-Noise journal passed in via `journalSlot`) and the
-// Weekly view (goal card, the full 4-week plan, and a Sunday check-in).
+// Mission — Stitch "Dashboard" editorial design, WIRED to the real monthly
+// mission backend. Same sleek-light language as the other tabs. All actions hit
+// Supabase (completion logic + cadence + goal-set are unchanged):
+//   • hero      → monthly_missions goal + macro progress
+//   • today     → the FIRST undone daily step; later days stay locked until it's
+//                 done (sequential unlock), the rest sit behind a week expander
+//   • plan      → the 4 weekly milestones, toggled done
+//   • set goal  → SetGoalModal (plan-month edge function)
+// The finance-mockup content (velocity, syndicates, "Sovereign Expansion") is
+// dropped, and the journal lives on its own tab now — every value here is the
+// user's real mission data.
 // ─────────────────────────────────────────────────────────────────────────────
 
 type Step = {
@@ -34,164 +37,38 @@ type Mission = {
 	generated_by: string;
 };
 
-// ── Soft Sky tokens ──────────────────────────────────────────────────────────
-// Three meanings, rationed: gold = the needle (next action), teal = on-course,
-// violet = drift. The vivid hues are *fills*; as text/icon on the light sky they
-// step to the readable *_INK variants (≥4.5:1). Surface is transparent so the
-// shell's Soft Sky atmosphere reads through; depth is hairline borders, no shadow.
-const BG = "transparent";
-const TEXT = "#0E1420";
-const GOLD = "#F5C842";
-const GOLD_DEEP = "#E8B84B";
-const GOLD_INK = "#8A6A00";
-const TEAL = "#3ECFBF";
-const TEAL_INK = "#0A8F7F";
-const VIOLET = "#7B61FF";
-const VIOLET_INK = "#5B43E0";
-const BORDER = "rgba(14,20,32,0.1)";
+const PRIMARY = "#005ac2";
+const SECONDARY = "#ee9800";
+const ON_SURFACE = "#131313";
+const ON_VARIANT = "#424754";
+const SERIF = "'Libre Caslon Text', Georgia, serif";
+const SANS = "'Sora', system-ui, sans-serif";
+const FONT_SHEET =
+	"https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&display=swap";
+const ICON_SHEET =
+	"https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block";
 
-// ── AI suggestion ────────────────────────────────────────────────────────────
-type Suggestion = {
-	suggestion: string | null;
-	resource?: string | null;
-	source?: string | null;
-	sourceUrl?: string | null;
-	duration?: string | null;
-	why?: string | null;
+const NAV = [
+	{ href: "/for-you", label: "For You", icon: "auto_awesome" },
+	{ href: "/mission", label: "Mission", icon: "target" },
+	{ href: "/opportunities", label: "Opportunities", icon: "trending_up" },
+	{ href: "/journal", label: "Journal", icon: "menu_book" },
+	{ href: "/community", label: "Community", icon: "group" },
+];
+
+const FOCUS_LABEL: Record<string, string> = {
+	craft: "Craft & Mastery",
+	venture: "Building a venture",
+	mind: "Mind & body",
+	people: "People & community",
+	money: "Money & freedom",
+	learn: "Deeper learning",
 };
-type SuggestionState = {
-	status: "none" | "loading" | "done";
-	data: Suggestion | null;
-};
-// Generic patterns that benefit from a concrete AI suggestion.
-const GENERIC =
-	/\b(learn|practice|read about|reading about|research|explore|study|studying)\b/i;
 
-function isGeneric(title: string | undefined): boolean {
-	return !!title && GENERIC.test(title);
-}
-
-// Fetch (or read from a 24h localStorage cache) a concrete suggestion for a
-// generic task. Non-generic tasks resolve to "none" without a network call.
-function useTaskSuggestion(
-	task: Step | null,
-	goalTitle: string,
-	week: number,
-): SuggestionState {
-	const [state, setState] = useState<SuggestionState>({
-		status: "none",
-		data: null,
-	});
-	const taskId = task?.id;
-	const taskTitle = task?.title;
-
-	useEffect(() => {
-		if (!taskId || !isGeneric(taskTitle)) {
-			setState({ status: "none", data: null });
-			return;
-		}
-		const cacheKey = `north_suggestion_${taskId}`;
-		try {
-			const cached = localStorage.getItem(cacheKey);
-			if (cached) {
-				const parsed = JSON.parse(cached) as { ts?: number; data?: Suggestion };
-				if (parsed.ts && Date.now() - parsed.ts < 86_400_000) {
-					setState({
-						status: parsed.data?.suggestion ? "done" : "none",
-						data: parsed.data ?? null,
-					});
-					return;
-				}
-			}
-		} catch {
-			/* storage unavailable — fall through to a fresh fetch */
-		}
-
-		const ctrl = new AbortController();
-		setState({ status: "loading", data: null });
-		fetch("/api/task-suggestion", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({
-				task: taskTitle,
-				goal: goalTitle,
-				focusAreas: [],
-				week,
-			}),
-			signal: ctrl.signal,
-		})
-			.then((r) => (r.ok ? r.json() : null))
-			.then((data: Suggestion | null) => {
-				if (!data?.suggestion) {
-					setState({ status: "none", data: null });
-					return;
-				}
-				try {
-					localStorage.setItem(
-						cacheKey,
-						JSON.stringify({ ts: Date.now(), data }),
-					);
-				} catch {
-					/* ignore quota / private mode */
-				}
-				setState({ status: "done", data });
-			})
-			.catch(() => setState({ status: "none", data: null }));
-		return () => ctrl.abort();
-	}, [taskId, taskTitle, goalTitle, week]);
-
-	return state;
-}
-
-// ── Time-of-day scheduling (per task, localStorage) ──────────────────────────
-const TIME_SLOTS = ["AM", "PM", "Eve"] as const;
-type TimeSlot = (typeof TIME_SLOTS)[number];
-
-function useTaskTime(taskId: string | undefined): {
-	slot: TimeSlot | null;
-	setSlot: (s: TimeSlot) => void;
-} {
-	const [slot, setSlotState] = useState<TimeSlot | null>(null);
-	useEffect(() => {
-		if (!taskId) return;
-		try {
-			const v = localStorage.getItem(`north_task_time_${taskId}`);
-			setSlotState(
-				v && (TIME_SLOTS as readonly string[]).includes(v)
-					? (v as TimeSlot)
-					: null,
-			);
-		} catch {
-			setSlotState(null);
-		}
-	}, [taskId]);
-	function setSlot(s: TimeSlot) {
-		setSlotState(s);
-		if (!taskId) return;
-		try {
-			localStorage.setItem(`north_task_time_${taskId}`, s);
-		} catch {
-			/* ignore */
-		}
-	}
-	return { slot, setSlot };
-}
-
-// ── Date helpers ─────────────────────────────────────────────────────────────
 function parseDate(d: string): Date {
 	return new Date(`${d}T00:00:00`);
 }
-function dayLetter(date: string): string {
-	return parseDate(date).toLocaleDateString("en-US", { weekday: "narrow" });
-}
-function todayLabel(today: string): string {
-	return parseDate(today).toLocaleDateString("en-US", {
-		weekday: "long",
-		month: "long",
-		day: "numeric",
-	});
-}
-// Consecutive completed daily steps ending at the most recent due date ≤ today.
+
 function computeStreak(daily: Step[], today: string): number {
 	const past = daily
 		.filter((s) => s.due_date && s.due_date <= today)
@@ -212,7 +89,8 @@ export function MonthlyMissionView({
 	currentWeekIndex,
 	streakState,
 	promptGoal = false,
-	journalSlot = null,
+	firstName = "there",
+	greeting = "Welcome",
 }: {
 	mission: Mission | null;
 	steps: Step[];
@@ -221,16 +99,17 @@ export function MonthlyMissionView({
 	currentWeekIndex: number;
 	streakState: number | null;
 	promptGoal?: boolean;
-	// The daily Signal-and-Noise journal, composed on the server and shown only
-	// under the Daily tab. Passed as a node so no journal data crosses into here.
-	journalSlot?: ReactNode;
+	firstName?: string;
+	greeting?: string;
 }) {
 	const [mission, setMission] = useState(initialMission);
 	const [steps, setSteps] = useState(initialSteps);
 	const [cadence, setCadence] = useState(initialCadence);
 	const [showGoal, setShowGoal] = useState(promptGoal);
-	// Task list is secondary to the hero task — collapsed by default, tap to open.
-	const [tasksOpen, setTasksOpen] = useState(false);
+	const [weekOpen, setWeekOpen] = useState(false);
+
+	const name = firstName && firstName !== "there" ? firstName : null;
+	const tail = name ? `, ${name}` : "";
 
 	function handleGoalSet(result: GoalSetResult) {
 		setMission(result.mission);
@@ -257,37 +136,40 @@ export function MonthlyMissionView({
 				.sort((a, b) => (a.due_date ?? "").localeCompare(b.due_date ?? "")),
 		[daily, currentWeekIndex],
 	);
-	const todayStep = daily.find((s) => s.due_date === today) ?? null;
-	const weekMilestone = weekly.find((s) => s.week_index === currentWeekIndex);
 
-	// Macro 4-week progress (independent of the daily/weekly view).
 	const weeksDone = weekly.filter((s) => s.done).length;
 	const weeksTotal = weekly.length || 4;
 	const goalPct = Math.round((weeksDone / weeksTotal) * 100);
 
-	// Hero "Up Next" task: today's micro-step (daily) or this week's milestone
-	// (weekly); fall back to the next undone day in the current week.
-	const heroTask =
-		(cadence === "daily" ? todayStep : (weekMilestone ?? null)) ??
-		weekDays.find((s) => !s.done) ??
-		weekMilestone ??
-		null;
-
-	// This week's daily progress + days remaining.
 	const tasksDone = weekDays.filter((s) => s.done).length;
 	const tasksTotal = weekDays.length;
 	const tasksPct = tasksTotal ? Math.round((tasksDone / tasksTotal) * 100) : 0;
 	const daysLeft = weekDays.filter((s) => (s.due_date ?? "") >= today).length;
-
 	const streak = streakState != null ? computeStreak(daily, today) : 0;
 
-	const goalTitle = mission?.goal_title ?? "";
-	const goalShort = goalTitle.replace(/\.\s*$/, "");
-	const suggestion = useTaskSuggestion(
-		heroTask,
-		goalTitle,
-		currentWeekIndex + 1,
-	);
+	// Daily steps unlock one at a time: the active step is the FIRST undone day
+	// this week — you can't jump ahead until it's done. Weekly: this week's
+	// milestone. Direction over a to-do list.
+	const firstUndoneIdx = weekDays.findIndex((s) => !s.done);
+	const focalStep =
+		cadence === "daily"
+			? (weekDays[firstUndoneIdx] ??
+				weekDays.find((s) => s.due_date === today) ??
+				weekDays[weekDays.length - 1] ??
+				null)
+			: (weekly.find((s) => s.week_index === currentWeekIndex) ?? null);
+
+	// A calm, personal nudge that reflects where they are right now.
+	const focalDone = focalStep?.done ?? false;
+	const encouragement = !focalStep
+		? `Nothing scheduled today${tail}. Enjoy the space.`
+		: focalDone
+			? streak > 1
+				? `Done for today${tail}. ${streak} days in rhythm.`
+				: `Done for today${tail}. Rest, or get a head start.`
+			: streak > 1
+				? `${streak} days in rhythm. One step keeps it going.`
+				: `One small step is enough${tail}.`;
 
 	async function setStepDone(id: string, done: boolean) {
 		setSteps((prev) => prev.map((s) => (s.id === id ? { ...s, done } : s)));
@@ -311,264 +193,457 @@ export function MonthlyMissionView({
 		}
 	}
 
-	if (!mission) {
-		return (
-			<div
-				className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-[18px] pt-14 text-center font-jakarta"
-				style={{ background: BG }}
-			>
-				<CompassMark />
-				<h2 className="font-black text-[20px]" style={{ color: TEXT }}>
-					No goal yet
-				</h2>
-				<p className="text-[13px]" style={{ color: "rgba(14,20,32,0.55)" }}>
-					Your monthly goal will appear here shortly.
-				</p>
-			</div>
-		);
-	}
-
-	const monthName = parseDate(mission.month_start).toLocaleDateString("en-US", {
-		month: "long",
-	});
-	const isSunday = parseDate(today).getDay() === 0;
+	const monthName = mission
+		? parseDate(mission.month_start).toLocaleDateString("en-US", {
+				month: "long",
+			})
+		: "";
+	const focusLabel = mission?.focus_area_id
+		? (FOCUS_LABEL[mission.focus_area_id] ?? null)
+		: null;
+	const isTemplate = mission?.generated_by === "template";
 
 	return (
-		<div
-			className="px-[18px] pt-[14px] font-jakarta"
-			style={{ background: BG, color: TEXT }}
-		>
-			<style>{ANIM}</style>
-
-			{/* ── Header ── */}
-			<header className="mb-[14px] flex items-start justify-between">
-				<div>
-					<p
-						className="font-bold text-[10px] uppercase tracking-[0.12em]"
-						style={{ color: "rgba(14,20,32,0.3)" }}
-					>
-						{todayLabel(today)}
-					</p>
-					<h1 className="font-black text-[22px] tracking-tight">Mission</h1>
-				</div>
-				<StreakBadge streak={streak} />
-			</header>
-
-			{/* ── Progress strip ── */}
-			<div className="mb-[14px] flex gap-[10px]">
-				<StatCard label="Tasks this week" barColor={GOLD} barPct={tasksPct}>
-					<span className="font-black text-[22px]" style={{ color: GOLD_INK }}>
-						{tasksDone}
-						<span
-							className="text-[14px]"
-							style={{ color: "rgba(14,20,32,0.3)" }}
-						>
-							/{tasksTotal || 0}
-						</span>
-					</span>
-				</StatCard>
-				<StatCard
-					label="Goal progress"
-					barGradient={`linear-gradient(90deg, ${GOLD}, ${TEAL})`}
-					barPct={goalPct}
-				>
-					<span className="font-black text-[22px]" style={{ color: TEAL_INK }}>
-						{goalPct}%
-					</span>
-				</StatCard>
-				<StatCard
-					label="Days left"
-					barColor={VIOLET}
-					barPct={tasksTotal ? (daysLeft / tasksTotal) * 100 : 0}
-				>
-					<span
-						className="font-black text-[22px]"
-						style={{ color: VIOLET_INK }}
-					>
-						{daysLeft}
-					</span>
-				</StatCard>
-			</div>
-
-			{/* ── Daily / Weekly tab switcher ── */}
-			<TabSwitcher
-				active={cadence}
-				onChange={(next) => void changeCadence(next)}
+		<div style={{ background: "#fbfbfb", color: ON_SURFACE, fontFamily: SANS }}>
+			<link rel="preconnect" href="https://fonts.googleapis.com" />
+			<link
+				rel="preconnect"
+				href="https://fonts.gstatic.com"
+				crossOrigin="anonymous"
 			/>
+			<link rel="stylesheet" href={FONT_SHEET} precedence="default" />
+			<link rel="stylesheet" href={ICON_SHEET} precedence="default" />
+			<style>{SCOPED_CSS}</style>
 
-			{/* ── Tab content — display switch (cadence preference still persists) ── */}
-			<div key={cadence} className="mm-tab-in">
-				{cadence === "daily" ? (
-					<>
-						{/* Hero · Up Next */}
-						<HeroTask
-							task={heroTask}
-							week={currentWeekIndex + 1}
-							goalShort={goalShort}
-							suggestion={suggestion}
-							onToggle={(t) => void setStepDone(t.id, !t.done)}
-						/>
+			<Sidebar />
 
-						{/* Today's Tasks (collapsed by default, tap to expand) */}
-						<div className="mb-[10px] flex items-center gap-2">
-							<button
-								type="button"
-								aria-expanded={tasksOpen}
-								onClick={() => setTasksOpen((v) => !v)}
-								className="flex cursor-pointer items-center gap-2"
-							>
-								<span
-									className="font-bold text-[10px] uppercase tracking-[0.12em]"
-									style={{ color: "rgba(14,20,32,0.5)" }}
-								>
-									Today's Tasks
-								</span>
-								{tasksTotal > 0 && (
-									<span
-										className="font-bold text-[10px]"
-										style={{ color: "rgba(14,20,32,0.3)" }}
-									>
-										{tasksDone}/{tasksTotal}
-									</span>
-								)}
-								<Chevron open={tasksOpen} />
-							</button>
-						</div>
-
-						{tasksOpen &&
-							(weekDays.length > 0 ? (
-								<div className="mb-[14px] flex flex-col gap-[6px]">
-									{weekDays.map((s) => (
-										<TaskRow
-											key={s.id}
-											task={s}
-											isCurrent={s.id === heroTask?.id}
-											isNext={s.due_date === today}
-											goalShort={goalShort}
-											suggestion={s.id === heroTask?.id ? suggestion : null}
-											onToggle={() => void setStepDone(s.id, !s.done)}
-										/>
-									))}
-								</div>
-							) : (
-								<p
-									className="mb-[14px] text-[13px]"
-									style={{ color: "rgba(14,20,32,0.45)" }}
-								>
-									No tasks scheduled for this week.
-								</p>
-							))}
-
-						{/* Week dots */}
-						{weekDays.length > 0 && (
-							<div
-								className="mb-[14px] flex items-end gap-[5px] rounded-[16px] border bg-white p-[12px_14px]"
-								style={{
-									borderColor: BORDER,
-								}}
-							>
-								{weekDays.map((s) => {
-									const isToday = s.due_date === today;
-									const state = s.done
-										? "done"
-										: isToday
-											? "today"
-											: "upcoming";
-									return (
-										<button
-											key={s.id}
-											type="button"
-											aria-pressed={s.done}
-											aria-label={`${s.due_date ? dayLetter(s.due_date) : ""}, ${
-												s.done ? "done" : isToday ? "today" : "upcoming"
-											}`}
-											onClick={() => void setStepDone(s.id, !s.done)}
-											className="flex flex-1 cursor-pointer flex-col items-center"
-										>
-											<span
-												className="mb-1 font-bold text-[9px] uppercase"
-												style={{ color: "rgba(14,20,32,0.3)" }}
-											>
-												{s.due_date ? dayLetter(s.due_date) : "·"}
-											</span>
-											<DayCircle state={state} />
-										</button>
-									);
-								})}
-							</div>
-						)}
-
-						{/* Signal & Noise journal (Daily tab only) */}
-						{journalSlot}
-					</>
-				) : (
-					<>
-						{/* Goal card with progress */}
-						<GoalCard
-							title={mission.goal_title}
-							weeksDone={weeksDone}
-							weeksTotal={weeksTotal}
-							pct={goalPct}
-						/>
-
-						{/* 4-Week Plan — all four weeks */}
-						<p
-							className="mb-[10px] font-bold text-[10px] uppercase tracking-[0.12em]"
-							style={{ color: "rgba(14,20,32,0.5)" }}
-						>
-							4-Week Plan
-						</p>
-						{weekly.length > 0 ? (
-							<div className="mb-[14px] flex flex-col gap-[8px]">
-								{weekly.map((w) => {
-									const isDone = w.done || w.week_index < currentWeekIndex;
-									const isCurrent =
-										!isDone && w.week_index === currentWeekIndex;
-									return (
-										<WeekCard
-											key={w.id}
-											week={w}
-											isDone={isDone}
-											isCurrent={isCurrent}
-										/>
-									);
-								})}
-							</div>
+			<div className="mm-main min-h-screen">
+				<TopBar monthName={monthName} />
+				<div className="px-5 pb-6 sm:px-6 lg:px-8">
+					<div className="mx-auto max-w-[1280px]">
+						{!mission ? (
+							<EmptyState onSet={() => setShowGoal(true)} />
 						) : (
-							<p
-								className="mb-[14px] text-[13px]"
-								style={{ color: "rgba(14,20,32,0.45)" }}
-							>
-								Your weekly plan is being prepared.
-							</p>
-						)}
+							<>
+								{/* ── Hero + Today's Pulse ───────────────────────── */}
+								<section className="mt-4 mb-7 grid grid-cols-1 gap-6 lg:grid-cols-12">
+									<div className="glass-card signal-glow relative flex min-h-[340px] flex-col justify-end overflow-hidden rounded-[2rem] p-8 sm:p-10 lg:col-span-8">
+										<div
+											aria-hidden="true"
+											className="absolute inset-0"
+											style={{
+												background:
+													"radial-gradient(120% 100% at 100% 0%, rgba(0,90,194,0.12), transparent 55%), radial-gradient(90% 90% at 0% 100%, rgba(62,207,191,0.10), transparent 55%)",
+											}}
+										/>
+										<div className="relative">
+											<div
+												className="mb-5 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-white"
+												style={{ background: PRIMARY }}
+											>
+												<span className="pulse-dot h-2 w-2 rounded-full bg-white" />
+												<span className="font-bold text-[10px] uppercase tracking-[0.18em]">
+													{monthName} mission
+												</span>
+											</div>
+											<h1
+												className="mb-3 max-w-2xl font-bold text-4xl leading-tight tracking-tight sm:text-5xl"
+												style={{ fontFamily: SERIF }}
+											>
+												{mission.goal_title}
+											</h1>
+											{mission.goal_intent && (
+												<p
+													className="mb-7 max-w-xl text-base leading-relaxed"
+													style={{ color: ON_VARIANT, opacity: 0.85 }}
+												>
+													{mission.goal_intent}
+												</p>
+											)}
+											<div className="flex flex-wrap items-center gap-6">
+												<button
+													type="button"
+													onClick={() => setShowGoal(true)}
+													className="rounded-xl px-7 py-3.5 font-bold text-sm text-white uppercase tracking-wider transition-all active:scale-95"
+													style={{
+														background: ON_SURFACE,
+														boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
+													}}
+												>
+													{isTemplate ? "Set your goal" : "Edit goal"}
+												</button>
+												<div className="flex items-center gap-3">
+													<div className="h-2 w-40 overflow-hidden rounded-full bg-black/10">
+														<div
+															className="h-full rounded-full transition-[width] duration-500 motion-reduce:transition-none"
+															style={{
+																width: `${goalPct}%`,
+																background: PRIMARY,
+																boxShadow: "0 0 8px rgba(0,90,194,0.5)",
+															}}
+														/>
+													</div>
+													<span className="font-bold text-sm">
+														{goalPct}% complete
+													</span>
+												</div>
+											</div>
+										</div>
+									</div>
 
-						{/* Sunday check-in */}
-						{isSunday && (
-							<SundayCheckin onStart={() => void changeCadence("daily")} />
+									{/* Today — one micro-step in focus */}
+									<div className="glass-card flex flex-col rounded-[2rem] p-7 lg:col-span-4">
+										<div className="mb-1 flex items-center justify-between gap-3">
+											<span
+												className="font-bold text-[11px] uppercase tracking-[0.18em]"
+												style={{ color: PRIMARY }}
+											>
+												{greeting}
+												{tail}
+											</span>
+											<CadenceToggle value={cadence} onChange={changeCadence} />
+										</div>
+										<h2
+											className="mb-5 font-bold text-2xl tracking-tight"
+											style={{ fontFamily: SERIF }}
+										>
+											{cadence === "daily" ? "Today" : "This week"}
+										</h2>
+
+										{focalStep ? (
+											<button
+												type="button"
+												onClick={() =>
+													void setStepDone(focalStep.id, !focalStep.done)
+												}
+												aria-pressed={focalStep.done}
+												className="flex items-start gap-4 rounded-2xl border p-5 text-left transition-colors"
+												style={{
+													borderColor: focalStep.done
+														? "rgba(0,90,194,0.2)"
+														: "rgba(0,90,194,0.3)",
+													background: focalStep.done
+														? "transparent"
+														: "rgba(0,90,194,0.05)",
+												}}
+											>
+												<span
+													className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-2 transition-colors"
+													style={{
+														borderColor: focalStep.done
+															? PRIMARY
+															: "rgba(0,90,194,0.4)",
+														background: focalStep.done
+															? PRIMARY
+															: "transparent",
+													}}
+												>
+													{focalStep.done && (
+														<span
+															className="material-symbols-outlined text-[20px] text-white"
+															style={{ fontVariationSettings: "'wght' 700" }}
+														>
+															check
+														</span>
+													)}
+												</span>
+												<span className="min-w-0 flex-1">
+													<span
+														className="mb-1.5 block font-bold text-[10px] uppercase tracking-[0.16em]"
+														style={{ color: PRIMARY }}
+													>
+														{cadence === "daily"
+															? "Your one thing today"
+															: `Week ${currentWeekIndex + 1} milestone`}
+													</span>
+													<span
+														className={`block font-bold text-lg leading-snug tracking-tight ${
+															focalStep.done ? "line-through opacity-50" : ""
+														}`}
+														style={{ fontFamily: SERIF }}
+													>
+														{focalStep.title}
+													</span>
+													{(focalStep.detail || focalStep.estimate_label) && (
+														<span
+															className="mt-1.5 block text-sm leading-relaxed"
+															style={{ color: ON_VARIANT, opacity: 0.8 }}
+														>
+															{focalStep.detail ?? focalStep.estimate_label}
+														</span>
+													)}
+												</span>
+											</button>
+										) : (
+											<p
+												className="rounded-2xl border border-black/5 p-5 text-sm"
+												style={{ color: ON_VARIANT, opacity: 0.7 }}
+											>
+												No step scheduled right now.
+											</p>
+										)}
+
+										<p
+											className="mt-4 text-sm leading-relaxed"
+											style={{ color: ON_VARIANT, opacity: 0.85 }}
+										>
+											{encouragement}
+										</p>
+
+										{cadence === "daily" && weekDays.length > 1 && (
+											<div className="mt-5 border-black/5 border-t pt-4">
+												<button
+													type="button"
+													onClick={() => setWeekOpen((v) => !v)}
+													className="flex w-full items-center justify-between font-bold text-[11px] uppercase tracking-widest"
+													style={{ color: ON_VARIANT, opacity: 0.7 }}
+												>
+													<span>
+														This week · {tasksDone}/{tasksTotal} done ·{" "}
+														{daysLeft} left
+													</span>
+													<span
+														className="material-symbols-outlined text-base transition-transform"
+														style={{
+															transform: weekOpen ? "rotate(180deg)" : "none",
+														}}
+													>
+														expand_more
+													</span>
+												</button>
+												{weekOpen && (
+													<div className="custom-scrollbar mt-3 max-h-[220px] space-y-1 overflow-y-auto">
+														{weekDays.map((s, i) => {
+															// Locked until every earlier day this week is done.
+															const locked =
+																!s.done &&
+																firstUndoneIdx !== -1 &&
+																i > firstUndoneIdx;
+															return (
+																<TaskRow
+																	key={s.id}
+																	step={s}
+																	today={today}
+																	locked={locked}
+																	onToggle={() =>
+																		void setStepDone(s.id, !s.done)
+																	}
+																/>
+															);
+														})}
+													</div>
+												)}
+											</div>
+										)}
+									</div>
+								</section>
+
+								{/* ── Stats bento ───────────────────────────────── */}
+								<section className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+									{/* Monthly progress */}
+									<div className="glass-card flex flex-col rounded-[2rem] border-primary/40 border-b-4 p-8">
+										<div className="mb-8 flex items-start justify-between">
+											<div>
+												<p
+													className="font-bold text-[11px] uppercase tracking-[0.2em]"
+													style={{ color: ON_VARIANT, opacity: 0.7 }}
+												>
+													Monthly progress
+												</p>
+												<h3
+													className="mt-2 font-bold text-4xl tracking-tight"
+													style={{ color: PRIMARY, fontFamily: SERIF }}
+												>
+													{goalPct}%
+												</h3>
+											</div>
+											<span
+												className="material-symbols-outlined rounded-2xl p-3 text-3xl"
+												style={{
+													background: "rgba(0,90,194,0.06)",
+													color: PRIMARY,
+												}}
+											>
+												target
+											</span>
+										</div>
+										<div className="flex h-20 items-end gap-3">
+											{Array.from({ length: weeksTotal }, (_, i) => {
+												const done = weekly[i]?.done ?? false;
+												const current = i === currentWeekIndex;
+												return (
+													<div
+														key={weekly[i]?.id ?? `w${i}`}
+														className="flex flex-1 flex-col items-center gap-2"
+													>
+														<div className="flex w-full flex-1 items-end">
+															<div
+																className="w-full rounded-t-md transition-all"
+																style={{
+																	height: done
+																		? "100%"
+																		: current
+																			? "55%"
+																			: "30%",
+																	background: done
+																		? PRIMARY
+																		: current
+																			? "rgba(0,90,194,0.35)"
+																			: "rgba(0,0,0,0.06)",
+																	boxShadow: done
+																		? "0 0 12px rgba(0,90,194,0.3)"
+																		: undefined,
+																}}
+															/>
+														</div>
+														<span
+															className="font-bold text-[10px] uppercase tracking-wider"
+															style={{
+																color: current ? PRIMARY : ON_VARIANT,
+																opacity: current ? 1 : 0.5,
+															}}
+														>
+															W{i + 1}
+														</span>
+													</div>
+												);
+											})}
+										</div>
+									</div>
+
+									{/* This month's focus */}
+									<div className="glass-card relative flex flex-col overflow-hidden rounded-[2rem] p-8">
+										<div className="relative z-10">
+											<div className="mb-6 flex items-center gap-3">
+												<span
+													className="material-symbols-outlined text-2xl"
+													style={{
+														color: SECONDARY,
+														fontVariationSettings: "'FILL' 1",
+													}}
+												>
+													explore
+												</span>
+												<span
+													className="font-bold text-[11px] uppercase tracking-[0.2em]"
+													style={{ color: SECONDARY }}
+												>
+													This month's focus
+												</span>
+											</div>
+											<h3
+												className="mb-4 font-bold text-2xl leading-snug tracking-tight"
+												style={{ fontFamily: SERIF }}
+											>
+												{focusLabel ?? "Your direction"}
+											</h3>
+											<p
+												className="text-sm leading-relaxed"
+												style={{ color: ON_VARIANT, opacity: 0.8 }}
+											>
+												{mission.goal_intent ??
+													"One goal, one month, broken into weekly steps."}
+											</p>
+										</div>
+										<span
+											aria-hidden="true"
+											className="material-symbols-outlined pointer-events-none absolute right-[-30px] bottom-[-30px] text-[200px]"
+											style={{ color: SECONDARY, opacity: 0.05 }}
+										>
+											target
+										</span>
+									</div>
+
+									{/* Rhythm */}
+									<div className="glass-card flex flex-col justify-between rounded-[2rem] border-secondary/40 border-b-4 p-8">
+										<p
+											className="mb-6 font-bold text-[11px] uppercase tracking-[0.2em]"
+											style={{ color: ON_VARIANT, opacity: 0.7 }}
+										>
+											Your rhythm
+										</p>
+										<div className="flex items-center gap-6">
+											<Ring pct={goalPct} center={String(streak)} />
+											<div>
+												<p className="font-bold text-lg tracking-tight">
+													{streak} {streak === 1 ? "day" : "days"} in rhythm
+												</p>
+												<p
+													className="font-bold text-xs uppercase tracking-wider"
+													style={{ color: PRIMARY }}
+												>
+													{tasksDone}/{tasksTotal || 0} tasks this week
+												</p>
+											</div>
+										</div>
+										<div className="mt-7 space-y-2">
+											<div
+												className="flex justify-between font-bold text-[11px] uppercase tracking-widest"
+												style={{ color: ON_SURFACE }}
+											>
+												<span>This week</span>
+												<span>{tasksPct}%</span>
+											</div>
+											<div className="h-1.5 w-full rounded-full bg-black/5">
+												<div
+													className="h-full rounded-full"
+													style={{
+														width: `${tasksPct}%`,
+														background: SECONDARY,
+														boxShadow: "0 0 8px rgba(238,152,0,0.4)",
+													}}
+												/>
+											</div>
+										</div>
+									</div>
+								</section>
+
+								{/* ── 4-week plan ───────────────────────────────── */}
+								<section className="mt-7">
+									<div className="glass-card rounded-[2rem] p-8">
+										<h3
+											className="mb-6 font-bold text-2xl tracking-tight"
+											style={{ fontFamily: SERIF }}
+										>
+											Your month
+										</h3>
+										<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+											{weekly.length > 0 ? (
+												weekly.map((s, i) => (
+													<TaskRow
+														key={s.id}
+														step={s}
+														today={today}
+														weekLabel={`Week ${i + 1}`}
+														current={i === currentWeekIndex}
+														onToggle={() => void setStepDone(s.id, !s.done)}
+													/>
+												))
+											) : (
+												<p
+													className="text-sm"
+													style={{ color: ON_VARIANT, opacity: 0.6 }}
+												>
+													Your 4-week plan will appear once your goal is set.
+												</p>
+											)}
+										</div>
+									</div>
+								</section>
+							</>
 						)}
-					</>
-				)}
+					</div>
+				</div>
 			</div>
 
-			{/* Goal edit (preserves the existing set-goal flow) */}
-			<button
-				type="button"
-				onClick={() => setShowGoal(true)}
-				className="mb-2 cursor-pointer font-bold text-[10px] uppercase tracking-[0.1em] transition-colors hover:opacity-80"
-				style={{ color: GOLD_INK }}
-			>
-				Edit {monthName} goal
-			</button>
-
-			{showGoal && (
+			{showGoal && mission && (
 				<SetGoalModal
 					monthName={monthName}
 					monthStart={mission.month_start}
 					initialGoal={mission.goal_title}
 					initialIntent={mission.goal_intent ?? ""}
 					initialCadence={cadence}
-					autosuggest={mission.generated_by !== "manual"}
+					autosuggest={isTemplate}
 					onDismiss={() => setShowGoal(false)}
 					onGoalSet={handleGoalSet}
 				/>
@@ -577,962 +652,360 @@ export function MonthlyMissionView({
 	);
 }
 
-// ── Daily / Weekly tab switcher ─────────────────────────────────────────────
-function TabSwitcher({
-	active,
-	onChange,
-}: {
-	active: "daily" | "weekly";
-	onChange: (next: "daily" | "weekly") => void;
-}) {
-	// First-visit nudge toward the (less obvious) weekly view; auto-dismisses.
-	const [hint, setHint] = useState(false);
-	useEffect(() => {
-		try {
-			if (localStorage.getItem("north_tab_hint_seen")) return;
-		} catch {
-			return;
-		}
-		setHint(true);
-		const t = setTimeout(() => {
-			setHint(false);
-			try {
-				localStorage.setItem("north_tab_hint_seen", "1");
-			} catch {
-				/* ignore */
-			}
-		}, 3000);
-		return () => clearTimeout(t);
-	}, []);
-
-	function dismissHint() {
-		setHint(false);
-		try {
-			localStorage.setItem("north_tab_hint_seen", "1");
-		} catch {
-			/* ignore */
-		}
-	}
-
-	const TABS = [
-		{ key: "daily" as const, label: "Today", sub: "Your next task" },
-		{ key: "weekly" as const, label: "This Week", sub: "Your 4-week plan" },
-	];
-
-	return (
-		<div className="relative mb-[14px]">
-			<div
-				className="flex rounded-[16px] p-1"
-				style={{ background: "rgba(14,20,32,0.06)" }}
-			>
-				{TABS.map((t) => {
-					const on = active === t.key;
-					return (
-						<button
-							key={t.key}
-							type="button"
-							aria-pressed={on}
-							aria-label={`${t.label}, ${t.sub}`}
-							onClick={() => {
-								dismissHint();
-								onChange(t.key);
-							}}
-							className="flex flex-1 cursor-pointer flex-col items-center gap-[3px] rounded-[12px] px-[16px] py-[10px] transition-all duration-200 motion-reduce:transition-none"
-							style={
-								on
-									? {
-											background: "#FFFFFF",
-											border: "1px solid rgba(14,20,32,0.1)",
-										}
-									: {
-											background: "transparent",
-											border: "1px solid transparent",
-										}
-							}
-						>
-							{t.key === "daily" ? (
-								<SunIcon color={on ? GOLD : "rgba(14,20,32,0.25)"} />
-							) : (
-								<CalendarIcon color={on ? GOLD : "rgba(14,20,32,0.25)"} />
-							)}
-							<span
-								className="font-extrabold text-[12px]"
-								style={{ color: on ? TEXT : "rgba(14,20,32,0.4)" }}
-							>
-								{t.label}
-							</span>
-							<span
-								className="font-medium text-[10px]"
-								style={{
-									color: on ? "rgba(14,20,32,0.4)" : "rgba(14,20,32,0.25)",
-								}}
-							>
-								{t.sub}
-							</span>
-							<span
-								className="h-[4px] w-[4px] rounded-full"
-								style={{ background: on ? GOLD : "transparent" }}
-							/>
-						</button>
-					);
-				})}
-			</div>
-
-			{hint && (
-				<div
-					role="status"
-					className="pointer-events-none absolute top-full right-[16px] z-20 mt-2 flex flex-col items-center"
-				>
-					<span
-						aria-hidden="true"
-						className="h-0 w-0"
-						style={{
-							borderLeft: "5px solid transparent",
-							borderRight: "5px solid transparent",
-							borderBottom: "5px solid rgba(14,20,32,0.75)",
-						}}
-					/>
-					<span
-						className="rounded-[8px] px-[10px] py-[5px] font-medium text-[10px] text-white backdrop-blur-sm"
-						style={{ background: "rgba(14,20,32,0.75)" }}
-					>
-						Tap to see your weekly plan
-					</span>
-				</div>
-			)}
-		</div>
-	);
-}
-
-// ── Goal card (Weekly tab) ──────────────────────────────────────────────────
-function GoalCard({
-	title,
-	weeksDone,
-	weeksTotal,
-	pct,
-}: {
-	title: string;
-	weeksDone: number;
-	weeksTotal: number;
-	pct: number;
-}) {
-	return (
-		<section
-			className="relative mb-[14px] overflow-hidden rounded-[18px] border p-4"
-			style={{
-				borderColor: "rgba(245,200,66,0.25)",
-				background:
-					"linear-gradient(135deg, rgba(245,200,66,0.10), rgba(245,200,66,0.02))",
-			}}
-		>
-			<span
-				aria-hidden="true"
-				className="absolute top-0 bottom-0 left-0 w-[3px] rounded-r-[3px]"
-				style={{ background: GOLD }}
-			/>
-			<p
-				className="mb-1.5 font-bold text-[9px] uppercase tracking-[0.15em]"
-				style={{ color: GOLD_INK }}
-			>
-				This Month's Goal
-			</p>
-			<p
-				className="mb-3 font-bold text-[15px] leading-[1.4]"
-				style={{ color: TEXT }}
-			>
-				{title}
-			</p>
-			<div className="mb-2 flex items-center justify-between">
-				<span className="text-[11px]" style={{ color: "rgba(14,20,32,0.55)" }}>
-					{weeksDone} of {weeksTotal} weeks
-				</span>
-				<span className="font-bold text-[11px]" style={{ color: "#8A6A00" }}>
-					{pct}%
-				</span>
-			</div>
-			<div
-				className="h-[5px] overflow-hidden rounded-full"
-				style={{ background: "rgba(14,20,32,0.1)" }}
-			>
-				<div
-					className="h-full rounded-full transition-[width] duration-300 motion-reduce:transition-none"
-					style={{
-						width: `${pct}%`,
-						background: `linear-gradient(90deg, ${GOLD}, ${TEAL})`,
-					}}
-				/>
-			</div>
-		</section>
-	);
-}
-
-// ── 4-week plan card (Weekly tab) ───────────────────────────────────────────
-function WeekCard({
-	week,
-	isDone,
-	isCurrent,
-}: {
-	week: Step;
-	isDone: boolean;
-	isCurrent: boolean;
-}) {
-	const badge = isDone
-		? {
-				label: "Done",
-				bg: "rgba(62,207,191,0.1)",
-				color: "#0A8F7F",
-				border: "rgba(62,207,191,0.2)",
-			}
-		: isCurrent
-			? {
-					label: "In progress",
-					bg: "rgba(245,200,66,0.1)",
-					color: "#8A6A00",
-					border: "rgba(245,200,66,0.2)",
-				}
-			: {
-					label: "Upcoming",
-					bg: "rgba(14,20,32,0.05)",
-					color: "rgba(14,20,32,0.3)",
-					border: "rgba(14,20,32,0.08)",
-				};
-	const circle = isDone
-		? {
-				bg: "rgba(245,200,66,0.12)",
-				border: "rgba(245,200,66,0.4)",
-				color: GOLD_INK,
-			}
-		: isCurrent
-			? { bg: GOLD, border: GOLD, color: "#05050E" }
-			: {
-					bg: "transparent",
-					border: "rgba(14,20,32,0.12)",
-					color: "rgba(14,20,32,0.4)",
-				};
-	return (
-		<div
-			className="relative flex items-start gap-3 overflow-hidden rounded-[14px] border p-[12px_14px]"
-			style={{
-				background: isCurrent ? "rgba(245,200,66,0.08)" : "#FFFFFF",
-				borderColor: isCurrent ? "rgba(245,200,66,0.3)" : BORDER,
-			}}
-		>
-			{isCurrent && (
-				<span
-					aria-hidden="true"
-					className="absolute top-0 bottom-0 left-0 w-[3px] rounded-r-[3px]"
-					style={{ background: GOLD }}
-				/>
-			)}
-			<span
-				className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-[1.5px] font-black text-[11px]"
-				style={{
-					background: circle.bg,
-					borderColor: circle.border,
-					color: circle.color,
-				}}
-			>
-				{isDone ? (
-					<CheckMark color={GOLD_INK} size={12} />
-				) : (
-					week.week_index + 1
-				)}
-			</span>
-			<div className="min-w-0 flex-1">
-				<p
-					className="mb-1 font-bold text-[9px] uppercase tracking-[0.1em]"
-					style={{ color: "rgba(14,20,32,0.3)" }}
-				>
-					Week {week.week_index + 1}
-				</p>
-				<p
-					className="mb-1.5 font-bold text-[13px] leading-[1.35]"
-					style={{ color: TEXT }}
-				>
-					{week.title}
-				</p>
-				<span
-					className="inline-block rounded-[20px] border px-[7px] py-[2px] font-bold text-[8px]"
-					style={{
-						background: badge.bg,
-						color: badge.color,
-						borderColor: badge.border,
-					}}
-				>
-					{badge.label}
-				</span>
-			</div>
-		</div>
-	);
-}
-
-// ── Sunday check-in (Weekly tab, Sundays only) ──────────────────────────────
-const REVIEW_QS = [
-	"What worked well this week?",
-	"What got in the way?",
-	"Does your goal still feel right?",
-];
-function SundayCheckin({ onStart }: { onStart: () => void }) {
-	return (
-		<section
-			className="mb-[14px] rounded-[18px] border p-4"
-			style={{
-				borderColor: "rgba(245,200,66,0.2)",
-				background:
-					"linear-gradient(135deg, rgba(245,200,66,0.09), rgba(245,200,66,0.02))",
-			}}
-		>
-			<p
-				className="mb-2 font-bold text-[9px] uppercase tracking-[0.15em]"
-				style={{ color: GOLD_INK }}
-			>
-				Weekly Review
-			</p>
-			<p className="mb-3 font-black text-[15px]" style={{ color: TEXT }}>
-				How was your week?
-			</p>
-			{REVIEW_QS.map((q) => (
-				<div key={q} className="mb-3 flex items-start gap-3">
-					<span
-						className="mt-1.5 h-[6px] w-[6px] shrink-0 rounded-full"
-						style={{ background: VIOLET }}
-					/>
-					<span
-						className="font-semibold text-[12px] leading-[1.5]"
-						style={{ color: "rgba(14,20,32,0.6)" }}
-					>
-						{q}
-					</span>
-				</div>
-			))}
-			<button
-				type="button"
-				onClick={onStart}
-				className="w-full cursor-pointer rounded-[12px] py-[11px] font-bold text-[#05050E] text-[13px]"
-				style={{
-					background: GOLD,
-				}}
-			>
-				Start this week's review
-			</button>
-		</section>
-	);
-}
-
-function SunIcon({ color }: { color: string }) {
-	return (
-		<svg
-			width="16"
-			height="16"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke={color}
-			strokeWidth={2}
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			aria-hidden="true"
-		>
-			<circle cx="12" cy="12" r="4" />
-			<path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
-		</svg>
-	);
-}
-
-function CalendarIcon({ color }: { color: string }) {
-	return (
-		<svg
-			width="16"
-			height="16"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke={color}
-			strokeWidth={2}
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			aria-hidden="true"
-		>
-			<rect x="3" y="4" width="18" height="18" rx="2" />
-			<path d="M16 2v4M8 2v4M3 10h18" />
-		</svg>
-	);
-}
-
-// ── Streak badge ─────────────────────────────────────────────────────────────
-function StreakBadge({ streak }: { streak: number }) {
-	const active = streak > 0;
-	return (
-		<div
-			className="mt-1 flex items-center gap-[5px] rounded-[20px] px-3 py-1.5"
-			style={{
-				background:
-					"linear-gradient(135deg, rgba(245,200,66,0.12), rgba(245,200,66,0.06))",
-				border: "1px solid rgba(245,200,66,0.3)",
-			}}
-		>
-			<FlameIcon />
-			<span className="flex flex-col leading-none">
-				<span
-					className="font-black text-[16px] leading-none"
-					style={{ color: GOLD_INK }}
-				>
-					{active ? streak : 0}
-				</span>
-			</span>
-			<span
-				className="font-bold text-[9px] uppercase tracking-wider"
-				style={{ color: GOLD_INK }}
-			>
-				{active ? "day streak" : "Start today"}
-			</span>
-		</div>
-	);
-}
-
-// ── Hero · Up Next ───────────────────────────────────────────────────────────
-function HeroTask({
-	task,
-	week,
-	goalShort,
-	suggestion,
-	onToggle,
-}: {
-	task: Step | null;
-	week: number;
-	goalShort: string;
-	suggestion: SuggestionState;
-	onToggle: (t: Step) => void;
-}) {
-	const { slot, setSlot } = useTaskTime(task?.id);
-	return (
-		<section
-			className="relative mb-[14px] overflow-hidden rounded-[22px] border p-5"
-			style={{
-				background:
-					"linear-gradient(135deg, rgba(245,200,66,0.16), rgba(245,200,66,0.04))",
-				borderColor: "rgba(245,200,66,0.32)",
-			}}
-		>
-			{/* The single sanctioned gold rail — the needle, full-height, not a stripe. */}
-			<span
-				aria-hidden="true"
-				className="absolute top-0 bottom-0 left-0 w-[3px] rounded-r-[3px]"
-				style={{ background: GOLD }}
-			/>
-			<CompassRose />
-
-			<div className="relative">
-				{/* Eyebrow */}
-				<div className="mb-[10px] flex items-center gap-2">
-					<span
-						className="h-[5px] w-[5px] rounded-full"
-						style={{ background: GOLD }}
-					/>
-					<span
-						className="font-bold text-[9px] uppercase tracking-[0.15em]"
-						style={{ color: GOLD_INK }}
-					>
-						Up Next · Week {week}
-					</span>
-				</div>
-
-				{/* Title */}
-				<h2
-					className="mb-2 font-black text-[18px] leading-[1.3] tracking-[-0.3px]"
-					style={{ color: TEXT }}
-				>
-					{task ? task.title : "You're all caught up for now"}
-				</h2>
-
-				{/* AI suggestion */}
-				{suggestion.status === "loading" && <SuggestionSkeleton />}
-				{suggestion.status === "done" && suggestion.data && (
-					<SuggestionPill data={suggestion.data} />
-				)}
-
-				{/* Goal link */}
-				{goalShort && (
-					<p
-						className="mb-4 font-semibold text-[10px]"
-						style={{ color: "rgba(14,20,32,0.5)" }}
-					>
-						→ {goalShort}
-					</p>
-				)}
-
-				{/* Actions */}
-				<div className="flex items-center gap-2">
-					{task && (
-						<button
-							type="button"
-							aria-pressed={task.done}
-							onClick={() => onToggle(task)}
-							className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-[12px] px-[20px] py-[11px] font-black text-[13px] transition-[filter] duration-200 hover:brightness-95 motion-reduce:transition-none"
-							style={{
-								background: GOLD,
-								color: "#05050E",
-							}}
-						>
-							<CheckMark color="#05050E" />
-							{task.done ? "Done" : "Mark done"}
-						</button>
-					)}
-
-					<div className="flex flex-1 gap-[5px]">
-						{TIME_SLOTS.map((s) => {
-							const on = slot === s;
-							return (
-								<button
-									key={s}
-									type="button"
-									aria-pressed={on}
-									aria-label={`Schedule ${s}`}
-									onClick={() => setSlot(s)}
-									className="flex-1 cursor-pointer rounded-[10px] py-[7px] text-center font-bold text-[9px] transition-colors duration-200 motion-reduce:transition-none"
-									style={{
-										background: on ? "rgba(245,200,66,0.2)" : "#FFFFFF",
-										border: `1px solid ${
-											on ? "rgba(245,200,66,0.55)" : "rgba(14,20,32,0.12)"
-										}`,
-										color: on ? GOLD_INK : "rgba(14,20,32,0.55)",
-									}}
-								>
-									{s}
-								</button>
-							);
-						})}
-					</div>
-				</div>
-			</div>
-		</section>
-	);
-}
-
-function SuggestionPill({ data }: { data: Suggestion }) {
-	return (
-		<div
-			className="mb-4 rounded-[12px] bg-white p-[10px_14px]"
-			style={{ border: "1px solid rgba(245,200,66,0.3)" }}
-		>
-			<div className="mb-2 flex items-center gap-2">
-				<SparkleIcon color={GOLD_INK} />
-				<span
-					className="font-bold text-[9px] uppercase tracking-[0.1em]"
-					style={{ color: GOLD_INK }}
-				>
-					North suggests
-				</span>
-				{data.duration && (
-					<span
-						className="font-bold text-[9px]"
-						style={{ color: "rgba(14,20,32,0.45)" }}
-					>
-						· {data.duration}
-					</span>
-				)}
-			</div>
-			<p
-				className="font-bold text-[13px] leading-[1.4]"
-				style={{ color: TEXT }}
-			>
-				{data.suggestion}
-			</p>
-			{(data.source || data.resource) && (
-				<div className="mt-2 flex items-center gap-2">
-					<span
-						className="flex items-center gap-1.5 rounded-full px-2.5 py-1 font-bold text-[9px]"
-						style={{
-							background: "rgba(245,200,66,0.12)",
-							border: "1px solid rgba(245,200,66,0.25)",
-							color: GOLD_INK,
-						}}
-					>
-						<LinkIcon />
-						{data.source ?? data.resource}
-					</span>
-					{data.sourceUrl ? (
-						<a
-							href={data.sourceUrl}
-							target="_blank"
-							rel="noopener noreferrer"
-							className="cursor-pointer rounded-full px-3 py-1 font-bold text-[10px] transition-colors hover:brightness-95"
-							style={{ background: GOLD, color: "#05050E" }}
-						>
-							Use this
-						</a>
-					) : null}
-				</div>
-			)}
-		</div>
-	);
-}
-
-function SuggestionSkeleton() {
-	return (
-		<div
-			className="mb-4 rounded-[12px] bg-white p-[10px_14px]"
-			style={{ border: "1px solid rgba(14,20,32,0.1)" }}
-		>
-			<div
-				className="mm-shimmer mb-2 h-4 w-3/4 rounded-lg"
-				style={{ background: "rgba(14,20,32,0.08)" }}
-			/>
-			<div
-				className="mm-shimmer h-3 w-1/2 rounded-lg"
-				style={{ background: "rgba(14,20,32,0.05)" }}
-			/>
-		</div>
-	);
-}
-
-// ── Progress stat card ───────────────────────────────────────────────────────
-function StatCard({
-	label,
-	children,
-	barColor,
-	barGradient,
-	barPct,
-}: {
-	label: string;
-	children: React.ReactNode;
-	barColor?: string;
-	barGradient?: string;
-	barPct: number;
-}) {
-	return (
-		<div
-			className="flex-1 rounded-[16px] border bg-white p-3 text-center"
-			style={{ borderColor: BORDER }}
-		>
-			{children}
-			<p
-				className="mt-1 font-bold text-[9px] uppercase tracking-[0.08em]"
-				style={{ color: "rgba(14,20,32,0.35)" }}
-			>
-				{label}
-			</p>
-			<div
-				className="mt-2 h-[4px] overflow-hidden rounded-full"
-				style={{ background: "rgba(14,20,32,0.07)" }}
-			>
-				<div
-					className="h-full rounded-full transition-[width] duration-300 motion-reduce:transition-none"
-					style={{
-						width: `${Math.max(0, Math.min(100, barPct))}%`,
-						background: barGradient ?? barColor,
-					}}
-				/>
-			</div>
-		</div>
-	);
-}
-
-// ── Week dot circle ──────────────────────────────────────────────────────────
-function DayCircle({ state }: { state: "done" | "today" | "upcoming" }) {
-	if (state === "done") {
-		return (
-			<span
-				className="flex h-[28px] w-[28px] items-center justify-center rounded-full border-[1.5px]"
-				style={{
-					background: "rgba(245,200,66,0.1)",
-					borderColor: "rgba(245,200,66,0.4)",
-				}}
-			>
-				<CheckMark color={GOLD_INK} size={12} />
-			</span>
-		);
-	}
-	if (state === "today") {
-		return (
-			<span
-				className="flex h-[28px] w-[28px] items-center justify-center rounded-full border-[1.5px]"
-				style={{ background: GOLD, borderColor: GOLD }}
-			>
-				<span
-					className="h-[6px] w-[6px] rounded-full"
-					style={{ background: "#FFFFFF" }}
-				/>
-			</span>
-		);
-	}
-	return (
-		<span
-			className="h-[28px] w-[28px] rounded-full border-[1.5px]"
-			style={{
-				background: "rgba(14,20,32,0.03)",
-				borderColor: "rgba(14,20,32,0.08)",
-			}}
-		/>
-	);
-}
-
-// ── Task row ─────────────────────────────────────────────────────────────────
 function TaskRow({
-	task,
-	isCurrent,
-	isNext,
-	goalShort,
-	suggestion,
+	step,
+	today,
+	weekLabel,
+	current,
+	locked = false,
 	onToggle,
 }: {
-	task: Step;
-	isCurrent: boolean;
-	isNext: boolean;
-	goalShort: string;
-	suggestion: SuggestionState | null;
+	step: Step;
+	today: string;
+	weekLabel?: string;
+	current?: boolean;
+	locked?: boolean;
 	onToggle: () => void;
 }) {
-	const accent = task.done
-		? TEAL
-		: isCurrent || isNext
-			? GOLD
-			: "rgba(14,20,32,0.07)";
-	const badge = task.done
-		? {
-				label: "Done",
-				bg: "rgba(62,207,191,0.1)",
-				color: "#0A8F7F",
-				border: "rgba(62,207,191,0.2)",
-			}
-		: isNext || isCurrent
-			? {
-					label: "Next",
-					bg: "rgba(245,200,66,0.1)",
-					color: "#8A6A00",
-					border: "rgba(245,200,66,0.2)",
-				}
-			: {
-					label: "Later",
-					bg: "rgba(14,20,32,0.05)",
-					color: "rgba(14,20,32,0.3)",
-					border: "rgba(14,20,32,0.08)",
-				};
+	const overdue = !step.done && step.due_date != null && step.due_date < today;
+	const meta = locked
+		? "Finish the step before to unlock"
+		: (weekLabel ??
+			step.estimate_label ??
+			(step.due_date
+				? overdue
+					? "Overdue"
+					: step.due_date === today
+						? "Due today"
+						: step.due_date
+				: ""));
 	return (
 		<button
 			type="button"
-			aria-pressed={task.done}
-			onClick={onToggle}
-			className="mm-task relative flex w-full cursor-pointer items-start gap-[12px] overflow-hidden rounded-[14px] border bg-white p-[12px_14px] text-left"
-			style={{ borderColor: BORDER }}
+			onClick={locked ? undefined : onToggle}
+			disabled={locked}
+			aria-pressed={step.done}
+			className={`flex w-full items-start gap-3 rounded-xl p-3 text-left transition-colors ${
+				locked ? "cursor-not-allowed" : "hover:bg-black/[0.03]"
+			}`}
+			style={{
+				opacity: locked ? 0.55 : 1,
+				background:
+					current && !step.done && !locked ? "rgba(0,90,194,0.05)" : undefined,
+			}}
 		>
 			<span
-				aria-hidden="true"
-				className="absolute top-0 bottom-0 left-0 w-[3px] rounded-r-[3px]"
-				style={{ background: accent }}
-			/>
-
-			{/* Checkbox */}
-			<span
-				className="mt-[1px] flex h-[20px] w-[20px] shrink-0 items-center justify-center rounded-full border-[1.5px]"
-				style={
-					task.done
-						? { background: TEAL, borderColor: TEAL }
-						: {
-								background: "transparent",
-								borderColor: isCurrent || isNext ? GOLD : "rgba(14,20,32,0.15)",
-							}
-				}
-			>
-				{task.done && <CheckMark color="#FFFFFF" size={11} />}
-			</span>
-
-			<span className="min-w-0 flex-1">
-				<span
-					className="block font-bold text-[12px] leading-[1.4]"
-					style={
-						task.done
-							? { color: "rgba(14,20,32,0.35)", textDecoration: "line-through" }
-							: { color: TEXT }
-					}
-				>
-					{task.title}
-				</span>
-
-				{/* Inline AI suggestion — current task only */}
-				{suggestion?.status === "done" && suggestion.data?.suggestion && (
-					<span
-						className="mt-[6px] flex items-start gap-[6px] rounded-[8px] p-[7px_10px]"
-						style={{
-							background: "rgba(245,200,66,0.06)",
-							border: "1px solid rgba(245,200,66,0.15)",
-						}}
-					>
-						<SparkleIcon color={GOLD_INK} size={10} />
-						<span
-							className="line-clamp-1 font-medium text-[11px] leading-[1.4]"
-							style={{ color: "rgba(14,20,32,0.6)" }}
-						>
-							{suggestion.data.suggestion}
-						</span>
-					</span>
-				)}
-
-				{goalShort && (
-					<span
-						className="mt-[2px] block font-semibold text-[9px]"
-						style={{ color: GOLD_INK }}
-					>
-						→ {goalShort}
-					</span>
-				)}
-			</span>
-
-			<span
-				className="shrink-0 rounded-[20px] border px-[7px] py-[2px] font-bold text-[8px]"
+				className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 transition-colors"
 				style={{
-					background: badge.bg,
-					color: badge.color,
-					borderColor: badge.border,
+					borderColor: step.done
+						? PRIMARY
+						: locked
+							? "rgba(14,20,32,0.2)"
+							: "rgba(0,90,194,0.3)",
+					background: step.done ? PRIMARY : "transparent",
 				}}
 			>
-				{badge.label}
+				{step.done ? (
+					<span
+						className="material-symbols-outlined text-[16px] text-white"
+						style={{ fontVariationSettings: "'wght' 700" }}
+					>
+						check
+					</span>
+				) : (
+					locked && (
+						<span
+							className="material-symbols-outlined text-[13px]"
+							style={{ color: "rgba(14,20,32,0.4)" }}
+						>
+							lock
+						</span>
+					)
+				)}
+			</span>
+			<span className="min-w-0 flex-1">
+				<span
+					className={`block font-bold text-sm leading-snug ${
+						step.done ? "line-through opacity-50" : ""
+					}`}
+				>
+					{locked ? "Locked" : step.title}
+				</span>
+				{meta && (
+					<span
+						className="mt-1 block font-bold text-[10px] uppercase tracking-wider"
+						style={{
+							color:
+								overdue && !locked
+									? "#ba1a1a"
+									: current && !locked
+										? PRIMARY
+										: ON_VARIANT,
+							opacity: step.done ? 0.5 : overdue || current ? 1 : 0.6,
+						}}
+					>
+						{meta}
+					</span>
+				)}
 			</span>
 		</button>
 	);
 }
 
-// ── Collapse chevron ─────────────────────────────────────────────────────────
-function Chevron({ open }: { open: boolean }) {
+function CadenceToggle({
+	value,
+	onChange,
+}: {
+	value: "daily" | "weekly";
+	onChange: (v: "daily" | "weekly") => void;
+}) {
 	return (
-		<svg
-			width="14"
-			height="14"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="rgba(14,20,32,0.4)"
-			strokeWidth={2.4}
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			aria-hidden="true"
-			className="transition-transform duration-200 motion-reduce:transition-none"
-			style={{ transform: open ? "rotate(180deg)" : "none" }}
-		>
-			<path d="M6 9l6 6 6-6" />
-		</svg>
+		<div className="flex rounded-full border border-black/5 bg-white/60 p-0.5">
+			{(["daily", "weekly"] as const).map((c) => {
+				const active = value === c;
+				return (
+					<button
+						key={c}
+						type="button"
+						onClick={() => onChange(c)}
+						className="rounded-full px-3 py-1 font-bold text-[10px] uppercase tracking-wider transition-colors"
+						style={
+							active
+								? { background: PRIMARY, color: "#fff" }
+								: { color: ON_VARIANT }
+						}
+					>
+						{c}
+					</button>
+				);
+			})}
+		</div>
 	);
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SVG art
-// ─────────────────────────────────────────────────────────────────────────────
-
-function CompassRose() {
+function Ring({ pct, center }: { pct: number; center: string }) {
+	const r = 34;
+	const circ = 2 * Math.PI * r;
+	const offset = circ * (1 - Math.min(100, Math.max(0, pct)) / 100);
 	return (
-		<svg
-			aria-hidden="true"
-			className="pointer-events-none absolute inset-0 h-full w-full"
-			style={{ opacity: 0.16 }}
-			viewBox="0 0 320 200"
-			fill="none"
-			preserveAspectRatio="xMaxYMin slice"
-		>
-			<g stroke={GOLD_INK} strokeWidth="1">
-				<circle cx="270" cy="40" r="70" />
-				<circle cx="270" cy="40" r="48" />
-				<circle cx="270" cy="40" r="26" />
-				<line x1="270" y1="-40" x2="270" y2="120" />
-				<line x1="190" y1="40" x2="350" y2="40" />
-				<line x1="214" y1="-16" x2="326" y2="96" />
-				<line x1="326" y1="-16" x2="214" y2="96" />
-			</g>
-		</svg>
+		<div className="relative h-20 w-20 shrink-0">
+			<svg
+				className="h-full w-full -rotate-90"
+				viewBox="0 0 80 80"
+				aria-hidden="true"
+			>
+				<circle
+					cx="40"
+					cy="40"
+					r={r}
+					fill="transparent"
+					stroke="rgba(0,0,0,0.06)"
+					strokeWidth="6"
+				/>
+				<circle
+					cx="40"
+					cy="40"
+					r={r}
+					fill="transparent"
+					stroke={PRIMARY}
+					strokeWidth="6"
+					strokeLinecap="round"
+					strokeDasharray={circ}
+					strokeDashoffset={offset}
+				/>
+			</svg>
+			<span
+				className="absolute inset-0 flex items-center justify-center font-bold text-2xl tracking-tight"
+				style={{ fontFamily: SERIF }}
+			>
+				{center}
+			</span>
+		</div>
 	);
 }
 
-function CompassMark() {
+function EmptyState({ onSet }: { onSet: () => void }) {
 	return (
-		<svg
-			width="40"
-			height="40"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke={GOLD_INK}
-			strokeWidth={1.4}
-			aria-hidden="true"
-		>
-			<circle cx="12" cy="12" r="10" />
-			<polygon points="16.2 7.8 13.4 13.4 7.8 16.2 10.6 10.6" fill={GOLD_INK} />
-		</svg>
+		<div className="glass-card mt-10 rounded-[2rem] p-14 text-center">
+			<span
+				className="material-symbols-outlined text-5xl"
+				style={{ color: PRIMARY, opacity: 0.35 }}
+			>
+				target
+			</span>
+			<p className="mt-3 font-bold text-2xl" style={{ fontFamily: SERIF }}>
+				No goal yet
+			</p>
+			<p
+				className="mx-auto mt-1 max-w-sm text-sm"
+				style={{ color: ON_VARIANT, opacity: 0.7 }}
+			>
+				Set one goal for the month and North breaks it into weekly steps.
+			</p>
+			<button
+				type="button"
+				onClick={onSet}
+				className="mt-6 rounded-xl px-7 py-3 font-bold text-sm text-white uppercase tracking-wider"
+				style={{ background: PRIMARY }}
+			>
+				Set your goal
+			</button>
+		</div>
 	);
 }
 
-function FlameIcon() {
+function TopBar({ monthName }: { monthName: string }) {
 	return (
-		<svg
-			width="13"
-			height="13"
-			viewBox="0 0 24 24"
-			fill={GOLD_INK}
-			aria-hidden="true"
+		<header
+			className="sticky top-0 z-40 px-5 py-3 backdrop-blur-md sm:px-6 lg:px-8"
+			style={{ background: "rgba(251,251,251,0.7)" }}
 		>
-			<path d="M12 2c1 4-2 5-2 8a2 2 0 1 0 4 0c0-1 0-1 .5-2 1 2 1.5 3 1.5 4a4 4 0 1 1-8 0c0-3 2-4 2-6 0-2 1-3 2-4z" />
-		</svg>
+			<div className="mx-auto flex w-full max-w-[1280px] items-center justify-between gap-3">
+				<span
+					className="font-bold text-xl tracking-tight md:hidden"
+					style={{ fontFamily: SERIF, color: ON_SURFACE }}
+				>
+					Mission
+				</span>
+				<span className="hidden md:block" />
+				<div className="flex items-center gap-4">
+					{monthName && (
+						<span
+							className="hidden rounded-full border border-black/5 px-3 py-1 font-bold text-[10px] uppercase tracking-wider sm:inline"
+							style={{ color: ON_VARIANT, opacity: 0.7 }}
+						>
+							{monthName}
+						</span>
+					)}
+					<a href="/profile" className="relative" aria-label="Notifications">
+						<span
+							className="material-symbols-outlined"
+							style={{ color: ON_VARIANT }}
+						>
+							notifications
+						</span>
+					</a>
+					<a
+						href="/profile"
+						aria-label="Your profile"
+						className="flex h-9 w-9 items-center justify-center rounded-full border border-black/5 bg-white shadow-sm"
+					>
+						<span
+							className="material-symbols-outlined text-xl"
+							style={{ color: ON_VARIANT }}
+						>
+							person
+						</span>
+					</a>
+				</div>
+			</div>
+		</header>
 	);
 }
 
-function SparkleIcon({ color, size = 12 }: { color: string; size?: number }) {
+function Sidebar() {
 	return (
-		<svg
-			width={size}
-			height={size}
-			viewBox="0 0 24 24"
-			fill={color}
-			aria-hidden="true"
-			className="mt-[1px] shrink-0"
-		>
-			<path d="M12 2l1.8 5.2L19 9l-5.2 1.8L12 16l-1.8-5.2L5 9l5.2-1.8L12 2z" />
-		</svg>
+		<aside className="mm-rail px-6 py-8">
+			<a
+				href="/for-you"
+				aria-label="North home"
+				className="mb-12 flex items-center gap-3 px-2"
+			>
+				<svg
+					className="h-9 w-9 shrink-0"
+					viewBox="0 0 100 100"
+					fill={PRIMARY}
+					aria-hidden="true"
+				>
+					<path d="M50 3 L58 42 L97 50 L58 58 L50 97 L42 58 L3 50 L42 42 Z" />
+				</svg>
+				<span
+					className="font-bold text-3xl tracking-tighter"
+					style={{ fontFamily: SERIF, color: ON_SURFACE }}
+				>
+					North
+				</span>
+			</a>
+			<nav className="flex-1 space-y-1">
+				{NAV.map((n) => {
+					const active = n.href === "/mission";
+					return (
+						<a
+							key={n.href}
+							href={n.href}
+							aria-current={active ? "page" : undefined}
+							className="flex items-center gap-4 rounded-xl px-4 py-3 transition-colors"
+							style={
+								active
+									? {
+											color: PRIMARY,
+											fontWeight: 700,
+											background: "rgba(0,90,194,0.05)",
+										}
+									: { color: ON_VARIANT }
+							}
+						>
+							<span
+								className="material-symbols-outlined"
+								style={
+									active
+										? { fontVariationSettings: "'FILL' 1, 'wght' 700" }
+										: undefined
+								}
+							>
+								{n.icon}
+							</span>
+							<span
+								className="text-sm"
+								style={{ fontWeight: active ? 700 : 500 }}
+							>
+								{n.label}
+							</span>
+						</a>
+					);
+				})}
+			</nav>
+			<div className="border-black/5 border-t pt-8">
+				<a
+					href="/api/billing/checkout"
+					className="flex items-center justify-between rounded-xl px-4 py-3 font-bold text-sm transition-colors hover:bg-black/5"
+					style={{ color: ON_SURFACE }}
+				>
+					Go Beyond
+					<span
+						className="material-symbols-outlined"
+						style={{ color: PRIMARY }}
+					>
+						arrow_forward
+					</span>
+				</a>
+			</div>
+		</aside>
 	);
 }
 
-function LinkIcon() {
-	return (
-		<svg
-			width="10"
-			height="10"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth={2.4}
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			aria-hidden="true"
-		>
-			<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1" />
-			<path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" />
-		</svg>
-	);
+const SCOPED_CSS = `
+.material-symbols-outlined {
+	font-family: 'Material Symbols Outlined';
+	font-weight: normal; font-style: normal; line-height: 1; letter-spacing: normal;
+	text-transform: none; display: inline-block; white-space: nowrap; word-wrap: normal;
+	direction: ltr; -webkit-font-feature-settings: 'liga'; font-feature-settings: 'liga';
+	-webkit-font-smoothing: antialiased; width: 1em; overflow: hidden;
 }
-
-function CheckMark({ color, size = 13 }: { color: string; size?: number }) {
-	return (
-		<svg
-			width={size}
-			height={size}
-			viewBox="0 0 12 12"
-			fill="none"
-			aria-hidden="true"
-		>
-			<path
-				d="M2 6l2.5 2.5L10 3"
-				stroke={color}
-				strokeWidth={2}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-			/>
-		</svg>
-	);
-}
-
-const ANIM = `
-@keyframes mm-shimmer { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
-.mm-shimmer { animation: mm-shimmer 1.5s ease-in-out infinite; }
-.mm-task { transition: border-color 0.15s ease, background 0.15s ease; }
-.mm-task:hover { border-color: rgba(14,20,32,0.18); background: rgba(255,255,255,0.92); }
-@keyframes mm-tab-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-.mm-tab-in { animation: mm-tab-in 200ms ease-out both; }
-@media (prefers-reduced-motion: reduce) {
-  .mm-shimmer { animation: none; opacity: 0.5; }
-  .mm-task { transition: none; }
-  .mm-tab-in { animation: none; }
-}
+/* Stitch recipe: frosted glass + a hairline gradient border (the ::before mask). */
+.glass-card { position: relative; background: rgba(255,255,255,0.6); backdrop-filter: blur(32px); -webkit-backdrop-filter: blur(32px); border: 0.5px solid rgba(0,0,0,0.08); box-shadow: 0 8px 32px -4px rgba(0,0,0,0.06); }
+.glass-card::before { content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 0.5px; background: linear-gradient(to bottom right, rgba(255,255,255,0.9), rgba(255,255,255,0.1)); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); mask-composite: exclude; pointer-events: none; }
+.glass-card > * { position: relative; }
+.signal-glow { box-shadow: 0 40px 80px -12px rgba(0,90,194,0.15); }
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.02); }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,90,194,0.15); border-radius: 10px; }
+@keyframes pulse-signal { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.1); } }
+.pulse-dot { animation: pulse-signal 2s infinite ease-in-out; }
+/* Critical layout, server-rendered: fixed sidebar + content offset before fonts
+   load. Phones use the bottom tab bar. */
+.mm-rail { position: fixed; left: 0; top: 0; height: 100%; width: 280px; z-index: 50; display: none; flex-direction: column; background: rgba(255,255,255,0.6); border-right: 1px solid rgba(0,0,0,0.05); backdrop-filter: blur(20px); }
+.mm-main { margin-left: 0; padding-bottom: 7rem; }
+@media (min-width: 768px) { .mm-rail { display: flex; } .mm-main { margin-left: 280px; padding-bottom: 2.5rem; } }
+@media (prefers-reduced-motion: reduce) { .pulse-dot { animation: none; } }
 `;
