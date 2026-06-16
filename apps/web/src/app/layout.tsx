@@ -35,10 +35,11 @@ export const metadata: Metadata = {
 		telephone: false,
 	},
 	icons: {
-		// SVG North compass mark — modern browsers render it in the tab at any
-		// size. (The raster PNG variants are regenerated from this SVG; until
-		// then only the SVG is referenced so no stale icon shows.)
-		icon: [{ url: "/favicon/favicon.svg?v=2", type: "image/svg+xml" }],
+		// North Star tab icon, served as a public asset (the auth middleware
+		// excludes .svg paths, so it loads without a redirect). The ?v bump is the
+		// cache-bust; browsers still cache favicons hard, so a stale one is the
+		// browser's cache, not this reference.
+		icon: [{ url: "/favicon/favicon.svg?v=3", type: "image/svg+xml" }],
 		// Without this link iOS "Add to Home Screen" falls back to a screenshot.
 		apple: "/favicon/apple-touch-icon.png",
 	},
