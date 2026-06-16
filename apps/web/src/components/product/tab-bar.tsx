@@ -20,7 +20,7 @@ type TabDef = {
 };
 
 const TABS: TabDef[] = [
-	{ href: "/for-you", label: "For You", icon: CompassIcon },
+	{ href: "/for-you", label: "For You", icon: StarIcon },
 	{ href: "/mission", label: "Mission", icon: MissionIcon },
 	{ href: "/opportunities", label: "Opportunities", icon: DocumentIcon },
 	{ href: "/journal", label: "Journal", icon: ChatIcon },
@@ -82,11 +82,11 @@ function base(color: string) {
 	};
 }
 
-function CompassIcon({ color }: { color: string }) {
+function StarIcon({ color }: { color: string }) {
 	return (
 		<svg {...base(color)} aria-hidden="true">
-			<circle cx="12" cy="12" r="9" />
-			<path d="M15.5 8.5l-2 5-5 2 2-5z" fill={color} stroke="none" />
+			{/* North Star — a four-point star/sparkle. */}
+			<path d="M12 3.2 13.9 10.1 20.8 12 13.9 13.9 12 20.8 10.1 13.9 3.2 12 10.1 10.1Z" />
 		</svg>
 	);
 }
