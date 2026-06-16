@@ -444,6 +444,12 @@ verify_jwt = false
 [functions.send-notifications]
 verify_jwt = false
 
+# AI moderation of user-submitted opportunities. Authenticates the caller itself
+# (supabase.auth.getUser), so the gateway JWT check is redundant — and the local
+# edge runtime can't verify the stack's ES256 user tokens. Skip it here.
+[functions.review-opportunity]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

@@ -26,6 +26,10 @@ export function SubmitOpportunityForm({ onClose }: { onClose: () => void }) {
 	});
 	const [submitting, setSubmitting] = useState(false);
 	const [done, setDone] = useState(false);
+	const [decision, setDecision] = useState<
+		"publish" | "reject" | "needs_human" | null
+	>(null);
+	const [verdict, setVerdict] = useState("");
 	const [error, setError] = useState<string | null>(null);
 
 	const set =
@@ -42,29 +46,27 @@ export function SubmitOpportunityForm({ onClose }: { onClose: () => void }) {
 		if (!form.title || !form.org || !form.external_url) return;
 		setError(null);
 		setSubmitting(true);
-		const {
-			data: { user },
-		} = await supabase.auth.getUser();
-		const { error: err } = await supabase
-			.from("opportunity_submissions")
-			.insert({
-				submitted_by: user?.id ?? null,
-				submitter_email: user?.email ?? null,
-				title: form.title,
-				org: form.org,
-				opportunity_type: form.opportunity_type || null,
-				location: form.location || null,
-				deadline: form.deadline || null,
-				description: form.description || null,
-				external_url: form.external_url,
-			});
+		// AI reviews each submission and either publishes it, holds it for a
+		// person, or declines it (with a reason). The function records the
+		// submission server-side, so the client no longer inserts directly.
+		const { data, error: err } = await supabase.functions.invoke(
+			"review-opportunity",
+			{ body: { ...form } },
+		);
 		setSubmitting(false);
-		if (err) {
-			setError(err.message);
+		if (err || !data?.ok) {
+			setError(
+				(data?.error as string) ??
+					err?.message ??
+					"Couldn't submit. Try again.",
+			);
 			return;
 		}
+		setDecision(data.decision as "publish" | "reject" | "needs_human");
+		setVerdict((data.reason as string) ?? "");
 		setDone(true);
-		setTimeout(onClose, 2000);
+		// Accepted or held: close after a beat. Declined: let them read why.
+		if (data.decision !== "reject") setTimeout(onClose, 2800);
 	}
 
 	const inputCls =
@@ -113,28 +115,65 @@ export function SubmitOpportunityForm({ onClose }: { onClose: () => void }) {
 				</div>
 
 				{done ? (
-					<div className="flex flex-col items-center justify-center gap-3 py-12">
-						<div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#7ec4bb]/15">
-							<svg
-								width="28"
-								height="28"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="#7ec4bb"
-								strokeWidth={2.5}
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								aria-hidden="true"
-							>
-								<path d="M20 6L9 17l-5-5" />
-							</svg>
-						</div>
-						<p className="font-semibold text-[#0E1420] text-[18px]">
-							Submitted!
-						</p>
-						<p className="text-[#0E1420]/55 text-[13px]">
-							We'll review it and add it to the feed.
-						</p>
+					<div className="flex flex-col items-center justify-center gap-3 px-6 py-12 text-center">
+						{decision === "reject" ? (
+							<>
+								<div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#ee9800]/15">
+									<svg
+										width="28"
+										height="28"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="#ee9800"
+										strokeWidth={2.5}
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										aria-hidden="true"
+									>
+										<path d="M12 8v5M12 16.5h.01M10.3 3.9 2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+									</svg>
+								</div>
+								<p className="font-semibold text-[#0E1420] text-[18px]">
+									This one wasn't added
+								</p>
+								<p className="max-w-xs text-[#0E1420]/55 text-[13px] leading-relaxed">
+									{verdict || "It didn't fit the Opportunities feed."}
+								</p>
+								<button
+									type="button"
+									onClick={onClose}
+									className="mt-2 rounded-xl border border-[#0E1420]/10 bg-white px-5 py-2.5 font-semibold text-[#0E1420] text-sm"
+								>
+									Close
+								</button>
+							</>
+						) : (
+							<>
+								<div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#7ec4bb]/15">
+									<svg
+										width="28"
+										height="28"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="#7ec4bb"
+										strokeWidth={2.5}
+										strokeLinecap="round"
+										strokeLinejoin="round"
+										aria-hidden="true"
+									>
+										<path d="M20 6L9 17l-5-5" />
+									</svg>
+								</div>
+								<p className="font-semibold text-[#0E1420] text-[18px]">
+									{decision === "publish" ? "Published" : "Submitted"}
+								</p>
+								<p className="max-w-xs text-[#0E1420]/55 text-[13px] leading-relaxed">
+									{decision === "publish"
+										? "Reviewed and live in Opportunities now."
+										: "Thanks. We'll review it and add it to the feed."}
+								</p>
+							</>
+						)}
 					</div>
 				) : (
 					<form onSubmit={handleSubmit} className="flex flex-col gap-4 p-5">
