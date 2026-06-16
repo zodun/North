@@ -13,8 +13,9 @@
 // Stale tokens (UNREGISTERED / BadDeviceToken) are deleted from push_tokens.
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { escapeHtml, sendMessage, telegramToken } from "../_shared/telegram.ts";
 import { getAPNsJWT, sendAPNs } from "./apns.ts";
-import { getCopy, type NotificationType } from "./copy.ts";
+import { buildBody, getCopy, type NotificationType } from "./copy.ts";
 import { getAccessToken, type ServiceAccount, sendFCM } from "./fcm.ts";
 
 const todayInAST = () => {
@@ -28,6 +29,8 @@ type TokenRow = {
 	platform: "ios" | "android";
 };
 
+type Task = { label: string; done: boolean };
+
 type RunResult = {
 	type: NotificationType;
 	candidates: number;
@@ -35,7 +38,47 @@ type RunResult = {
 	skipped: number;
 	stale_removed: number;
 	errors: number;
+	telegram_sent: number;
+	telegram_errors: number;
 };
+
+// Telegram reminder channel (NOTIF-03). Fires only on the morning run — one ping
+// a day is enough; the evening nudge stays push-only. Each opted-in, connected
+// chat gets a digest of that user's own tasks for today. Skips entirely when the
+// bot isn't configured. Honors the user's choice: only telegram_opt_in chats.
+async function sendTelegramReminders(
+	supabase: SupabaseClient,
+	title: string,
+	tasksByUser: Map<string, Task[]>,
+	result: RunResult,
+): Promise<void> {
+	const token = telegramToken();
+	if (!token) return;
+
+	const userIds = [...tasksByUser.keys()];
+	if (userIds.length === 0) return;
+
+	// Opted-in, connected chats among users who have a mission today.
+	const { data: rows } = await supabase
+		.from("profiles")
+		.select("user_id, telegram_chat_id")
+		.eq("telegram_opt_in", true)
+		.not("telegram_chat_id", "is", null)
+		.in("user_id", userIds);
+
+	for (const r of (rows ?? []) as {
+		user_id: string;
+		telegram_chat_id: string;
+	}[]) {
+		if (!r.telegram_chat_id) continue;
+		const labels = (tasksByUser.get(r.user_id) ?? []).map((t) => t.label);
+		const body = buildBody("morning", labels);
+		const text = `<b>${escapeHtml(title)}</b>\n\n${escapeHtml(body)}`;
+		const res = await sendMessage(token, r.telegram_chat_id, text);
+		if (res.ok) result.telegram_sent++;
+		else result.telegram_errors++;
+	}
+}
 
 // ── Main job ─────────────────────────────────────────────────────────────────
 
@@ -52,7 +95,7 @@ export async function runNotificationJob(
 	fetcher: typeof fetch = fetch,
 ): Promise<RunResult> {
 	const today = todayInAST();
-	const { title, body } = getCopy(type);
+	const { title } = getCopy(type);
 	const result: RunResult = {
 		type,
 		candidates: 0,
@@ -60,6 +103,8 @@ export async function runNotificationJob(
 		skipped: 0,
 		stale_removed: 0,
 		errors: 0,
+		telegram_sent: 0,
+		telegram_errors: 0,
 	};
 
 	// Obtain FCM access token once (reused for all Android messages).
@@ -91,33 +136,56 @@ export async function runNotificationJob(
 		}
 	}
 
-	// Load eligible users: have a push token + have a mission today.
-	const { data: candidates, error: candErr } = await supabase
-		.from("push_tokens")
-		.select(
-			"user_id, token, platform, missions!inner(id, mission_date, user_mission_tasks(done))",
-		)
-		.eq("missions.mission_date", today);
+	// Today's tasks per user (label + done) — the basis for every channel's
+	// digest and the evening "any done?" check. Mission-centric so a user with
+	// Telegram but no push token is still covered.
+	const { data: missionRows, error: missionErr } = await supabase
+		.from("missions")
+		.select("user_id, user_mission_tasks(label, done)")
+		.eq("mission_date", today);
 
-	if (candErr) throw new Error(`load candidates: ${candErr.message}`);
+	if (missionErr) throw new Error(`load missions: ${missionErr.message}`);
 
-	const rows = (candidates ?? []) as (TokenRow & {
-		missions: { id: string; user_mission_tasks: { done: boolean }[] }[];
-	})[];
+	const tasksByUser = new Map<string, Task[]>();
+	for (const m of (missionRows ?? []) as {
+		user_id: string;
+		user_mission_tasks: Task[];
+	}[]) {
+		const arr = tasksByUser.get(m.user_id) ?? [];
+		arr.push(...(m.user_mission_tasks ?? []));
+		tasksByUser.set(m.user_id, arr);
+	}
+
+	// Push tokens for those users only. No token → no push for that user, but
+	// Telegram may still reach them below (their channel choice).
+	const userIds = [...tasksByUser.keys()];
+	const { data: tokenRows, error: tokErr } =
+		userIds.length === 0
+			? { data: [] as TokenRow[], error: null }
+			: await supabase
+					.from("push_tokens")
+					.select("user_id, token, platform")
+					.in("user_id", userIds);
+
+	if (tokErr) throw new Error(`load push tokens: ${tokErr.message}`);
+
+	const rows = (tokenRows ?? []) as TokenRow[];
 
 	for (const row of rows) {
 		result.candidates++;
+		const tasks = tasksByUser.get(row.user_id) ?? [];
 
 		// Evening type: skip users who have at least one task done.
-		if (type === "evening") {
-			const anyDone = row.missions.some((m) =>
-				m.user_mission_tasks.some((t) => t.done),
-			);
-			if (anyDone) {
-				result.skipped++;
-				continue;
-			}
+		if (type === "evening" && tasks.some((t) => t.done)) {
+			result.skipped++;
+			continue;
 		}
+
+		// Per-user digest: this user's own tasks for today.
+		const body = buildBody(
+			type,
+			tasks.map((t) => t.label),
+		);
 
 		let sendResult: "sent" | "invalid_token" | "error" | "no_creds";
 
@@ -161,6 +229,11 @@ export async function runNotificationJob(
 		} else {
 			result.errors++;
 		}
+	}
+
+	// One Telegram reminder a day, on the morning run.
+	if (type === "morning") {
+		await sendTelegramReminders(supabase, title, tasksByUser, result);
 	}
 
 	return result;

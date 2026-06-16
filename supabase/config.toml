@@ -389,6 +389,11 @@ deno_version = 2
 [edge_runtime.secrets]
 ANTHROPIC_API_KEY = "env(ANTHROPIC_API_KEY)"
 OPENAI_API_KEY = "env(OPENAI_API_KEY)"
+# Telegram reminders (NOTIF-03). Bot token + @username from @BotFather; the
+# webhook secret is whatever you pass to setWebhook's secret_token.
+TELEGRAM_BOT_TOKEN = "env(TELEGRAM_BOT_TOKEN)"
+TELEGRAM_BOT_USERNAME = "env(TELEGRAM_BOT_USERNAME)"
+TELEGRAM_WEBHOOK_SECRET = "env(TELEGRAM_WEBHOOK_SECRET)"
 
 # Cron-triggered scraper. The function authenticates callers with its own
 # x-trigger-secret header, and the pg_cron job sends only that header (no JWT),
@@ -419,6 +424,24 @@ verify_jwt = false
 # and gates on premium, so the gateway JWT check is redundant — and the local
 # edge runtime can't verify the stack's ES256 user tokens. Skip it.
 [functions.personalize]
+verify_jwt = false
+
+# Telegram deep-link issuer. Authenticates the caller itself (supabase.auth.getUser),
+# so the gateway JWT check is redundant and the local edge runtime can't verify
+# the stack's ES256 user tokens. Skip it.
+[functions.telegram-link]
+verify_jwt = false
+
+# Telegram webhook. Public endpoint — Telegram sends no JWT; it's secured by the
+# X-Telegram-Bot-Api-Secret-Token header instead, so the gateway JWT check is off.
+[functions.telegram-webhook]
+verify_jwt = false
+
+# Cron-triggered notifications (NOTIF-01). The pg_cron job (migration 0020) posts
+# only an x-trigger-secret header (no JWT), which the function checks itself — so
+# the gateway JWT check must stay off or the 13:00/00:00 UTC runs 401 before the
+# function executes.
+[functions.send-notifications]
 verify_jwt = false
 
 [analytics]
