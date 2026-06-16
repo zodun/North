@@ -1,12 +1,8 @@
 import type { Metadata } from "next";
 import { getServerSupabase } from "@/lib/supabase-server";
-import { JournalCard } from "../signal/journal-card";
-import { loadSignalData } from "../signal/load-signal-data";
 import { MonthlyMissionView } from "./monthly-mission-view";
 
 export const metadata: Metadata = { title: "Mission" };
-
-const DAY_MS = 86_400_000;
 
 export default async function MissionPage() {
 	const supabase = await getServerSupabase();
@@ -43,7 +39,7 @@ export default async function MissionPage() {
 			.maybeSingle(),
 		supabase
 			.from("profiles")
-			.select("mission_cadence, goal_prompt_dismissed_month")
+			.select("mission_cadence, goal_prompt_dismissed_month, display_name")
 			.eq("user_id", user.id)
 			.maybeSingle(),
 		supabase
@@ -69,18 +65,24 @@ export default async function MissionPage() {
 	const cadence =
 		profileRes.data?.mission_cadence === "weekly" ? "weekly" : "daily";
 
-	const currentWeekIndex = mission
-		? Math.min(
-				3,
-				Math.max(
-					0,
-					Math.floor(
-						(Date.parse(today) - Date.parse(mission.month_start)) /
-							(7 * DAY_MS),
-					),
-				),
-			)
-		: 0;
+	// The week the user is actually on follows the plan's daily steps, which start
+	// the day the goal was set — not the calendar month. So a goal set mid-month
+	// still opens on week 1. Use today's step, else the next step still ahead or
+	// undone, else the first step.
+	const dailySteps = (
+		(steps ?? []) as {
+			cadence: string;
+			due_date: string | null;
+			week_index: number;
+			done: boolean;
+		}[]
+	).filter((s) => s.cadence === "daily");
+	const activeStep =
+		dailySteps.find((s) => s.due_date === today) ??
+		dailySteps.find((s) => !s.done && (s.due_date ?? "") >= today) ??
+		dailySteps.find((s) => !s.done) ??
+		dailySteps[0];
+	const currentWeekIndex = mission ? (activeStep?.week_index ?? 0) : 0;
 
 	// Prompt the user to author their own goal when this month's mission is
 	// still the seeded template and they haven't dismissed the prompt this month.
@@ -89,30 +91,23 @@ export default async function MissionPage() {
 		mission.generated_by === "template" &&
 		profileRes.data?.goal_prompt_dismissed_month !== mission.month_start;
 
-	// The Signal / Direction Score now lives on Profile; Mission keeps only the
-	// daily Signal-and-Noise journal. The signal data is still loaded (unchanged)
-	// and we use its latest reflection to seed the journal.
-	const signal = await loadSignalData(supabase, user.id);
+	// Greet by first name + time of day (Jamaica, UTC-5), matching the other tabs.
+	const firstName = (profileRes.data?.display_name ?? "there").split(/\s+/)[0];
+	const hour = (new Date().getUTCHours() + 19) % 24; // UTC-5
+	const greeting =
+		hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
 	return (
-		<div className="min-h-full pb-24 font-jakarta">
-			<MonthlyMissionView
-				mission={mission}
-				steps={steps ?? []}
-				cadence={cadence}
-				today={today}
-				currentWeekIndex={currentWeekIndex}
-				streakState={streakRes.data?.state ?? null}
-				promptGoal={promptGoal}
-				journalSlot={
-					<>
-						<p className="mt-2 mb-3 font-bold text-[#0E1420]/50 text-[10px] uppercase tracking-[0.12em]">
-							Signal &amp; Noise
-						</p>
-						<JournalCard entryDate={today} initialEntry={signal.lastJournal} />
-					</>
-				}
-			/>
-		</div>
+		<MonthlyMissionView
+			mission={mission}
+			steps={steps ?? []}
+			cadence={cadence}
+			today={today}
+			currentWeekIndex={currentWeekIndex}
+			streakState={streakRes.data?.state ?? null}
+			promptGoal={promptGoal}
+			firstName={firstName}
+			greeting={greeting}
+		/>
 	);
 }
