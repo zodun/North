@@ -50,6 +50,7 @@ export function SetGoalModal({
 	onGoalSet: (result: GoalSetResult) => void;
 }) {
 	const [goal, setGoal] = useState("");
+	const [measure, setMeasure] = useState("");
 	const [cadence, setCadence] = useState<"daily" | "weekly">(initialCadence);
 	const [submitting, setSubmitting] = useState(false);
 	const [suggesting, setSuggesting] = useState(autosuggest);
@@ -95,13 +96,13 @@ export function SetGoalModal({
 	async function submit(e: React.FormEvent) {
 		e.preventDefault();
 		const title = goal.trim();
-		if (!title || submitting) return;
+		if (!title || !measure.trim() || submitting) return;
 		setError(null);
 		setSubmitting(true);
 		const { data, error: err } = await supabase.functions.invoke("plan-month", {
 			body: {
 				goal_title: title,
-				goal_intent: null,
+				goal_intent: `Done when: ${measure.trim()}`,
 				cadence,
 				month_start: monthStart,
 			},
@@ -129,6 +130,40 @@ export function SetGoalModal({
 	const presetLabel = autosuggest
 		? "Need an idea? Tap to use"
 		: "Your current goal. Tap to edit it";
+
+	// Live SMART checks. Specific + Measurable are required to submit; the month
+	// gives Time bound; Achievable + Relevant are gentle guidance.
+	const words = goal.trim().split(/\s+/).filter(Boolean).length;
+	const specificOk = words >= 3;
+	const measurableOk = measure.trim().length >= 2;
+	const canSubmit = specificOk && measurableOk;
+	const smart = [
+		{
+			k: "S",
+			label: "Specific",
+			ok: specificOk,
+			hint: "Say exactly what you'll do",
+		},
+		{
+			k: "M",
+			label: "Measurable",
+			ok: measurableOk,
+			hint: "A number or clear milestone",
+		},
+		{
+			k: "A",
+			label: "Achievable",
+			ok: canSubmit,
+			hint: "Realistic for one month",
+		},
+		{ k: "R", label: "Relevant", ok: words > 0, hint: "It matters to you" },
+		{
+			k: "T",
+			label: "Time bound",
+			ok: true,
+			hint: `By the end of ${monthName}`,
+		},
+	];
 
 	return (
 		// biome-ignore lint/a11y/useKeyWithClickEvents lint/a11y/noStaticElementInteractions: backdrop dismiss, keyboard users can use the close button
@@ -180,9 +215,8 @@ export function SetGoalModal({
 
 				<form onSubmit={submit} className="flex flex-col gap-4 p-5">
 					<p className="text-[#0E1420]/65 text-[13px] leading-relaxed">
-						Name one thing you want to make happen this month. We'll break it
-						down into small steps you can actually do, so you always know your
-						next move.
+						Name one clear, measurable thing you want to make happen this month.
+						The sharper your goal, the better North can break it into steps.
 					</p>
 
 					<div>
@@ -227,6 +261,53 @@ export function SetGoalModal({
 								</span>
 							</button>
 						)}
+					</div>
+
+					<div>
+						<label htmlFor="goal-measure" className={labelCls}>
+							How you'll measure it
+						</label>
+						<input
+							id="goal-measure"
+							required
+							maxLength={120}
+							placeholder="e.g. ship 3 portfolio pieces, reach 100 sign-ups"
+							value={measure}
+							onChange={(e) => setMeasure(e.target.value)}
+							className={inputCls}
+						/>
+					</div>
+
+					{/* Live SMART checklist */}
+					<div className="rounded-2xl border border-black/10 bg-[#F7F9FC] p-3.5">
+						<p
+							className="mb-2.5 font-bold text-[10px] uppercase tracking-widest"
+							style={{ color: "#005ac2" }}
+						>
+							Make it SMART
+						</p>
+						<ul className="flex flex-col gap-1.5">
+							{smart.map((c) => (
+								<li key={c.k} className="flex items-start gap-2.5 text-[12px]">
+									<span
+										className="mt-px flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full font-bold text-[10px]"
+										style={{
+											background: c.ok ? "#005ac2" : "rgba(14,20,32,0.08)",
+											color: c.ok ? "#fff" : "rgba(14,20,32,0.5)",
+										}}
+									>
+										{c.ok ? "✓" : c.k}
+									</span>
+									<span
+										style={{
+											color: c.ok ? "#131313" : "rgba(14,20,32,0.55)",
+										}}
+									>
+										<span className="font-semibold">{c.label}.</span> {c.hint}
+									</span>
+								</li>
+							))}
+						</ul>
 					</div>
 
 					<fieldset>
@@ -299,7 +380,7 @@ export function SetGoalModal({
 
 					<button
 						type="submit"
-						disabled={submitting || !goal.trim()}
+						disabled={submitting || !canSubmit}
 						className="h-13 w-full cursor-pointer rounded-xl py-3.5 font-bold text-[#05050E] text-[15px] transition-opacity disabled:opacity-40"
 						style={{ backgroundColor: GOLD }}
 					>
