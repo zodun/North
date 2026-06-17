@@ -57,7 +57,7 @@ Output JSON only, matching the schema: exactly 4 weeks (week 1 to week 4), each 
 export function buildUserPrompt(p: PlanPayload): string {
 	return [
 		`This month's goal (user's words): ${p.goal_title}`,
-		p.goal_intent ? `Why it matters to them: ${p.goal_intent}` : "",
+		p.goal_intent ? `How they'll measure success: ${p.goal_intent}` : "",
 		`Focus areas: ${p.focus_areas.length ? p.focus_areas.join(", ") : "(none chosen yet)"}`,
 		p.fields?.length ? `Field: ${p.fields.join(", ")}` : "",
 		p.career_stage ? `Career stage: ${p.career_stage}` : "",

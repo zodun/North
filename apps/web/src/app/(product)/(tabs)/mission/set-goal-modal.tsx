@@ -102,7 +102,7 @@ export function SetGoalModal({
 		const { data, error: err } = await supabase.functions.invoke("plan-month", {
 			body: {
 				goal_title: title,
-				goal_intent: `Done when: ${measure.trim()}`,
+				goal_intent: measure.trim(),
 				cadence,
 				month_start: monthStart,
 			},
