@@ -102,7 +102,7 @@ export function SetGoalModal({
 		const { data, error: err } = await supabase.functions.invoke("plan-month", {
 			body: {
 				goal_title: title,
-				goal_intent: measure.trim(),
+				goal_intent: `I'll ${measure.trim()}`,
 				cadence,
 				month_start: monthStart,
 			},
@@ -265,17 +265,22 @@ export function SetGoalModal({
 
 					<div>
 						<label htmlFor="goal-measure" className={labelCls}>
-							How you'll measure it
+							How you'll know you've done it
 						</label>
-						<input
-							id="goal-measure"
-							required
-							maxLength={120}
-							placeholder="e.g. ship 3 portfolio pieces, reach 100 sign-ups"
-							value={measure}
-							onChange={(e) => setMeasure(e.target.value)}
-							className={inputCls}
-						/>
+						<div className="flex items-center gap-2 rounded-2xl border border-black/10 bg-white px-4 py-3.5 transition-colors focus-within:border-[#005ac2]/40 focus-within:ring-2 focus-within:ring-[#005ac2]/20">
+							<span className="shrink-0 font-semibold text-[#131313] text-[15px]">
+								I'll
+							</span>
+							<input
+								id="goal-measure"
+								required
+								maxLength={120}
+								placeholder="make 300,000 in sales"
+								value={measure}
+								onChange={(e) => setMeasure(e.target.value)}
+								className="flex-1 bg-transparent text-[#131313] text-[15px] outline-none placeholder:text-black/35"
+							/>
+						</div>
 					</div>
 
 					{/* Live SMART checklist */}
