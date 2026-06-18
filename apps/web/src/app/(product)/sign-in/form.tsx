@@ -6,178 +6,102 @@ import { supabase } from "@/lib/auth-client";
 
 type Mode = "password" | "magic" | "signup";
 
-// ── Shared styles ──────────────────────────────────────────────────────────
+// ── Light "Collective" form on a white panel (paired with the dark photo side) ─
 
 const inputCls =
-	"w-full rounded-[10px] border border-[#0E1420]/10 bg-white px-[13px] py-[10px] text-[13px] text-[#0E1420] placeholder:text-[#0E1420]/35 outline-none transition-all focus:border-[#3ECFBF] focus:bg-[rgba(62,207,191,0.05)]";
+	"h-14 w-full rounded-full border border-[#0E1420]/15 bg-white px-5 text-[15px] font-semibold text-[#0E1420] outline-none transition-all placeholder:font-normal placeholder:text-[#0E1420]/35 focus:border-[#005ac2] focus:shadow-[0_0_0_1px_#005ac2]";
 
 const labelCls =
-	"mb-1 block font-bold text-[9px] text-[#0E1420]/60 uppercase tracking-[0.1em]";
+	"mb-2 ml-1 block font-bold text-[11px] text-[#0E1420]/70 uppercase tracking-[0.15em]";
 
 const primaryBtnCls =
-	"relative mt-2 mb-3 w-full cursor-pointer overflow-hidden rounded-xl bg-[#F5C842] py-[13px] font-black text-[15px] text-[#05050E] tracking-tight shadow-[0_2px_12px_rgba(245,200,66,0.30)] transition-all active:scale-[0.98] hover:bg-[#FFD966] hover:shadow-[0_3px_16px_rgba(245,200,66,0.40)] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100";
+	"flex h-14 w-full cursor-pointer items-center justify-center gap-3 rounded-full font-bold text-[14px] text-white uppercase tracking-[0.2em] transition-all hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-50";
+
+const primaryBtnStyle: React.CSSProperties = {
+	background: "linear-gradient(135deg, #4d8eff 0%, #005ac2 100%)",
+	boxShadow: "0 4px 20px rgba(0,90,194,0.25)",
+};
+
+const eyebrowCls =
+	"mb-3 block font-bold text-[12px] text-[#005ac2] uppercase tracking-[0.15em]";
 
 const switchLinkCls =
-	"cursor-pointer font-bold text-[12px] text-[#0A8F7F] transition-colors hover:text-[#0E1420]";
+	"ml-1 cursor-pointer font-bold text-[#005ac2] transition-colors hover:text-[#0E1420]";
 
-// ── Trust items ────────────────────────────────────────────────────────────
+const headingCls = "mb-2 font-bold text-[#0E1420] text-[30px] leading-[1.2]";
+const subCls = "text-[15px] text-[#0E1420]/65";
+const SERIF = "'Libre Caslon Text', Georgia, serif";
 
-const TRUST_ITEMS = [
-	{ dot: "#F5C842", text: "Free to join" },
-	{ dot: "#3ECFBF", text: "Built for you" },
-	{ dot: "#7B61FF", text: "Private" },
-];
+// ── Icons ───────────────────────────────────────────────────────────────────
 
-// ── Compass logo ───────────────────────────────────────────────────────────
-
-function CompassLogo() {
+function ArrowIcon() {
 	return (
 		<svg
-			width="32"
-			height="32"
-			viewBox="0 0 32 32"
+			width="16"
+			height="16"
+			viewBox="0 0 24 24"
 			fill="none"
+			stroke="currentColor"
+			strokeWidth={2.4}
+			strokeLinecap="round"
+			strokeLinejoin="round"
 			aria-hidden="true"
 		>
-			{/* Outer circle */}
-			<circle
-				cx="16"
-				cy="16"
-				r="14"
-				stroke="rgba(245,200,66,0.6)"
-				strokeWidth="1"
-			/>
-			{/* Middle dashed circle */}
-			<circle
-				cx="16"
-				cy="16"
-				r="9"
-				stroke="rgba(245,200,66,0.25)"
-				strokeWidth="0.8"
-				strokeDasharray="2 4"
-			/>
-			{/* Inner circle */}
-			<circle
-				cx="16"
-				cy="16"
-				r="5"
-				stroke="rgba(62,207,191,0.5)"
-				strokeWidth="0.8"
-			/>
-			{/* Cross lines */}
-			<line
-				x1="16"
-				y1="2"
-				x2="16"
-				y2="30"
-				stroke="rgba(245,200,66,0.2)"
-				strokeWidth="0.5"
-			/>
-			<line
-				x1="2"
-				y1="16"
-				x2="30"
-				y2="16"
-				stroke="rgba(245,200,66,0.2)"
-				strokeWidth="0.5"
-			/>
-			{/* North needle, gold */}
-			<polygon points="16,5 13,16 19,16" fill="rgba(245,200,66,1)" />
-			{/* South needle, teal 80% */}
-			<polygon points="16,27 13,16 19,16" fill="rgba(62,207,191,0.8)" />
-			{/* East needle, ink 35% */}
-			<polygon points="27,16 16,13 16,19" fill="rgba(14,20,32,0.35)" />
-			{/* West needle, ink 35% */}
-			<polygon points="5,16 16,13 16,19" fill="rgba(14,20,32,0.35)" />
-			{/* Center dot, gold */}
-			<circle cx="16" cy="16" r="2.2" fill="rgba(245,200,66,1)" />
-			{/* Center dot, dark inner */}
-			<circle cx="16" cy="16" r="0.9" fill="#05050E" />
+			<path d="M5 12h14M13 6l6 6-6 6" />
 		</svg>
 	);
 }
 
-// ── Google icon ────────────────────────────────────────────────────────────
-
-function GoogleIcon() {
+function EyeButton({
+	shown,
+	onClick,
+}: {
+	shown: boolean;
+	onClick: () => void;
+}) {
 	return (
-		<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-			<path
-				d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-				fill="#4285F4"
-			/>
-			<path
-				d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-				fill="#34A853"
-			/>
-			<path
-				d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-				fill="#FBBC05"
-			/>
-			<path
-				d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-				fill="#EA4335"
-			/>
-		</svg>
+		<button
+			type="button"
+			onClick={onClick}
+			aria-label={shown ? "Hide password" : "Show password"}
+			className="absolute top-1/2 right-4 -translate-y-1/2 cursor-pointer text-[#0E1420]/40 transition-colors hover:text-[#005ac2]"
+		>
+			<svg
+				width="20"
+				height="20"
+				viewBox="0 0 24 24"
+				fill="none"
+				stroke="currentColor"
+				strokeWidth={2}
+				strokeLinecap="round"
+				strokeLinejoin="round"
+				aria-hidden="true"
+			>
+				{shown ? (
+					<>
+						<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-10-7-10-7a18.5 18.5 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 7 10 7a18.5 18.5 0 0 1-2.16 3.19" />
+						<path d="M1 1l22 22" />
+					</>
+				) : (
+					<>
+						<circle cx="12" cy="12" r="3" />
+						<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+					</>
+				)}
+			</svg>
+		</button>
 	);
 }
 
-// ── Reusable sub-components ────────────────────────────────────────────────
+// ── Main component ───────────────────────────────────────────────────────────
 
-function BrandRow() {
-	return (
-		<div className="mb-3 flex items-center gap-3">
-			<div className="shrink-0 animate-logo-pulse">
-				<CompassLogo />
-			</div>
-			<div className="leading-none">
-				<div className="font-black text-[#0E1420] text-[18px] tracking-tight">
-					North<span style={{ color: "#8A6A00" }}>.</span>
-				</div>
-				<div className="mt-0.5 font-bold text-[#0E1420]/50 text-[8px] uppercase tracking-[0.18em]">
-					Find your direction
-				</div>
-			</div>
-		</div>
-	);
-}
-
-function OrDivider({ label = "or email" }: { label?: string }) {
-	return (
-		<div className="my-3 flex items-center gap-2.5">
-			<div className="h-px flex-1 bg-[rgba(14,20,32,0.12)]" />
-			<span className="text-[#0E1420]/50 text-[11px]">{label}</span>
-			<div className="h-px flex-1 bg-[rgba(14,20,32,0.12)]" />
-		</div>
-	);
-}
-
-function TrustBar() {
-	return (
-		<div className="flex items-center justify-center gap-[14px] border-[#0E1420]/10 border-t pt-3">
-			{TRUST_ITEMS.map(({ dot, text }) => (
-				<div key={text} className="flex items-center gap-1.5">
-					<div
-						className="h-1.5 w-1.5 rounded-full"
-						style={{ backgroundColor: dot }}
-					/>
-					<span className="font-medium text-[#0E1420]/55 text-[10px]">
-						{text}
-					</span>
-				</div>
-			))}
-		</div>
-	);
-}
-
-// ── Main component ─────────────────────────────────────────────────────────
-
-export function ProductSignIn() {
+export function ProductSignIn({ initialMode }: { initialMode?: Mode }) {
 	const router = useRouter();
-	const [mode, setMode] = useState<Mode>("password");
+	const [mode, setMode] = useState<Mode>(initialMode ?? "password");
+	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
-	const [confirmPassword, setConfirmPassword] = useState("");
+	const [showPassword, setShowPassword] = useState(false);
 	const [sent, setSent] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -219,32 +143,26 @@ export function ProductSignIn() {
 		setSent(true);
 	};
 
-	const handleGoogle = async () => {
-		await supabase.auth.signInWithOAuth({
-			provider: "google",
-			options: { redirectTo },
-		});
-	};
-
 	const handleSignUp = async (e: React.FormEvent) => {
 		e.preventDefault();
 		setError(null);
-		if (password !== confirmPassword) {
-			setError("Passwords don't match.");
-			return;
-		}
 		if (password.length < 6) {
 			setError("Password must be at least 6 characters.");
 			return;
 		}
 		setLoading(true);
-		const { error } = await supabase.auth.signUp({ email, password });
+		// Stash the name in user metadata so onboarding's first step prefills it.
+		const { error } = await supabase.auth.signUp({
+			email,
+			password,
+			options: { data: { display_name: name.trim() || undefined } },
+		});
 		setLoading(false);
 		if (error) {
 			setError(error.message);
 			return;
 		}
-		// Hard navigation so the proxy re-checks auth and redirects appropriately
+		// Hard navigation so the proxy re-checks auth and routes to onboarding.
 		window.location.href = "/onboarding";
 	};
 
@@ -253,63 +171,59 @@ export function ProductSignIn() {
 		setMode(next);
 	};
 
-	// ── Sent state ───────────────────────────────────────────────────────────
+	const errorBox = error ? (
+		<p className="rounded-2xl bg-red-500/10 px-4 py-2.5 font-semibold text-[13px] text-red-600">
+			{error}
+		</p>
+	) : null;
 
+	// ── Sent state ───────────────────────────────────────────────────────────
 	if (sent) {
 		return (
-			<>
-				<BrandRow />
-				<div className="py-5 text-center">
-					<div className="mb-3 flex justify-center">
-						<div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#3ECFBF]/10">
-							<svg
-								width="24"
-								height="24"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="#0A8F7F"
-								strokeWidth={1.8}
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								aria-hidden="true"
-							>
-								<rect x="2" y="4" width="20" height="16" rx="2" />
-								<path d="M2 7l10 7 10-7" />
-							</svg>
-						</div>
-					</div>
-					<p className="font-bold text-[#0E1420] text-[17px]">
-						Check your email
-					</p>
-					<p className="mt-1.5 text-[#0E1420]/65 text-[13px]">
-						Magic link sent to <span className="text-[#0E1420]">{email}</span>
-					</p>
-					<button
-						type="button"
-						onClick={() => {
-							setSent(false);
-							switchMode("password");
-						}}
-						className="mt-5 cursor-pointer text-[#0E1420]/55 text-[12px] transition-colors hover:text-[#0E1420]/70"
+			<div className="text-center">
+				<div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#005ac2]/10">
+					<svg
+						width="24"
+						height="24"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="#005ac2"
+						strokeWidth={2}
+						strokeLinecap="round"
+						strokeLinejoin="round"
+						aria-hidden="true"
 					>
-						Back to sign in
-					</button>
+						<rect x="2" y="4" width="20" height="16" rx="2" />
+						<path d="M2 7l10 7 10-7" />
+					</svg>
 				</div>
-				<TrustBar />
-			</>
+				<p className="font-bold text-[#0E1420] text-[18px]">Check your email</p>
+				<p className="mt-1.5 text-[#0E1420]/65 text-[14px]">
+					Magic link sent to <span className="text-[#0E1420]">{email}</span>
+				</p>
+				<button
+					type="button"
+					onClick={() => {
+						setSent(false);
+						switchMode("password");
+					}}
+					className="mt-6 cursor-pointer font-semibold text-[#0E1420]/60 text-[13px] transition-colors hover:text-[#0E1420]"
+				>
+					Back to sign in
+				</button>
+			</div>
 		);
 	}
 
 	// ── Magic link mode ──────────────────────────────────────────────────────
-
 	if (mode === "magic") {
 		return (
-			<>
-				<BrandRow />
-				<p className="mb-3 font-black text-[#0E1420] text-[18px] tracking-tight">
+			<div>
+				<span className={eyebrowCls}>Passwordless</span>
+				<h2 className={headingCls} style={{ fontFamily: SERIF }}>
 					Magic link
-				</p>
-				<form onSubmit={handleMagicLink} className="flex flex-col gap-2.5">
+				</h2>
+				<form onSubmit={handleMagicLink} className="mt-8 space-y-6">
 					<div>
 						<label htmlFor="magic-email" className={labelCls}>
 							Email
@@ -319,71 +233,61 @@ export function ProductSignIn() {
 							type="email"
 							required
 							autoComplete="email"
-							placeholder="your@email.com"
+							placeholder="you@example.com"
 							value={email}
 							onChange={(e) => setEmail(e.target.value)}
 							className={inputCls}
 						/>
 					</div>
-					{error && (
-						<p className="rounded-lg bg-red-500/10 px-3 py-1.5 text-[12px] text-red-600">
-							{error}
-						</p>
-					)}
-					<button type="submit" disabled={loading} className={primaryBtnCls}>
-						<span className="relative z-10">
-							{loading ? "Sending…" : "Send magic link"}
-						</span>
-					</button>
+					{errorBox}
 					<button
-						type="button"
-						onClick={() => switchMode("password")}
-						className="cursor-pointer text-center text-[#0E1420]/55 text-[12px] transition-colors hover:text-[#0E1420]/70"
+						type="submit"
+						disabled={loading}
+						className={primaryBtnCls}
+						style={primaryBtnStyle}
 					>
-						Sign in with password instead
+						{loading ? "Sending…" : "Send magic link"}
+						<ArrowIcon />
 					</button>
 				</form>
-				<TrustBar />
-			</>
+				<button
+					type="button"
+					onClick={() => switchMode("password")}
+					className="mt-6 w-full cursor-pointer text-center font-semibold text-[#0E1420]/60 text-[13px] transition-colors hover:text-[#0E1420]"
+				>
+					Sign in with a password instead
+				</button>
+			</div>
 		);
 	}
 
-	// ── Sign-up mode ─────────────────────────────────────────────────────────
-
+	// ── Sign-up mode (the "Collective" form) ─────────────────────────────────
 	if (mode === "signup") {
-		const pwMismatch =
-			confirmPassword.length > 0 && password !== confirmPassword;
 		return (
-			<>
-				<BrandRow />
-
-				{/* Hero, parallel to the sign-in headline but framed as a beginning. */}
-				<div className="mb-4">
-					<div className="font-black text-[#0E1420] text-[22px] leading-[1.15] tracking-tight">
-						Find your
-					</div>
-					<div
-						className="font-black text-[22px] leading-[1.15] tracking-tight"
-						style={{ color: "#F5C842" }}
-					>
-						direction.
-					</div>
-					<p className="mt-2 text-[#0E1420]/60 text-[13px] leading-relaxed">
-						Create your account and turn intention into a few completed steps,
-						one day at a time.
-					</p>
+			<div>
+				<div className="mb-10 text-center md:text-left">
+					<span className={eyebrowCls}>New Collective Application</span>
+					<h2 className={headingCls} style={{ fontFamily: SERIF }}>
+						Create your North identity
+					</h2>
+					<p className={subCls}>The first step toward intentional growth.</p>
 				</div>
-
-				<button
-					type="button"
-					onClick={handleGoogle}
-					className="mb-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-[#0E1420]/12 border-[1.5px] bg-white py-[11px] font-bold text-[#0E1420] text-[14px] transition-colors hover:bg-[#F4F7FC]"
-				>
-					<GoogleIcon />
-					Continue with Google
-				</button>
-				<OrDivider label="or sign up with email" />
-				<form onSubmit={handleSignUp} className="flex flex-col gap-2.5">
+				<form onSubmit={handleSignUp} className="space-y-6">
+					<div>
+						<label htmlFor="signup-name" className={labelCls}>
+							Full name
+						</label>
+						<input
+							id="signup-name"
+							type="text"
+							required
+							autoComplete="name"
+							placeholder="Alexander Thorne"
+							value={name}
+							onChange={(e) => setName(e.target.value)}
+							className={inputCls}
+						/>
+					</div>
 					<div>
 						<label htmlFor="signup-email" className={labelCls}>
 							Email
@@ -393,7 +297,7 @@ export function ProductSignIn() {
 							type="email"
 							required
 							autoComplete="email"
-							placeholder="your@email.com"
+							placeholder="you@example.com"
 							value={email}
 							onChange={(e) => setEmail(e.target.value)}
 							className={inputCls}
@@ -401,109 +305,63 @@ export function ProductSignIn() {
 					</div>
 					<div>
 						<label htmlFor="signup-password" className={labelCls}>
-							Password
+							Secure password
 						</label>
-						<input
-							id="signup-password"
-							type="password"
-							required
-							autoComplete="new-password"
-							placeholder="At least 6 characters"
-							value={password}
-							onChange={(e) => setPassword(e.target.value)}
-							className={inputCls}
-						/>
+						<div className="relative">
+							<input
+								id="signup-password"
+								type={showPassword ? "text" : "password"}
+								required
+								autoComplete="new-password"
+								placeholder="At least 6 characters"
+								value={password}
+								onChange={(e) => setPassword(e.target.value)}
+								className={`${inputCls} pr-12`}
+							/>
+							<EyeButton
+								shown={showPassword}
+								onClick={() => setShowPassword((v) => !v)}
+							/>
+						</div>
 					</div>
-					<div>
-						<label htmlFor="signup-confirm" className={labelCls}>
-							Confirm password
-						</label>
-						<input
-							id="signup-confirm"
-							type="password"
-							required
-							autoComplete="new-password"
-							placeholder="Repeat password"
-							value={confirmPassword}
-							onChange={(e) => setConfirmPassword(e.target.value)}
-							className={`${inputCls} ${pwMismatch ? "border-red-400 focus:border-red-400" : ""}`}
-						/>
-						{pwMismatch && (
-							<p className="mt-1 text-[11px] text-red-600">
-								Passwords don't match yet.
-							</p>
-						)}
-					</div>
-					{error && (
-						<p className="rounded-lg bg-red-500/10 px-3 py-1.5 text-[12px] text-red-600">
-							{error}
-						</p>
-					)}
-					<button type="submit" disabled={loading} className={primaryBtnCls}>
-						<span className="relative z-10">
-							{loading ? "Creating account…" : "Create account"}
-						</span>
-						{/* Shimmer sweep, matching the sign-in CTA. */}
-						<div
-							aria-hidden="true"
-							className="pointer-events-none absolute inset-y-0 w-[50%] animate-shimmer"
-							style={{
-								background:
-									"linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent)",
-							}}
-						/>
+					{errorBox}
+					<button
+						type="submit"
+						disabled={loading}
+						className={primaryBtnCls}
+						style={primaryBtnStyle}
+					>
+						{loading ? "Creating account…" : "Join the Collective"}
+						<ArrowIcon />
 					</button>
 				</form>
-				<div className="mt-3 mb-3.5 flex items-center justify-center gap-2 text-[12px]">
-					<span className="text-[#0E1420]/55">Already have an account?</span>
-					<button
-						type="button"
-						onClick={() => switchMode("password")}
-						className={switchLinkCls}
-					>
-						Sign in
-					</button>
+				<div className="mt-10 border-[#0E1420]/10 border-t pt-8 text-center">
+					<p className="font-medium text-[#0E1420]/60 text-[14px]">
+						Already have access?
+						<button
+							type="button"
+							onClick={() => switchMode("password")}
+							className={switchLinkCls}
+						>
+							Sign in
+						</button>
+					</p>
 				</div>
-				<TrustBar />
-			</>
+			</div>
 		);
 	}
 
-	// ── Password mode (default) ──────────────────────────────────────────────
-
+	// ── Password (sign-in) mode, default ─────────────────────────────────────
 	return (
-		<>
-			{/* 1. Brand row */}
-			<BrandRow />
-
-			{/* 2. Hero */}
-			<div className="mb-4">
-				<div className="font-black text-[#0E1420] text-[22px] leading-[1.15] tracking-tight">
-					Your future
-				</div>
-				<div
-					className="font-black text-[22px] leading-[1.15] tracking-tight"
-					style={{ color: "#F5C842" }}
-				>
-					starts now.
-				</div>
+		<div>
+			<div className="mb-10 text-center md:text-left">
+				<span className={eyebrowCls}>Member Access</span>
+				<h2 className={headingCls} style={{ fontFamily: SERIF }}>
+					Welcome back
+				</h2>
+				<p className={subCls}>Sign in to continue your direction.</p>
 			</div>
-
-			{/* 3. Google */}
-			<button
-				type="button"
-				onClick={handleGoogle}
-				className="mb-2 flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border-[#0E1420]/12 border-[1.5px] bg-white py-[11px] font-bold text-[#0E1420] text-[14px] transition-colors hover:bg-[#F4F7FC]"
-			>
-				<GoogleIcon />
-				Continue with Google
-			</button>
-
-			{/* 4. Divider */}
-			<OrDivider label="or email" />
-
-			{/* 5 & 6. Inputs */}
-			<form onSubmit={handlePassword} className="flex flex-col gap-2.5">
+			<form onSubmit={handlePassword} className="space-y-6">
 				<div>
 					<label htmlFor="signin-email" className={labelCls}>
 						Email
@@ -513,7 +371,7 @@ export function ProductSignIn() {
 						type="email"
 						required
 						autoComplete="email"
-						placeholder="your@email.com"
+						placeholder="you@example.com"
 						value={email}
 						onChange={(e) => setEmail(e.target.value)}
 						className={inputCls}
@@ -523,63 +381,53 @@ export function ProductSignIn() {
 					<label htmlFor="signin-password" className={labelCls}>
 						Password
 					</label>
-					<input
-						id="signin-password"
-						type="password"
-						required
-						autoComplete="current-password"
-						placeholder="Your password"
-						value={password}
-						onChange={(e) => setPassword(e.target.value)}
-						className={inputCls}
-					/>
+					<div className="relative">
+						<input
+							id="signin-password"
+							type={showPassword ? "text" : "password"}
+							required
+							autoComplete="current-password"
+							placeholder="Your password"
+							value={password}
+							onChange={(e) => setPassword(e.target.value)}
+							className={`${inputCls} pr-12`}
+						/>
+						<EyeButton
+							shown={showPassword}
+							onClick={() => setShowPassword((v) => !v)}
+						/>
+					</div>
 				</div>
-
-				{error && (
-					<p className="rounded-lg bg-red-500/10 px-3 py-1.5 text-[12px] text-red-600">
-						{error}
-					</p>
-				)}
-
-				{/* 7. CTA */}
-				<button type="submit" disabled={loading} className={primaryBtnCls}>
-					<span className="relative z-10">
-						{loading ? "Signing in…" : "Sign in to North"}
-					</span>
-					{/* Shimmer sweep */}
-					<div
-						aria-hidden="true"
-						className="pointer-events-none absolute inset-y-0 w-[50%] animate-shimmer"
-						style={{
-							background:
-								"linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent)",
-						}}
-					/>
+				{errorBox}
+				<button
+					type="submit"
+					disabled={loading}
+					className={primaryBtnCls}
+					style={primaryBtnStyle}
+				>
+					{loading ? "Signing in…" : "Sign in to North"}
+					<ArrowIcon />
 				</button>
 			</form>
-
-			{/* 8. Footer */}
-			<div className="mb-3.5 flex items-center justify-center gap-2 text-[12px]">
-				<span className="text-[#0E1420]/55">New here?</span>
-				<button
-					type="button"
-					onClick={() => switchMode("signup")}
-					className={switchLinkCls}
-				>
-					Create your account
-				</button>
-				<span className="text-[#0E1420]/40">·</span>
+			<div className="mt-10 border-[#0E1420]/10 border-t pt-8 text-center text-[14px]">
+				<p className="font-medium text-[#0E1420]/60">
+					New here?
+					<button
+						type="button"
+						onClick={() => switchMode("signup")}
+						className={switchLinkCls}
+					>
+						Join the Collective
+					</button>
+				</p>
 				<button
 					type="button"
 					onClick={() => switchMode("magic")}
-					className="cursor-pointer text-[#0E1420]/50 text-[12px] transition-colors hover:text-[#0E1420]/70"
+					className="mt-2 cursor-pointer font-medium text-[#0E1420]/45 text-[13px] transition-colors hover:text-[#0E1420]/80"
 				>
-					Magic link
+					Use a magic link instead
 				</button>
 			</div>
-
-			{/* 9. Trust bar */}
-			<TrustBar />
-		</>
+		</div>
 	);
 }

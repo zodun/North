@@ -28,21 +28,49 @@ function normalizeUsername(raw: string): string {
 // display name by mistake (the cause of the "bot not found" t.me page). Falls
 // back to the configured secret only when getMe is unavailable.
 export async function resolveBotUsername(): Promise<string | null> {
+	// Telegram handles are 5..32 chars of [A-Za-z0-9_]; anything else (e.g. a
+	// display name with spaces) would build an invalid t.me URL, so reject it.
+	const valid = (u: string) => /^[A-Za-z0-9_]{4,32}$/.test(u);
+
 	const token = telegramToken();
 	if (token) {
 		try {
 			const res = await fetch(`${API}/bot${token}/getMe`);
 			if (res.ok) {
 				const data = await res.json();
-				const u = data?.result?.username;
-				if (typeof u === "string" && u.trim()) return u.trim();
+				const u =
+					typeof data?.result?.username === "string"
+						? data.result.username.trim()
+						: "";
+				if (valid(u)) {
+					console.log(`[telegram] username via getMe: ${u}`);
+					return u;
+				}
+				console.log(
+					`[telegram] getMe ok but no valid username: ${JSON.stringify(data?.result?.username ?? null)}`,
+				);
+			} else {
+				console.log(`[telegram] getMe HTTP ${res.status}`);
 			}
-		} catch {
-			// Network/Telegram hiccup: fall through to the configured secret.
+		} catch (e) {
+			console.log(
+				`[telegram] getMe threw: ${e instanceof Error ? e.message : String(e)}`,
+			);
 		}
+	} else {
+		console.log("[telegram] TELEGRAM_BOT_TOKEN is not set");
 	}
+
 	const raw = botUsername();
-	return raw ? normalizeUsername(raw) || null : null;
+	const u = raw ? normalizeUsername(raw) : "";
+	if (valid(u)) {
+		console.log(`[telegram] username via TELEGRAM_BOT_USERNAME secret: ${u}`);
+		return u;
+	}
+	console.log(
+		`[telegram] no valid username; secret raw=${JSON.stringify(raw)}`,
+	);
+	return null;
 }
 
 // Escape user-supplied text before embedding it in an HTML-parse-mode message.

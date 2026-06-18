@@ -40,3 +40,6 @@ self.addEventListener("activate", (event) => {
 
 // Do not intercept any requests — let the network handle everything.
 self.addEventListener("fetch", () => {});
+
+// Bump this to force browsers to detect a script change and re-run the
+// self-destruct above (clears caches + unregisters + reloads). v3.

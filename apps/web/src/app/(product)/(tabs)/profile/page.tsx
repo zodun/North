@@ -214,10 +214,8 @@ export default async function ProfilePage() {
 			country={profile?.country ?? null}
 			openToRemote={profile?.open_to_remote ?? false}
 			openToRelocate={profile?.open_to_relocate ?? false}
-			telegramLinked={Boolean(profile?.telegram_chat_id)}
-			telegramEnabled={
-				Boolean(profile?.telegram_opt_in) && Boolean(profile?.telegram_chat_id)
-			}
+			telegramLinked={true}
+			telegramEnabled={profile?.telegram_opt_in ?? true}
 			telegramFrequency={
 				profile?.telegram_frequency === "weekdays" ||
 				profile?.telegram_frequency === "weekly"
