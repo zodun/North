@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/auth-client";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Community Hub, Stitch "Signal & Noise" editorial design, WIRED to the real
-// peer-community backend. Light canvas, gradient-border composer, glass cards,
-// the same visual language as the Journal screen. Every action hits Supabase:
-//   • feed  → peer_posts (server-fetched, prepended on post)
-//   • like  → peer_likes (insert/delete, optimistic)
-//   • post  → peer_posts insert (inline composer)
-//   • rail  → real public_profiles members
+// peer-community backend. Light canvas, gradient-border composer, glass cards.
+// The feed is now a forum: each discussion is a thread row that opens its own
+// page (/community/<id>) where the full conversation and reply box live.
+//   • compose → peer_posts insert (one discussion per day, server-gated)
+//   • list    → forum thread rows linking to the thread page
+//   • rail    → real public_profiles members
 // Styling uses inline tokens + a scoped <style> (no Play-CDN), so the layout is
 // correct before paint and never leaks into other routes.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -27,6 +27,7 @@ export type CommunityHubPost = {
 	likesCount: number;
 	repliesCount: number;
 	liked: boolean;
+	createdAt: string;
 };
 export type CommunityHubMember = {
 	id: string;
@@ -47,14 +48,14 @@ const FONT_SHEET =
 const ICON_SHEET =
 	"https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=block";
 
-const CATEGORIES: { key: string; label: string; color: string }[] = [
+export const CATEGORIES: { key: string; label: string; color: string }[] = [
 	{ key: "win", label: "Win", color: "#0E9E73" },
 	{ key: "question", label: "Question", color: PRIMARY },
 	{ key: "accountability", label: "Accountability", color: "#ee9800" },
 	{ key: "opportunity", label: "Opportunity", color: "#7B61FF" },
 	{ key: "general", label: "General", color: ON_VARIANT },
 ];
-const catMeta = (key: string) =>
+export const catMeta = (key: string) =>
 	CATEGORIES.find((c) => c.key === key) ?? CATEGORIES[4];
 
 const NAV = [
@@ -64,6 +65,22 @@ const NAV = [
 	{ href: "/journal", label: "Journal", icon: "menu_book" },
 	{ href: "/community", label: "Community", icon: "group" },
 ];
+
+// Short relative time for the thread rows ("3h", "2d"), so the forum reads as
+// active without a heavy date library.
+function timeAgo(iso: string): string {
+	const then = new Date(iso).getTime();
+	if (Number.isNaN(then)) return "";
+	const s = Math.max(0, Math.floor((Date.now() - then) / 1000));
+	if (s < 60) return "now";
+	const m = Math.floor(s / 60);
+	if (m < 60) return `${m}m`;
+	const h = Math.floor(m / 60);
+	if (h < 24) return `${h}h`;
+	const d = Math.floor(h / 24);
+	if (d < 7) return `${d}d`;
+	return `${Math.floor(d / 7)}w`;
+}
 
 export function CommunityHub({
 	userId,
@@ -93,7 +110,7 @@ export function CommunityHub({
 	// One discussion a day; flips off after a successful post (or a rejected one).
 	const [canPost, setCanPost] = useState(canPostToday);
 
-	// Inline composer state (replaces the old modal).
+	// Inline composer state.
 	const [category, setCategory] = useState("general");
 	const [title, setTitle] = useState("");
 	const [body, setBody] = useState("");
@@ -107,37 +124,6 @@ export function CommunityHub({
 	function focusComposer() {
 		bodyRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
 		bodyRef.current?.focus();
-	}
-
-	async function toggleLike(id: string) {
-		const post = posts.find((p) => p.id === id);
-		if (!post) return;
-		const nextLiked = !post.liked;
-		setPosts((prev) =>
-			prev.map((p) =>
-				p.id === id
-					? {
-							...p,
-							liked: nextLiked,
-							likesCount: Math.max(0, p.likesCount + (nextLiked ? 1 : -1)),
-						}
-					: p,
-			),
-		);
-		try {
-			if (nextLiked)
-				await supabase
-					.from("peer_likes")
-					.insert({ user_id: userId, post_id: id });
-			else
-				await supabase
-					.from("peer_likes")
-					.delete()
-					.eq("user_id", userId)
-					.eq("post_id", id);
-		} catch {
-			setPosts((prev) => prev.map((p) => (p.id === id ? post : p)));
-		}
 	}
 
 	async function submitPost() {
@@ -161,7 +147,7 @@ export function CommunityHub({
 			if (error) setCanPost(false);
 			return;
 		}
-		// Used today's discussion; replies stay open.
+		// Used today's discussion; replies on the thread pages stay open.
 		setCanPost(false);
 		const author = anon ? "Anonymous" : displayName;
 		setPosts((prev) => [
@@ -176,6 +162,7 @@ export function CommunityHub({
 				likesCount: 0,
 				repliesCount: 0,
 				liked: false,
+				createdAt: new Date().toISOString(),
 			},
 			...prev,
 		]);
@@ -260,7 +247,7 @@ export function CommunityHub({
 											className="mb-1.5 block font-bold text-[11px] uppercase tracking-[0.2em]"
 											style={{ color: PRIMARY }}
 										>
-											Share with the community
+											Start a discussion
 										</span>
 										<h3
 											className="font-bold text-2xl tracking-tight"
@@ -286,7 +273,7 @@ export function CommunityHub({
 								<input
 									value={title}
 									onChange={(e) => setTitle(e.target.value)}
-									placeholder="Add a title (optional)"
+									placeholder="Give your discussion a title"
 									maxLength={120}
 									className="w-full border-none bg-transparent font-bold text-xl outline-none placeholder:text-black/25"
 									style={{ fontFamily: SERIF, color: ON_SURFACE }}
@@ -336,7 +323,9 @@ export function CommunityHub({
 										className="text-xs"
 										style={{ color: ON_VARIANT, opacity: 0.6 }}
 									>
-										{anon ? "Posting anonymously." : "Every post is a step."}
+										{anon
+											? "Posting anonymously."
+											: "One discussion a day, make it count."}
 									</span>
 									<button
 										type="button"
@@ -357,7 +346,7 @@ export function CommunityHub({
 						)}
 					</section>
 
-					{/* ── Discussions + rail ──────────────────────────────────── */}
+					{/* ── Discussions (forum) + rail ──────────────────────────── */}
 					<section className="mx-auto max-w-6xl">
 						<div className="grid grid-cols-12 gap-6">
 							<div className="col-span-12 lg:col-span-8">
@@ -372,7 +361,7 @@ export function CommunityHub({
 										className="font-bold text-3xl tracking-tight"
 										style={{ fontFamily: SERIF }}
 									>
-										Latest discussions
+										Discussions
 									</h2>
 									<div className="mt-5 flex flex-wrap gap-2">
 										<FilterPill
@@ -392,17 +381,9 @@ export function CommunityHub({
 								</div>
 
 								{visiblePosts.length > 0 ? (
-									<div className="space-y-6">
-										{visiblePosts.map((p, i) => (
-											<PostCard
-												key={p.id}
-												post={p}
-												index={i}
-												featured={i === 0 && filter === "all"}
-												onLike={() => void toggleLike(p.id)}
-												userId={userId}
-												currentName={displayName}
-											/>
+									<div className="space-y-3">
+										{visiblePosts.map((p) => (
+											<ThreadRow key={p.id} post={p} />
 										))}
 									</div>
 								) : (
@@ -498,7 +479,8 @@ export function CommunityHub({
 										className="mt-1 text-sm"
 										style={{ color: ON_VARIANT, opacity: 0.75 }}
 									>
-										Every post is a step, for you and for someone reading it.
+										Every discussion is a step, for you and for someone reading
+										it.
 									</p>
 									<button
 										type="button"
@@ -506,7 +488,7 @@ export function CommunityHub({
 										className="mt-4 rounded-xl px-5 py-2.5 font-bold text-white text-xs uppercase tracking-wider transition-all active:scale-95"
 										style={{ background: PRIMARY }}
 									>
-										Post something
+										Start a discussion
 									</button>
 								</div>
 							</aside>
@@ -592,30 +574,17 @@ function FilterPill({
 	);
 }
 
-function PostCard({
-	post,
-	index,
-	featured,
-	onLike,
-	userId,
-	currentName,
-}: {
-	post: CommunityHubPost;
-	index: number;
-	featured: boolean;
-	onLike: () => void;
-	userId: string;
-	currentName: string;
-}) {
+// A forum thread row: the discussion at a glance (category, author, title, a
+// one-line preview, reply/like counts, age) linking to its own thread page.
+function ThreadRow({ post }: { post: CommunityHubPost }) {
 	const cat = catMeta(post.category);
-	const [showReplies, setShowReplies] = useState(false);
-	const [repliesCount, setRepliesCount] = useState(post.repliesCount);
+	const heading = post.title ?? post.body;
+	const preview = post.title ? post.body : null;
+	const age = timeAgo(post.createdAt);
 	return (
-		<article
-			className={`cm-rise ${
-				featured ? "glass-gradient-border" : "glass-panel"
-			} group rounded-[2rem] p-7 sm:p-8`}
-			style={{ animationDelay: `${Math.min(index, 8) * 60 + 120}ms` }}
+		<a
+			href={`/community/${post.id}`}
+			className="cm-rise glass-panel group block rounded-2xl p-5 sm:p-6"
 		>
 			<div className="flex items-start gap-4">
 				<span
@@ -626,254 +595,63 @@ function PostCard({
 				</span>
 				<div className="min-w-0 flex-1">
 					<div className="mb-1 flex flex-wrap items-center gap-2">
-						<span className="font-bold text-sm">{post.authorName}</span>
-						{post.flag && <span aria-hidden="true">{post.flag}</span>}
-						{post.authorDetail && (
-							<span
-								className="text-xs"
-								style={{ color: ON_VARIANT, opacity: 0.5 }}
-							>
-								{post.authorDetail}
-							</span>
-						)}
 						<span
 							className="rounded-full px-2 py-0.5 font-bold text-[10px] uppercase tracking-wider"
 							style={{ background: `${cat.color}1f`, color: cat.color }}
 						>
 							{cat.label}
 						</span>
-					</div>
-					{post.title && (
-						<h4
-							className={`mb-1 font-bold leading-snug ${
-								featured ? "text-2xl sm:text-3xl" : "text-lg"
-							}`}
-							style={{ fontFamily: SERIF }}
-						>
-							{post.title}
-						</h4>
-					)}
-					<p
-						className={`leading-relaxed ${featured ? "text-base" : "text-sm"}`}
-						style={{ color: ON_VARIANT, opacity: 0.85 }}
-					>
-						{post.body}
-					</p>
-					<div className="mt-5 flex items-center gap-5 border-black/5 border-t pt-5">
-						<button
-							type="button"
-							onClick={onLike}
-							aria-pressed={post.liked}
-							className="flex items-center gap-1.5 font-medium text-xs transition-colors"
-							style={{ color: post.liked ? PRIMARY : ON_VARIANT }}
-						>
+						<span className="font-bold text-sm">{post.authorName}</span>
+						{post.flag && <span aria-hidden="true">{post.flag}</span>}
+						{age && (
 							<span
-								className={`material-symbols-outlined text-base ${post.liked ? "cm-heart-liked" : ""}`}
-								style={{
-									fontVariationSettings: post.liked ? "'FILL' 1" : "'FILL' 0",
-								}}
+								className="text-xs"
+								style={{ color: ON_VARIANT, opacity: 0.5 }}
 							>
-								favorite
-							</span>
-							{post.likesCount}
-						</button>
-						<button
-							type="button"
-							onClick={() => setShowReplies((v) => !v)}
-							aria-expanded={showReplies}
-							className="flex items-center gap-1.5 font-medium text-xs transition-colors"
-							style={{ color: showReplies ? PRIMARY : ON_VARIANT }}
-						>
-							<span
-								className="material-symbols-outlined text-base"
-								style={{
-									fontVariationSettings: showReplies ? "'FILL' 1" : "'FILL' 0",
-								}}
-							>
-								chat_bubble
-							</span>
-							{repliesCount === 0
-								? "Reply"
-								: `${repliesCount} ${repliesCount === 1 ? "reply" : "replies"}`}
-						</button>
-						{featured && (
-							<span
-								className="material-symbols-outlined ml-auto transition-transform group-hover:translate-x-1"
-								style={{ color: cat.color }}
-							>
-								arrow_forward
+								{age}
 							</span>
 						)}
 					</div>
-
-					{showReplies && (
-						<RepliesPanel
-							postId={post.id}
-							userId={userId}
-							currentName={currentName}
-							catColor={cat.color}
-							onAdded={() => setRepliesCount((c) => c + 1)}
-						/>
-					)}
-				</div>
-			</div>
-		</article>
-	);
-}
-
-type Reply = { id: string; body: string; name: string; initial: string };
-
-// Participation: the expandable thread under a discussion. Replies load on first
-// open (lazy), and anyone signed in can add one, there's no daily cap on taking
-// part. Inserts hit peer_replies; the DB trigger bumps replies_count + points.
-function RepliesPanel({
-	postId,
-	userId,
-	currentName,
-	catColor,
-	onAdded,
-}: {
-	postId: string;
-	userId: string;
-	currentName: string;
-	catColor: string;
-	onAdded: () => void;
-}) {
-	const [replies, setReplies] = useState<Reply[] | null>(null);
-	const [loading, setLoading] = useState(false);
-	const [draft, setDraft] = useState("");
-	const [busy, setBusy] = useState(false);
-
-	useEffect(() => {
-		let active = true;
-		(async () => {
-			setLoading(true);
-			const { data } = await supabase
-				.from("peer_replies")
-				.select("id, user_id, body, created_at")
-				.eq("post_id", postId)
-				.order("created_at", { ascending: true });
-			const rows = (data ?? []) as {
-				id: string;
-				user_id: string;
-				body: string;
-			}[];
-			const ids = [...new Set(rows.map((r) => r.user_id))];
-			const nameById = new Map<string, string>();
-			if (ids.length) {
-				const { data: authors } = await supabase
-					.from("public_profiles")
-					.select("user_id, display_name")
-					.in("user_id", ids);
-				for (const a of (authors ?? []) as {
-					user_id: string;
-					display_name: string | null;
-				}[])
-					nameById.set(a.user_id, a.display_name ?? "Member");
-			}
-			if (!active) return;
-			setReplies(
-				rows.map((r) => {
-					const name = nameById.get(r.user_id) ?? "Member";
-					return {
-						id: r.id,
-						body: r.body,
-						name,
-						initial: (name[0] ?? "·").toUpperCase(),
-					};
-				}),
-			);
-			setLoading(false);
-		})();
-		return () => {
-			active = false;
-		};
-	}, [postId]);
-
-	async function submit() {
-		if (!draft.trim() || busy) return;
-		setBusy(true);
-		const { data, error } = await supabase
-			.from("peer_replies")
-			.insert({ post_id: postId, user_id: userId, body: draft.trim() })
-			.select("id, body")
-			.single();
-		setBusy(false);
-		if (error || !data) return;
-		setReplies((prev) => [
-			...(prev ?? []),
-			{
-				id: data.id as string,
-				body: data.body as string,
-				name: currentName,
-				initial: (currentName[0] ?? "·").toUpperCase(),
-			},
-		]);
-		setDraft("");
-		onAdded();
-	}
-
-	return (
-		<div className="mt-4 border-black/5 border-t pt-4">
-			{loading && replies === null ? (
-				<p className="text-xs" style={{ color: ON_VARIANT, opacity: 0.6 }}>
-					Loading replies…
-				</p>
-			) : (
-				<div className="space-y-4">
-					{(replies ?? []).map((r) => (
-						<div key={r.id} className="flex items-start gap-3">
-							<span
-								className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-bold text-xs"
-								style={{ background: `${catColor}1f`, color: catColor }}
-							>
-								{r.initial}
-							</span>
-							<div className="min-w-0 flex-1">
-								<p className="font-bold text-xs">{r.name}</p>
-								<p
-									className="text-sm leading-relaxed"
-									style={{ color: ON_VARIANT, opacity: 0.9 }}
-								>
-									{r.body}
-								</p>
-							</div>
-						</div>
-					))}
-					{replies !== null && replies.length === 0 && (
-						<p className="text-xs" style={{ color: ON_VARIANT, opacity: 0.6 }}>
-							No replies yet. Be the first to respond.
+					<h3
+						className="line-clamp-2 font-bold text-lg leading-snug"
+						style={{ fontFamily: SERIF }}
+					>
+						{heading}
+					</h3>
+					{preview && (
+						<p
+							className="mt-0.5 line-clamp-1 text-sm"
+							style={{ color: ON_VARIANT, opacity: 0.8 }}
+						>
+							{preview}
 						</p>
 					)}
+					<div
+						className="mt-3 flex items-center gap-5 text-xs"
+						style={{ color: ON_VARIANT, opacity: 0.7 }}
+					>
+						<span className="flex items-center gap-1.5">
+							<span className="material-symbols-outlined text-base">
+								chat_bubble
+							</span>
+							{post.repliesCount}
+						</span>
+						<span className="flex items-center gap-1.5">
+							<span className="material-symbols-outlined text-base">
+								favorite
+							</span>
+							{post.likesCount}
+						</span>
+						<span
+							className="ml-auto font-bold uppercase tracking-wider transition-colors group-hover:text-[#005ac2]"
+							style={{ color: PRIMARY }}
+						>
+							Open thread →
+						</span>
+					</div>
 				</div>
-			)}
-
-			<div className="mt-4 flex items-center gap-2">
-				<input
-					value={draft}
-					onChange={(e) => setDraft(e.target.value)}
-					onKeyDown={(e) => {
-						if (e.key === "Enter" && !e.shiftKey) {
-							e.preventDefault();
-							void submit();
-						}
-					}}
-					placeholder="Write a reply…"
-					maxLength={2000}
-					className="flex-1 rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm outline-none transition-colors placeholder:text-black/30 focus:border-[#005ac2]/40"
-					style={{ color: ON_SURFACE }}
-				/>
-				<button
-					type="button"
-					onClick={() => void submit()}
-					disabled={!draft.trim() || busy}
-					className="rounded-xl px-4 py-2.5 font-bold text-white text-xs uppercase tracking-wider transition-all active:scale-95 disabled:opacity-40"
-					style={{ background: PRIMARY }}
-				>
-					{busy ? "…" : "Reply"}
-				</button>
 			</div>
-		</div>
+		</a>
 	);
 }
 
@@ -900,8 +678,8 @@ function DailyLimitNotice({ tail }: { tail: string }) {
 				style={{ color: ON_VARIANT, opacity: 0.8 }}
 			>
 				One a day keeps it considered. Come back tomorrow to start another. In
-				the meantime, jump into the conversations below, replies are always
-				open.
+				the meantime, open a thread below and join the conversation, replies are
+				always open.
 			</p>
 		</div>
 	);
@@ -927,7 +705,7 @@ function EmptyFeed({
 			</p>
 			<p className="mt-1 text-sm" style={{ color: ON_VARIANT, opacity: 0.7 }}>
 				{filtered
-					? "No posts in this category yet. Be the first."
+					? "No discussions in this category yet. Be the first."
 					: "Start the first one, share a win, ask a question, or set an intention."}
 			</p>
 			<button
@@ -987,7 +765,7 @@ function TopBar({
 	);
 }
 
-function Sidebar() {
+export function Sidebar() {
 	return (
 		<aside className="ch-rail px-6 py-8">
 			<a
@@ -1053,7 +831,7 @@ function Sidebar() {
 	);
 }
 
-const SCOPED_CSS = `
+export const SCOPED_CSS = `
 .material-symbols-outlined {
 	font-family: 'Material Symbols Outlined';
 	font-weight: normal; font-style: normal; line-height: 1; letter-spacing: normal;
@@ -1087,8 +865,8 @@ const SCOPED_CSS = `
 		radial-gradient(50% 75% at 96% -8%, rgba(62,207,191,0.14), transparent 60%),
 		radial-gradient(42% 60% at 62% -22%, rgba(245,200,66,0.12), transparent 55%);
 }
-/* A little flair, calm by default: cards rise in on load, the like pops, and
-   presence dots breathe, all disabled under reduced-motion. */
+/* A little flair, calm by default: cards rise in on load and presence dots
+   breathe, all disabled under reduced-motion. */
 @keyframes cm-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 .cm-rise { animation: cm-rise .55s cubic-bezier(0.22,1,0.36,1) both; }
 @keyframes cm-pop { 0% { transform: scale(1); } 40% { transform: scale(1.35); } 100% { transform: scale(1); } }

@@ -96,6 +96,7 @@ export default async function CommunityPage() {
 			likesCount: p.likes_count as number,
 			repliesCount: p.replies_count as number,
 			liked: liked.has(p.id as string),
+			createdAt: p.created_at as string,
 		};
 	});
 
