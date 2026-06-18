@@ -351,12 +351,29 @@ export function ProductSignIn() {
 	// ── Sign-up mode ─────────────────────────────────────────────────────────
 
 	if (mode === "signup") {
+		const pwMismatch =
+			confirmPassword.length > 0 && password !== confirmPassword;
 		return (
 			<>
 				<BrandRow />
-				<p className="mb-3 font-black text-[#0E1420] text-[18px] tracking-tight">
-					Create account
-				</p>
+
+				{/* Hero, parallel to the sign-in headline but framed as a beginning. */}
+				<div className="mb-4">
+					<div className="font-black text-[#0E1420] text-[22px] leading-[1.15] tracking-tight">
+						Find your
+					</div>
+					<div
+						className="font-black text-[22px] leading-[1.15] tracking-tight"
+						style={{ color: "#F5C842" }}
+					>
+						direction.
+					</div>
+					<p className="mt-2 text-[#0E1420]/60 text-[13px] leading-relaxed">
+						Create your account and turn intention into a few completed steps,
+						one day at a time.
+					</p>
+				</div>
+
 				<button
 					type="button"
 					onClick={handleGoogle}
@@ -365,7 +382,7 @@ export function ProductSignIn() {
 					<GoogleIcon />
 					Continue with Google
 				</button>
-				<OrDivider label="or email" />
+				<OrDivider label="or sign up with email" />
 				<form onSubmit={handleSignUp} className="flex flex-col gap-2.5">
 					<div>
 						<label htmlFor="signup-email" className={labelCls}>
@@ -391,7 +408,7 @@ export function ProductSignIn() {
 							type="password"
 							required
 							autoComplete="new-password"
-							placeholder="Minimum 6 characters"
+							placeholder="At least 6 characters"
 							value={password}
 							onChange={(e) => setPassword(e.target.value)}
 							className={inputCls}
@@ -409,8 +426,13 @@ export function ProductSignIn() {
 							placeholder="Repeat password"
 							value={confirmPassword}
 							onChange={(e) => setConfirmPassword(e.target.value)}
-							className={inputCls}
+							className={`${inputCls} ${pwMismatch ? "border-red-400 focus:border-red-400" : ""}`}
 						/>
+						{pwMismatch && (
+							<p className="mt-1 text-[11px] text-red-600">
+								Passwords don't match yet.
+							</p>
+						)}
 					</div>
 					{error && (
 						<p className="rounded-lg bg-red-500/10 px-3 py-1.5 text-[12px] text-red-600">
@@ -421,15 +443,27 @@ export function ProductSignIn() {
 						<span className="relative z-10">
 							{loading ? "Creating account…" : "Create account"}
 						</span>
+						{/* Shimmer sweep, matching the sign-in CTA. */}
+						<div
+							aria-hidden="true"
+							className="pointer-events-none absolute inset-y-0 w-[50%] animate-shimmer"
+							style={{
+								background:
+									"linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent)",
+							}}
+						/>
 					</button>
+				</form>
+				<div className="mt-3 mb-3.5 flex items-center justify-center gap-2 text-[12px]">
+					<span className="text-[#0E1420]/55">Already have an account?</span>
 					<button
 						type="button"
 						onClick={() => switchMode("password")}
-						className="cursor-pointer text-center text-[#0E1420]/55 text-[12px] transition-colors hover:text-[#0E1420]/70"
+						className={switchLinkCls}
 					>
-						Already have an account? Sign in
+						Sign in
 					</button>
-				</form>
+				</div>
 				<TrustBar />
 			</>
 		);

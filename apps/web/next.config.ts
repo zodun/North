@@ -10,6 +10,9 @@ const withSerwist = withSerwistInit({
 const nextConfig: NextConfig = {
 	typedRoutes: true,
 	reactCompiler: true,
+	// Hide the Next.js dev indicator (the "N" logo button in the corner). It's
+	// dev-only chrome that never ships to production; this removes it locally too.
+	devIndicators: false,
 	// Same-origin proxy to the local Supabase, so the browser can reach it over
 	// HTTPS through a tunnel (e.g. ngrok) without mixed-content/CORS. Set the
 	// browser's NEXT_PUBLIC_SUPABASE_URL to `https://<tunnel>/sb` to use it; the

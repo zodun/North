@@ -315,11 +315,12 @@ export default function OnboardingPage() {
 				.eq("user_id", userId);
 		}
 		if (step === 11 && purposeMode) {
-			const { error: err } = await supabase
+			// Best-effort: the stance is cosmetic and onboarding completion doesn't
+			// depend on it, so a save hiccup must never trap the user on this step.
+			await supabase
 				.from("profiles")
 				.update({ purpose_mode: purposeMode })
 				.eq("user_id", userId);
-			if (err) throw new Error(err.message);
 		}
 	}
 
