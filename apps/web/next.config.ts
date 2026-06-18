@@ -22,6 +22,7 @@ const nextConfig: NextConfig = {
 		const sb = process.env.SUPABASE_URL ?? "http://127.0.0.1:54321";
 		return [{ source: "/sb/:path*", destination: `${sb}/:path*` }];
 	},
+	turbopack: {},
 };
 
 // In development the dev server uses Turbopack, which errors if a webpack config
