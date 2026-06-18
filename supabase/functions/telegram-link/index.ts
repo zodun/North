@@ -11,7 +11,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { corsHeaders, preflight } from "../_shared/cors.ts";
-import { botUsername } from "../_shared/telegram.ts";
+import { resolveBotUsername } from "../_shared/telegram.ts";
 
 const TOKEN_TTL_MS = 15 * 60 * 1000;
 
@@ -49,26 +49,12 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 		} = await userClient.auth.getUser();
 		if (authErr || !user) return json({ error: "unauthorized" }, 401);
 
-		const rawUsername = botUsername();
-		if (!rawUsername) {
-			return json(
-				{ error: "Telegram bot not configured (TELEGRAM_BOT_USERNAME)." },
-				503,
-			);
-		}
-		// Normalize however the secret was set, strip whitespace, a leading @, and
-		// any pasted t.me/ or https://t.me/ prefix, so the deep link is always a
-		// valid https://t.me/<handle> URL. A stray @ or prefix makes Safari reject
-		// the address ("the address is invalid") and the link never opens.
-		const username = rawUsername
-			.trim()
-			.replace(/^https?:\/\/t\.me\//i, "")
-			.replace(/^t\.me\//i, "")
-			.replace(/^@+/, "")
-			.trim();
+		// Authoritative @username straight from the bot token (getMe), so the deep
+		// link always points at the real bot even if TELEGRAM_BOT_USERNAME is stale.
+		const username = await resolveBotUsername();
 		if (!username) {
 			return json(
-				{ error: "Telegram bot not configured (TELEGRAM_BOT_USERNAME)." },
+				{ error: "Telegram bot not configured (set TELEGRAM_BOT_TOKEN)." },
 				503,
 			);
 		}
