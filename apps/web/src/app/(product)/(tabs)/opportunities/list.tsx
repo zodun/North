@@ -720,14 +720,6 @@ function TopBar({
 					/>
 				</div>
 				<div className="flex shrink-0 items-center gap-4">
-					<a href="/profile" className="relative" aria-label="Notifications">
-						<span
-							className="material-symbols-outlined"
-							style={{ color: ON_VARIANT }}
-						>
-							notifications
-						</span>
-					</a>
 					<a
 						href="/profile"
 						aria-label="Your profile"

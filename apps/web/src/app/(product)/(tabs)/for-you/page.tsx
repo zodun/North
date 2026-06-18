@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { getIsPremium } from "@/lib/entitlement";
 import { applyOrder, personalize } from "@/lib/personalize";
+import { isPurposeMode } from "@/lib/purpose";
 import { getServerSupabase } from "@/lib/supabase-server";
 import { SleekForYou } from "./sleek-feed";
 
@@ -54,7 +55,7 @@ export default async function ForYouPage() {
 	const { data: profile } = user
 		? await supabase
 				.from("profiles")
-				.select("aspiration, content_formats, fields")
+				.select("aspiration, content_formats, fields, purpose_mode")
 				.eq("user_id", user.id)
 				.maybeSingle()
 		: { data: null };
@@ -268,6 +269,9 @@ export default async function ForYouPage() {
 			initialSaved={[...initialSaved]}
 			preview={preview}
 			aspiration={(profile?.aspiration as string | null) ?? null}
+			purposeMode={
+				isPurposeMode(profile?.purpose_mode) ? profile.purpose_mode : null
+			}
 			mission={mission}
 			opportunity={opportunity}
 		/>

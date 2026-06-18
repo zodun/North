@@ -96,19 +96,42 @@ const CTA_LABELS = [
 	"That's how I learn", // 8 learn-format
 	"That's my aim", // 9 aim
 	"This is my pace", // 10 time
-	"Take me to North", // 11 consent
+	"That's where I am", // 11 purpose (explorer / builder)
+	"Take me to North", // 12 consent
 ];
 
-// 12 steps: a welcome (name) + 10 questions + consent. The counter shows the 10
+// 13 steps: a welcome (name) + 11 questions + consent. The counter shows the 11
 // questions; the welcome and consent are framing steps.
-const TOTAL_STEPS = 12;
-const QUESTION_COUNT = 10;
+const TOTAL_STEPS = 13;
+const QUESTION_COUNT = 11;
 
 // How the user likes to consume content → For You can favour matching kinds.
 const CONTENT_FORMATS = [
 	{ id: "read", label: "Read" },
 	{ id: "watch", label: "Watch" },
 	{ id: "listen", label: "Listen" },
+];
+
+// Do you already know your purpose? This is the one question that names who the
+// user is in North. The two stances are worn across the app afterward, so the
+// choice is framed as an induction, not a checkbox.
+const PURPOSE_OPTIONS = [
+	{
+		id: "builder",
+		icon: "rocket" as const,
+		title: "Builder",
+		creed: "I know what I'm working toward. I'm here to make it real.",
+		sealed: "You're a Builder. North will move with you toward it.",
+		color: GOLD,
+	},
+	{
+		id: "explorer",
+		icon: "compass" as const,
+		title: "Explorer",
+		creed: "I'm still finding my direction. I'm here to discover it.",
+		sealed: "You're an Explorer. North will help you find the way.",
+		color: TEAL,
+	},
 ];
 
 // Highest education completed or in progress → Opportunities eligibility.
@@ -140,6 +163,7 @@ export default function OnboardingPage() {
 	const [time, setTime] = useState<string | null>(null);
 	const [educationLevel, setEducationLevel] = useState<string | null>(null);
 	const [aspiration, setAspiration] = useState("");
+	const [purposeMode, setPurposeMode] = useState<string | null>(null);
 	const [consent, setConsent] = useState(false);
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -203,7 +227,8 @@ export default function OnboardingPage() {
 		setError(null);
 
 		// 0 welcome/name · 1 focus · 2 fields · 3 career · 4 interests ·
-		// 5 direction · 6 location · 7 education · 8 learn-format · 9 aim · 10 time
+		// 5 direction · 6 location · 7 education · 8 learn-format · 9 aim · 10 time ·
+		// 11 purpose
 		if (step === 0) {
 			const { error: err } = await supabase
 				.from("profiles")
@@ -289,6 +314,13 @@ export default function OnboardingPage() {
 				.update({ time_budget_label: time })
 				.eq("user_id", userId);
 		}
+		if (step === 11 && purposeMode) {
+			const { error: err } = await supabase
+				.from("profiles")
+				.update({ purpose_mode: purposeMode })
+				.eq("user_id", userId);
+			if (err) throw new Error(err.message);
+		}
 	}
 
 	async function handleComplete() {
@@ -345,7 +377,8 @@ export default function OnboardingPage() {
 		if (step === 8) return contentFormats.length > 0;
 		if (step === 9) return true; // aim optional
 		if (step === 10) return time !== null;
-		if (step === 11) return focus.length > 0 && consent;
+		if (step === 11) return purposeMode !== null;
+		if (step === 12) return focus.length > 0 && consent;
 		return false;
 	})();
 
@@ -436,6 +469,9 @@ export default function OnboardingPage() {
 				)}
 				{step === 10 && <StepTime value={time} onSelect={setTime} />}
 				{step === 11 && (
+					<StepPurpose value={purposeMode} onSelect={setPurposeMode} />
+				)}
+				{step === 12 && (
 					<StepConsent consent={consent} onConsent={setConsent} />
 				)}
 
@@ -463,7 +499,7 @@ export default function OnboardingPage() {
 							Skip for now
 						</button>
 					)}
-					{step === 11 && !consent && (
+					{step === 12 && !consent && (
 						<p className="mt-2 text-center text-[#0E1420]/50 text-[11px]">
 							You must agree to continue
 						</p>
@@ -1120,6 +1156,86 @@ function StepTime({
 	);
 }
 
+function StepPurpose({
+	value,
+	onSelect,
+}: {
+	value: string | null;
+	onSelect: (v: string) => void;
+}) {
+	const chosen = PURPOSE_OPTIONS.find((o) => o.id === value) ?? null;
+	return (
+		<div>
+			<StepHead
+				eyebrow="Who you are here"
+				headline="Do you already know your purpose?"
+				sub="No wrong answer. This names how you'll move through North."
+			/>
+			<div className="flex flex-col gap-3">
+				{PURPOSE_OPTIONS.map((opt) => {
+					const selected = value === opt.id;
+					return (
+						<button
+							key={opt.id}
+							type="button"
+							aria-pressed={selected}
+							onClick={() => onSelect(opt.id)}
+							className={`relative flex items-center gap-4 rounded-[20px] border-[1.5px] p-5 text-left transition-all hover:bg-[#F4F7FC] ${selectableRing()} motion-reduce:transition-none`}
+							style={{
+								backgroundColor: selected ? `${opt.color}1A` : "#ffffff",
+								borderColor: selected ? opt.color : "rgba(14,20,32,0.12)",
+							}}
+						>
+							{/* Ringed medallion: the mark they're choosing to wear. */}
+							<span
+								className="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full transition-transform duration-500 ease-out motion-reduce:transition-none"
+								style={{
+									background: `${opt.color}24`,
+									border: `1.5px solid ${opt.color}${selected ? "" : "80"}`,
+									transform: selected ? "scale(1.04)" : "scale(1)",
+								}}
+							>
+								<span
+									aria-hidden="true"
+									className="absolute inset-[6px] rounded-full"
+									style={{ border: `1px solid ${opt.color}59` }}
+								/>
+								<Icon name={opt.icon} color={opt.color} size={24} />
+							</span>
+							<span className="flex-1 pr-6">
+								<span className="block font-black text-[#0E1420] text-[17px] tracking-tight">
+									{opt.title}
+								</span>
+								<span className="mt-1 block text-[#0E1420]/60 text-[12px] leading-relaxed">
+									{opt.creed}
+								</span>
+							</span>
+							{selected && <CheckBadge color={opt.color} size={24} />}
+						</button>
+					);
+				})}
+			</div>
+
+			{/* The seal: a quiet line of standing that appears once they choose. */}
+			{chosen && (
+				<p
+					key={chosen.id}
+					className="seal-in mt-5 flex items-center justify-center gap-2 text-center font-bold text-[12px] tracking-tight"
+					style={{ color: chosen.color === GOLD ? "#8A6A00" : "#0A8F7F" }}
+					aria-live="polite"
+				>
+					<Icon
+						name={chosen.icon}
+						color={chosen.color === GOLD ? "#8A6A00" : "#0A8F7F"}
+						size={15}
+					/>
+					{chosen.sealed}
+				</p>
+			)}
+		</div>
+	);
+}
+
 function StepAspiration({
 	value,
 	onChange,
@@ -1300,5 +1416,7 @@ function Icon({
 const ANIM = `
 @keyframes stepIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
 .step-in { animation: stepIn 400ms cubic-bezier(0.16,1,0.3,1); }
-@media (prefers-reduced-motion: reduce) { .step-in { animation: none; } }
+@keyframes sealIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.seal-in { animation: sealIn 420ms cubic-bezier(0.16,1,0.3,1); }
+@media (prefers-reduced-motion: reduce) { .step-in, .seal-in { animation: none; } }
 `;

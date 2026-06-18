@@ -57,7 +57,7 @@ export default async function ProfilePage() {
 		supabase
 			.from("profiles")
 			.select(
-				"display_name, statement_of_intent, season_label, time_budget_label, mission_cadence, career_stage, fields, country, open_to_remote, open_to_relocate, telegram_chat_id, telegram_opt_in",
+				"display_name, statement_of_intent, season_label, time_budget_label, mission_cadence, career_stage, fields, country, open_to_remote, open_to_relocate, telegram_chat_id, telegram_opt_in, telegram_frequency, purpose_mode",
 			)
 			.eq("user_id", user.id)
 			.single(),
@@ -217,6 +217,18 @@ export default async function ProfilePage() {
 			telegramLinked={Boolean(profile?.telegram_chat_id)}
 			telegramEnabled={
 				Boolean(profile?.telegram_opt_in) && Boolean(profile?.telegram_chat_id)
+			}
+			telegramFrequency={
+				profile?.telegram_frequency === "weekdays" ||
+				profile?.telegram_frequency === "weekly"
+					? profile.telegram_frequency
+					: "daily"
+			}
+			purposeMode={
+				profile?.purpose_mode === "explorer" ||
+				profile?.purpose_mode === "builder"
+					? profile.purpose_mode
+					: null
 			}
 		/>
 	);

@@ -22,17 +22,28 @@ const SERIF = "'Libre Caslon Text', Georgia, serif";
 const POLL_MS = 3000;
 const POLL_WINDOW_MS = 15 * 60 * 1000;
 
+type Frequency = "daily" | "weekdays" | "weekly";
+
+const FREQUENCIES: { value: Frequency; label: string; hint: string }[] = [
+	{ value: "daily", label: "Daily", hint: "Every morning" },
+	{ value: "weekdays", label: "Weekdays", hint: "Mon to Fri" },
+	{ value: "weekly", label: "Weekly", hint: "Mondays" },
+];
+
 export function TelegramReminders({
 	userId,
 	initialLinked,
 	initialEnabled,
+	initialFrequency = "daily",
 }: {
 	userId: string;
 	initialLinked: boolean;
 	initialEnabled: boolean;
+	initialFrequency?: Frequency;
 }) {
 	const [linked, setLinked] = useState(initialLinked);
 	const [enabled, setEnabled] = useState(initialEnabled);
+	const [frequency, setFrequency] = useState<Frequency>(initialFrequency);
 	const [linkUrl, setLinkUrl] = useState<string | null>(null);
 	const [qrUrl, setQrUrl] = useState<string | null>(null);
 	const [copied, setCopied] = useState(false);
@@ -114,6 +125,15 @@ export function TelegramReminders({
 			.eq("user_id", userId);
 	}
 
+	async function changeFrequency(next: Frequency) {
+		if (next === frequency) return;
+		setFrequency(next);
+		await supabase
+			.from("profiles")
+			.update({ telegram_frequency: next })
+			.eq("user_id", userId);
+	}
+
 	return (
 		<div>
 			<div className="mb-1 flex items-center gap-2">
@@ -139,26 +159,68 @@ export function TelegramReminders({
 			</p>
 
 			{linked ? (
-				<div className="flex items-center justify-between gap-3">
-					<p className="font-bold text-sm" style={{ color: ON_SURFACE }}>
-						{enabled ? "On" : "Off"}
-					</p>
-					<button
-						type="button"
-						role="switch"
-						aria-checked={enabled}
-						aria-label="Telegram reminders"
-						onClick={() => void toggle(!enabled)}
-						className="relative h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors"
-						style={{ background: enabled ? TELEGRAM : "rgba(14,20,32,0.15)" }}
-					>
-						<span
-							className="absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform"
-							style={{
-								transform: enabled ? "translateX(22px)" : "translateX(2px)",
-							}}
-						/>
-					</button>
+				<div className="flex flex-col gap-5">
+					<div className="flex items-center justify-between gap-3">
+						<p className="font-bold text-sm" style={{ color: ON_SURFACE }}>
+							{enabled ? "On" : "Off"}
+						</p>
+						<button
+							type="button"
+							role="switch"
+							aria-checked={enabled}
+							aria-label="Telegram reminders"
+							onClick={() => void toggle(!enabled)}
+							className="relative h-6 w-11 shrink-0 cursor-pointer rounded-full transition-colors"
+							style={{ background: enabled ? TELEGRAM : "rgba(14,20,32,0.15)" }}
+						>
+							<span
+								className="absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform"
+								style={{
+									transform: enabled ? "translateX(22px)" : "translateX(2px)",
+								}}
+							/>
+						</button>
+					</div>
+
+					{enabled && (
+						<div>
+							<p
+								className="mb-2 font-bold text-[11px] uppercase tracking-[0.16em]"
+								style={{ color: ON_VARIANT, opacity: 0.7 }}
+							>
+								How often
+							</p>
+							<div className="grid grid-cols-3 gap-1 rounded-2xl border border-black/10 bg-white p-1">
+								{FREQUENCIES.map((f) => {
+									const active = frequency === f.value;
+									return (
+										<button
+											key={f.value}
+											type="button"
+											aria-pressed={active}
+											onClick={() => void changeFrequency(f.value)}
+											className="flex flex-col items-center gap-0.5 rounded-xl px-2 py-2.5 text-center transition-colors"
+											style={{
+												background: active ? TELEGRAM : "transparent",
+												color: active ? "#fff" : ON_SURFACE,
+											}}
+										>
+											<span className="font-bold text-sm">{f.label}</span>
+											<span
+												className="text-[11px]"
+												style={{
+													color: active ? "rgba(255,255,255,0.85)" : ON_VARIANT,
+													opacity: active ? 1 : 0.7,
+												}}
+											>
+												{f.hint}
+											</span>
+										</button>
+									);
+								})}
+							</div>
+						</div>
+					)}
 				</div>
 			) : linkUrl ? (
 				<div className="flex flex-col gap-4">

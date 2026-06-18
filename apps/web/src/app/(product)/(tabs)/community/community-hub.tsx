@@ -740,14 +740,6 @@ function TopBar({
 							<Pill tone="muted">{samePathCount} on your path</Pill>
 						)}
 					</span>
-					<a href="/profile" className="relative" aria-label="Notifications">
-						<span
-							className="material-symbols-outlined"
-							style={{ color: ON_VARIANT }}
-						>
-							notifications
-						</span>
-					</a>
 					<a
 						href="/profile"
 						aria-label="Your profile"

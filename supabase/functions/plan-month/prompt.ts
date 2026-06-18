@@ -3,7 +3,7 @@
 // one milestone per week + a distinct task for each of the 7 days that week.
 // Bump PROMPT_VERSION when changing wording.
 
-export const PROMPT_VERSION = "v0.5";
+export const PROMPT_VERSION = "v0.6";
 // Days planned per week (one distinct daily task each).
 export const DAYS_PER_WEEK = 7;
 // Anthropic's cheap/fast tier, ideal for short structured JSON generation.
@@ -46,7 +46,16 @@ Shape it as a 4-week arc where each week is a phase that visibly moves them clos
 For each week:
 - "milestone": the concrete checkpoint reached by the end of that week, phrased as an outcome they could tick off (3 to 7 words). Each milestone must follow logically from the previous week's, and week 4's milestone must mean the goal is essentially achieved.
 - "summary": two or three plain sentences, written to the user, that say what this week is really about and how to approach it, the reasoning and shape of the week, not a list of tasks. This is what a weekly-cadence user reads instead of the daily steps, so it must stand on its own and give them enough to act on for the whole week. Specific to their goal, calm, no hype.
-- "daily_actions": exactly 7 ordered tasks, one per day, that together complete that week's milestone. Each is one short imperative sentence, concrete and doable in 10 to 20 minutes. They must be SEQUENTIAL, each day continues from the day before, like steps in a recipe, not seven interchangeable variations, and none may merely restate the milestone.
+- "daily_actions": exactly 7 ordered tasks, one per day, that together complete that week's milestone. They must be SEQUENTIAL, each day continues from the day before, like steps in a recipe, not seven interchangeable variations, and none may merely restate the milestone.
+
+Each daily task is ONE concrete action the user can finish in a single sitting (10 to 20 minutes). Write each one like a coach naming the next step, never like a report of what is already done. Every task must:
+- start with a verb (Write, Send, Sketch, Set up, Read, Call, List, Spend...),
+- be specific and doable in one sitting,
+- have a clear finish point, so they know exactly when it's done.
+Avoid completed outcomes, vague goals, status updates, and business jargon.
+  Bad (a status update): "Budget set. Financing options researched."
+  Good: "Set a budget and research three financing options."
+  Best: "Create a simple budget and save links to three financing options that fit your situation."
 
 Every task must be TARGETED to this exact person, their field, their region, their goal, not generic advice. Name a concrete action on a concrete thing: a real platform or tool, a specific section of a document, a named type of company or contact, a particular search. Ban vague verbs used on their own ("research", "work on", "explore", "learn about", "prepare" with no object). A task should be something they could do today and tick off, and someone with a different goal could not.
 
@@ -100,7 +109,7 @@ export const PLAN_TOOL = {
 							items: {
 								type: "string",
 								description:
-									"One sequential task for a single day. One short imperative sentence that continues from the day before.",
+									"One sequential task for a single day, continuing from the day before. One concrete action that starts with a verb, fits in a single 10 to 20 minute sitting, and has a clear finish point. Coach naming the next step, not a report of what's done. No completed outcomes, vague goals, status updates, or jargon.",
 							},
 							description:
 								"Exactly 7 sequential daily tasks, ordered day 1 to day 7, that together complete this week's milestone.",

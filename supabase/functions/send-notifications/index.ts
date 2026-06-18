@@ -23,6 +23,24 @@ const todayInAST = () => {
 	return new Date(ms).toISOString().slice(0, 10);
 };
 
+// Day of week in AST (0 = Sunday … 6 = Saturday), used to honour each user's
+// Telegram reminder frequency.
+const weekdayInAST = () =>
+	new Date(Date.now() - 4 * 60 * 60 * 1000).getUTCDay();
+
+// Whether today's run should ping a user given their chosen frequency.
+//   daily    : always
+//   weekdays : Mon–Fri (1–5)
+//   weekly   : Mondays only (1)
+const frequencyIncludesToday = (
+	frequency: string | null,
+	weekday: number,
+): boolean => {
+	if (frequency === "weekdays") return weekday >= 1 && weekday <= 5;
+	if (frequency === "weekly") return weekday === 1;
+	return true; // "daily" or unset
+};
+
 type TokenRow = {
 	user_id: string;
 	token: string;
@@ -61,16 +79,21 @@ async function sendTelegramReminders(
 	// Opted-in, connected chats among users who have a mission today.
 	const { data: rows } = await supabase
 		.from("profiles")
-		.select("user_id, telegram_chat_id")
+		.select("user_id, telegram_chat_id, telegram_frequency")
 		.eq("telegram_opt_in", true)
 		.not("telegram_chat_id", "is", null)
 		.in("user_id", userIds);
 
+	// Each user only hears from us on the days their frequency allows.
+	const weekday = weekdayInAST();
+
 	for (const r of (rows ?? []) as {
 		user_id: string;
 		telegram_chat_id: string;
+		telegram_frequency: string | null;
 	}[]) {
 		if (!r.telegram_chat_id) continue;
+		if (!frequencyIncludesToday(r.telegram_frequency, weekday)) continue;
 		const tasks = tasksByUser.get(r.user_id) ?? [];
 		// Weekly focus carries a description (the week's depth), show milestone
 		// then description. Daily is the bullet list of today's steps.

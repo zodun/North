@@ -91,6 +91,7 @@ export function MonthlyMissionView({
 	promptGoal = false,
 	firstName = "there",
 	greeting = "Welcome",
+	purposeMode = null,
 }: {
 	mission: Mission | null;
 	steps: Step[];
@@ -101,6 +102,7 @@ export function MonthlyMissionView({
 	promptGoal?: boolean;
 	firstName?: string;
 	greeting?: string;
+	purposeMode?: "explorer" | "builder" | null;
 }) {
 	const [mission, setMission] = useState(initialMission);
 	const [steps, setSteps] = useState(initialSteps);
@@ -159,17 +161,25 @@ export function MonthlyMissionView({
 				null)
 			: (weekly.find((s) => s.week_index === currentWeekIndex) ?? null);
 
-	// A calm, personal nudge that reflects where they are right now.
+	// A calm, personal nudge that reflects where they are right now. The not-yet
+	// line leans on the user's mode: explorers hear discovery, builders hear
+	// execution. Everything else stays shared.
 	const focalDone = focalStep?.done ?? false;
+	const notYetLine =
+		streak > 1
+			? `${streak} days in rhythm. One step keeps it going.`
+			: purposeMode === "explorer"
+				? `One step is how you find the way${tail}.`
+				: purposeMode === "builder"
+					? `One step builds the thing${tail}. Make it today.`
+					: `One small step is enough${tail}.`;
 	const encouragement = !focalStep
 		? `Nothing scheduled today${tail}. Enjoy the space.`
 		: focalDone
 			? streak > 1
 				? `Done for today${tail}. ${streak} days in rhythm.`
 				: `Done for today${tail}. Rest, or get a head start.`
-			: streak > 1
-				? `${streak} days in rhythm. One step keeps it going.`
-				: `One small step is enough${tail}.`;
+			: notYetLine;
 
 	async function setStepDone(id: string, done: boolean) {
 		setSteps((prev) => prev.map((s) => (s.id === id ? { ...s, done } : s)));
@@ -226,8 +236,8 @@ export function MonthlyMissionView({
 						) : (
 							<>
 								{/* ── Hero + Today's Pulse ───────────────────────── */}
-								<section className="mt-4 mb-7 grid grid-cols-1 gap-6 lg:grid-cols-12">
-									<div className="glass-card signal-glow relative flex min-h-[340px] flex-col justify-end overflow-hidden rounded-[2rem] p-8 sm:p-10 lg:col-span-8">
+								<section className="mt-4 mb-7 grid grid-cols-12 gap-6">
+									<div className="glass-card signal-glow relative col-span-12 flex min-h-[340px] flex-col justify-end overflow-hidden rounded-[2rem] p-8 sm:p-10 md:col-span-7 lg:col-span-8">
 										<div
 											aria-hidden="true"
 											className="absolute inset-0"
@@ -292,7 +302,7 @@ export function MonthlyMissionView({
 									</div>
 
 									{/* Today, one micro-step in focus */}
-									<div className="glass-card flex flex-col rounded-[2rem] p-7 lg:col-span-4">
+									<div className="glass-card col-span-12 flex flex-col rounded-[2rem] p-7 md:col-span-5 lg:col-span-4">
 										<div className="mb-1 flex items-center justify-between gap-3">
 											<span
 												className="font-bold text-[11px] uppercase tracking-[0.18em]"
@@ -877,14 +887,6 @@ function TopBar({ monthName }: { monthName: string }) {
 							{monthName}
 						</span>
 					)}
-					<a href="/profile" className="relative" aria-label="Notifications">
-						<span
-							className="material-symbols-outlined"
-							style={{ color: ON_VARIANT }}
-						>
-							notifications
-						</span>
-					</a>
 					<a
 						href="/profile"
 						aria-label="Your profile"

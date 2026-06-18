@@ -1,6 +1,7 @@
 "use client";
 
 import { PreferencesSection } from "./preferences-section";
+import { PurposeBadge } from "./purpose-badge";
 import { TelegramReminders } from "./telegram-reminders";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -76,6 +77,8 @@ type Props = {
 	openToRelocate: boolean;
 	telegramLinked: boolean;
 	telegramEnabled: boolean;
+	telegramFrequency: "daily" | "weekdays" | "weekly";
+	purposeMode: "explorer" | "builder" | null;
 };
 
 export function ProfileView({
@@ -107,6 +110,8 @@ export function ProfileView({
 	openToRelocate,
 	telegramLinked,
 	telegramEnabled,
+	telegramFrequency,
+	purposeMode,
 }: Props) {
 	const litCount =
 		signalScore != null
@@ -191,7 +196,7 @@ export function ProfileView({
 						)}
 
 						{focusAreas.length > 0 && (
-							<div className="mb-10 flex flex-wrap gap-2">
+							<div className="mb-8 flex flex-wrap gap-2">
 								{focusAreas.map((fa) => (
 									<span
 										key={fa.id}
@@ -207,6 +212,8 @@ export function ProfileView({
 								))}
 							</div>
 						)}
+
+						<PurposeBadge userId={userId} initialMode={purposeMode} />
 
 						{/* ── Stat cards ──────────────────────────────────────── */}
 						<div className="mb-6 grid grid-cols-12 gap-6">
@@ -498,6 +505,7 @@ export function ProfileView({
 								userId={userId}
 								initialLinked={telegramLinked}
 								initialEnabled={telegramEnabled}
+								initialFrequency={telegramFrequency}
 							/>
 						</section>
 

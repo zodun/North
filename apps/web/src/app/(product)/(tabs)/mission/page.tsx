@@ -39,7 +39,9 @@ export default async function MissionPage() {
 			.maybeSingle(),
 		supabase
 			.from("profiles")
-			.select("mission_cadence, goal_prompt_dismissed_month, display_name")
+			.select(
+				"mission_cadence, goal_prompt_dismissed_month, display_name, purpose_mode",
+			)
 			.eq("user_id", user.id)
 			.maybeSingle(),
 		supabase
@@ -65,10 +67,10 @@ export default async function MissionPage() {
 	const cadence =
 		profileRes.data?.mission_cadence === "weekly" ? "weekly" : "daily";
 
-	// The week the user is actually on follows the plan's daily steps, which start
-	// the day the goal was set, not the calendar month. So a goal set mid-month
-	// still opens on week 1. Use today's step, else the next step still ahead or
-	// undone, else the first step.
+	// The week the user is actually on follows progress, not the calendar: steps
+	// unlock one at a time, so the active step is the FIRST undone day. A fresh
+	// mission opens on week 1 and only advances as steps get completed. (Once the
+	// whole plan is done, fall back to the last step.)
 	const dailySteps = (
 		(steps ?? []) as {
 			cadence: string;
@@ -78,9 +80,8 @@ export default async function MissionPage() {
 		}[]
 	).filter((s) => s.cadence === "daily");
 	const activeStep =
-		dailySteps.find((s) => s.due_date === today) ??
-		dailySteps.find((s) => !s.done && (s.due_date ?? "") >= today) ??
 		dailySteps.find((s) => !s.done) ??
+		dailySteps[dailySteps.length - 1] ??
 		dailySteps[0];
 	const currentWeekIndex = mission ? (activeStep?.week_index ?? 0) : 0;
 
@@ -97,6 +98,12 @@ export default async function MissionPage() {
 	const greeting =
 		hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
+	const purposeMode =
+		profileRes.data?.purpose_mode === "explorer" ||
+		profileRes.data?.purpose_mode === "builder"
+			? profileRes.data.purpose_mode
+			: null;
+
 	return (
 		<MonthlyMissionView
 			mission={mission}
@@ -108,6 +115,7 @@ export default async function MissionPage() {
 			promptGoal={promptGoal}
 			firstName={firstName}
 			greeting={greeting}
+			purposeMode={purposeMode}
 		/>
 	);
 }

@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { IdentityCrest } from "@/components/product/identity-crest";
 import { coverUrl } from "@/lib/article-image/cover";
 import { supabase } from "@/lib/auth-client";
 import { proxiedImage } from "@/lib/img";
+import type { PurposeMode } from "@/lib/purpose";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // For You, "Sleek Light" (Stitch: Elite Interface Design).
@@ -148,8 +150,24 @@ function youtubeThumbnail(url: string): string | null {
 // keep the real title (the leading segment). Conservative: only collapses to
 // the first segment when the tail is a known publisher, so legitimate titles
 // that happen to contain a pipe are left alone.
+// Decode the HTML entities that creep in from external sources. Video titles
+// from YouTube/TED arrive escaped ("Why I quit a &quot;Stable&quot; job"), so
+// without this the raw &quot; / &#39; / &amp; leak onto the card. Ampersand is
+// decoded first so a double-encoded "&amp;quot;" still resolves to a real quote.
+function decodeEntities(s: string): string {
+	return s
+		.replace(/&nbsp;/g, " ")
+		.replace(/&amp;/g, "&")
+		.replace(/&lt;/g, "<")
+		.replace(/&gt;/g, ">")
+		.replace(/&quot;|&#34;/g, '"')
+		.replace(/&#39;|&apos;|&rsquo;|&lsquo;/g, "'");
+}
+
 function cleanTitle(title: string): string {
-	let s = title.replace(/\s*[-–—]\s*YouTube\s*$/i, "").trim();
+	let s = decodeEntities(title)
+		.replace(/\s*[-–—]\s*YouTube\s*$/i, "")
+		.trim();
 	if (
 		s.includes("|") &&
 		/\|\s*(TEDx?|TED-?Ed|TED|YouTube|NPR|WIRED|Bloomberg)\s*$/i.test(s)
@@ -160,14 +178,7 @@ function cleanTitle(title: string): string {
 }
 
 function plainText(body: string): string {
-	return body
-		.replace(/<[^>]*>/g, " ")
-		.replace(/&nbsp;/g, " ")
-		.replace(/&amp;/g, "&")
-		.replace(/&lt;/g, "<")
-		.replace(/&gt;/g, ">")
-		.replace(/&quot;/g, '"')
-		.replace(/&#39;|&rsquo;|&lsquo;/g, "'")
+	return decodeEntities(body.replace(/<[^>]*>/g, " "))
 		.replace(/\s*[—–]\s*/g, ", ")
 		.replace(/\s+/g, " ")
 		.trim();
@@ -247,6 +258,7 @@ export function SleekForYou({
 	initialSaved,
 	preview = false,
 	aspiration = null,
+	purposeMode = null,
 	mission = null,
 	opportunity = null,
 }: {
@@ -255,6 +267,7 @@ export function SleekForYou({
 	initialSaved: string[];
 	preview?: boolean;
 	aspiration?: string | null;
+	purposeMode?: PurposeMode | null;
 	mission?: MissionBlock | null;
 	opportunity?: OpportunityBlock | null;
 }) {
@@ -298,7 +311,8 @@ export function SleekForYou({
 	async function share(item: Item) {
 		const url = item.external_url ?? window.location.href;
 		try {
-			if (navigator.share) await navigator.share({ title: item.title, url });
+			if (navigator.share)
+				await navigator.share({ title: cleanTitle(item.title), url });
 			else {
 				await navigator.clipboard?.writeText(url);
 				flashToast("Link copied");
@@ -342,6 +356,11 @@ export function SleekForYou({
 					<TopBar />
 
 					<main className="mx-auto max-w-[1200px] px-5 pt-6 pb-24 sm:px-6 lg:px-8">
+						{purposeMode && (
+							<div className="mb-5 flex items-center gap-3 border-black/5 border-b pb-4">
+								<IdentityCrest mode={purposeMode} variant="compact" />
+							</div>
+						)}
 						{hero ? (
 							<Hero
 								item={hero}
@@ -964,7 +983,7 @@ function TopBar() {
 		>
 			<div className="mx-auto flex w-full max-w-[1200px] items-center justify-between gap-3">
 				{/* The rail carries the wordmark; on mobile the bar shows the section
-			    title on the left and the profile/notification icons on the right. */}
+			    title on the left and the profile icon on the right. */}
 				<span
 					className="font-bold text-xl tracking-tight md:hidden"
 					style={{ fontFamily: SERIF, color: ON_SURFACE }}
@@ -987,18 +1006,6 @@ function TopBar() {
 				</div>
 
 				<div className="flex items-center gap-4">
-					<a href="/profile" className="relative" aria-label="Notifications">
-						<span
-							className="material-symbols-outlined"
-							style={{ color: ON_VARIANT }}
-						>
-							notifications
-						</span>
-						<span
-							className="absolute top-0 right-0 h-2 w-2 rounded-full border-2 border-[#F8F9FA]"
-							style={{ background: SECONDARY }}
-						/>
-					</a>
 					<a
 						href="/profile"
 						aria-label="Your profile"
