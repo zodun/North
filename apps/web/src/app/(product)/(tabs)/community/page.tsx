@@ -144,6 +144,19 @@ export default async function CommunityPage() {
 		.from("public_profiles")
 		.select("user_id", { count: "exact", head: true });
 
+	// One discussion per user per day (Jamaica, UTC-5), mirroring the peer_posts
+	// daily-limit trigger so the composer can gate itself before the insert fails.
+	const startOfJamaicaDay = (() => {
+		const shifted = new Date(Date.now() - 5 * 60 * 60 * 1000);
+		shifted.setUTCHours(0, 0, 0, 0);
+		return new Date(shifted.getTime() + 5 * 60 * 60 * 1000).toISOString();
+	})();
+	const { count: postedToday } = await supabase
+		.from("peer_posts")
+		.select("id", { count: "exact", head: true })
+		.eq("user_id", user.id)
+		.gte("created_at", startOfJamaicaDay);
+
 	return (
 		<CommunityHub
 			userId={user.id}
@@ -155,6 +168,7 @@ export default async function CommunityPage() {
 			firstName={firstName}
 			focusLabel={focusTopLabel}
 			samePathCount={samePathCount}
+			canPostToday={(postedToday ?? 0) === 0}
 		/>
 	);
 }

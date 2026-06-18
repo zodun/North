@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/auth-client";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -75,6 +75,7 @@ export function CommunityHub({
 	firstName,
 	focusLabel,
 	samePathCount,
+	canPostToday,
 }: {
 	userId: string;
 	displayName: string;
@@ -85,9 +86,12 @@ export function CommunityHub({
 	firstName: string;
 	focusLabel: string | null;
 	samePathCount: number;
+	canPostToday: boolean;
 }) {
 	const [posts, setPosts] = useState(initialPosts);
 	const [filter, setFilter] = useState<string>("all");
+	// One discussion a day; flips off after a successful post (or a rejected one).
+	const [canPost, setCanPost] = useState(canPostToday);
 
 	// Inline composer state (replaces the old modal).
 	const [category, setCategory] = useState("general");
@@ -137,7 +141,7 @@ export function CommunityHub({
 	}
 
 	async function submitPost() {
-		if (!body.trim() || busy) return;
+		if (!body.trim() || busy || !canPost) return;
 		setBusy(true);
 		const { data, error } = await supabase
 			.from("peer_posts")
@@ -151,7 +155,14 @@ export function CommunityHub({
 			.select("id, category, title, body")
 			.single();
 		setBusy(false);
-		if (error || !data) return;
+		if (error || !data) {
+			// The daily-limit trigger rejects a second post; close the composer so
+			// the one-a-day notice takes over instead of showing a raw error.
+			if (error) setCanPost(false);
+			return;
+		}
+		// Used today's discussion; replies stay open.
+		setCanPost(false);
 		const author = anon ? "Anonymous" : displayName;
 		setPosts((prev) => [
 			{
@@ -236,110 +247,114 @@ export function CommunityHub({
 						</p>
 					</header>
 
-					{/* ── Composer ────────────────────────────────────────────── */}
+					{/* ── Composer (one discussion a day) ─────────────────────── */}
 					<section className="mx-auto mb-16 max-w-4xl">
-						<div
-							className="cm-rise glass-gradient-border signal-glow-primary rounded-[2rem] p-7 sm:p-10"
-							style={{ animationDelay: "60ms" }}
-						>
-							<div className="mb-6 flex items-start justify-between gap-4">
-								<div>
-									<span
-										className="mb-1.5 block font-bold text-[11px] uppercase tracking-[0.2em]"
-										style={{ color: PRIMARY }}
-									>
-										Share with the community
-									</span>
-									<h3
-										className="font-bold text-2xl tracking-tight"
-										style={{ fontFamily: SERIF }}
-									>
-										What's on your mind{tail}?
-									</h3>
-								</div>
-								<button
-									type="button"
-									onClick={() => setAnon((v) => !v)}
-									aria-pressed={anon}
-									className="flex shrink-0 items-center gap-1.5 font-bold text-[11px] uppercase tracking-widest transition-colors"
-									style={{ color: anon ? PRIMARY : ON_VARIANT }}
-								>
-									<span className="material-symbols-outlined text-lg">
-										{anon ? "toggle_on" : "toggle_off"}
-									</span>
-									Anonymous
-								</button>
-							</div>
-
-							<input
-								value={title}
-								onChange={(e) => setTitle(e.target.value)}
-								placeholder="Add a title (optional)"
-								maxLength={120}
-								className="w-full border-none bg-transparent font-bold text-xl outline-none placeholder:text-black/25"
-								style={{ fontFamily: SERIF, color: ON_SURFACE }}
-							/>
-							<textarea
-								ref={bodyRef}
-								value={body}
-								onChange={(e) => setBody(e.target.value)}
-								placeholder="Share a win, ask a question, or set an intention…"
-								maxLength={2000}
-								rows={4}
-								className="mt-2 min-h-[120px] w-full resize-none border-none bg-transparent text-base leading-relaxed outline-none placeholder:text-black/30"
-								style={{ color: ON_SURFACE }}
-							/>
-
-							<div className="mt-5 flex flex-wrap gap-2">
-								{CATEGORIES.map((c) => {
-									const active = category === c.key;
-									return (
-										<button
-											key={c.key}
-											type="button"
-											onClick={() => setCategory(c.key)}
-											className="rounded-full border px-4 py-2 font-bold text-[11px] uppercase tracking-wider transition-colors"
-											style={
-												active
-													? {
-															background: `${c.color}1f`,
-															color: c.color,
-															borderColor: `${c.color}40`,
-														}
-													: {
-															color: ON_VARIANT,
-															background: "rgba(255,255,255,0.4)",
-															borderColor: "rgba(0,0,0,0.08)",
-														}
-											}
+						{canPost ? (
+							<div
+								className="cm-rise glass-gradient-border signal-glow-primary rounded-[2rem] p-7 sm:p-10"
+								style={{ animationDelay: "60ms" }}
+							>
+								<div className="mb-6 flex items-start justify-between gap-4">
+									<div>
+										<span
+											className="mb-1.5 block font-bold text-[11px] uppercase tracking-[0.2em]"
+											style={{ color: PRIMARY }}
 										>
-											{c.label}
-										</button>
-									);
-								})}
-							</div>
+											Share with the community
+										</span>
+										<h3
+											className="font-bold text-2xl tracking-tight"
+											style={{ fontFamily: SERIF }}
+										>
+											What's on your mind{tail}?
+										</h3>
+									</div>
+									<button
+										type="button"
+										onClick={() => setAnon((v) => !v)}
+										aria-pressed={anon}
+										className="flex shrink-0 items-center gap-1.5 font-bold text-[11px] uppercase tracking-widest transition-colors"
+										style={{ color: anon ? PRIMARY : ON_VARIANT }}
+									>
+										<span className="material-symbols-outlined text-lg">
+											{anon ? "toggle_on" : "toggle_off"}
+										</span>
+										Anonymous
+									</button>
+								</div>
 
-							<div className="mt-7 flex items-center justify-between gap-4 border-black/5 border-t pt-7">
-								<span
-									className="text-xs"
-									style={{ color: ON_VARIANT, opacity: 0.6 }}
-								>
-									{anon ? "Posting anonymously." : "Every post is a step."}
-								</span>
-								<button
-									type="button"
-									onClick={() => void submitPost()}
-									disabled={!body.trim() || busy}
-									className="rounded-xl px-9 py-3.5 font-bold text-sm text-white uppercase tracking-widest transition-all active:scale-95 disabled:opacity-40"
-									style={{
-										background: PRIMARY,
-										boxShadow: "0 10px 30px rgba(0,90,194,0.25)",
-									}}
-								>
-									{busy ? "Posting…" : "Post"}
-								</button>
+								<input
+									value={title}
+									onChange={(e) => setTitle(e.target.value)}
+									placeholder="Add a title (optional)"
+									maxLength={120}
+									className="w-full border-none bg-transparent font-bold text-xl outline-none placeholder:text-black/25"
+									style={{ fontFamily: SERIF, color: ON_SURFACE }}
+								/>
+								<textarea
+									ref={bodyRef}
+									value={body}
+									onChange={(e) => setBody(e.target.value)}
+									placeholder="Share a win, ask a question, or set an intention…"
+									maxLength={2000}
+									rows={4}
+									className="mt-2 min-h-[120px] w-full resize-none border-none bg-transparent text-base leading-relaxed outline-none placeholder:text-black/30"
+									style={{ color: ON_SURFACE }}
+								/>
+
+								<div className="mt-5 flex flex-wrap gap-2">
+									{CATEGORIES.map((c) => {
+										const active = category === c.key;
+										return (
+											<button
+												key={c.key}
+												type="button"
+												onClick={() => setCategory(c.key)}
+												className="rounded-full border px-4 py-2 font-bold text-[11px] uppercase tracking-wider transition-colors"
+												style={
+													active
+														? {
+																background: `${c.color}1f`,
+																color: c.color,
+																borderColor: `${c.color}40`,
+															}
+														: {
+																color: ON_VARIANT,
+																background: "rgba(255,255,255,0.4)",
+																borderColor: "rgba(0,0,0,0.08)",
+															}
+												}
+											>
+												{c.label}
+											</button>
+										);
+									})}
+								</div>
+
+								<div className="mt-7 flex items-center justify-between gap-4 border-black/5 border-t pt-7">
+									<span
+										className="text-xs"
+										style={{ color: ON_VARIANT, opacity: 0.6 }}
+									>
+										{anon ? "Posting anonymously." : "Every post is a step."}
+									</span>
+									<button
+										type="button"
+										onClick={() => void submitPost()}
+										disabled={!body.trim() || busy}
+										className="rounded-xl px-9 py-3.5 font-bold text-sm text-white uppercase tracking-widest transition-all active:scale-95 disabled:opacity-40"
+										style={{
+											background: PRIMARY,
+											boxShadow: "0 10px 30px rgba(0,90,194,0.25)",
+										}}
+									>
+										{busy ? "Posting…" : "Post"}
+									</button>
+								</div>
 							</div>
-						</div>
+						) : (
+							<DailyLimitNotice tail={tail} />
+						)}
 					</section>
 
 					{/* ── Discussions + rail ──────────────────────────────────── */}
@@ -385,6 +400,8 @@ export function CommunityHub({
 												index={i}
 												featured={i === 0 && filter === "all"}
 												onLike={() => void toggleLike(p.id)}
+												userId={userId}
+												currentName={displayName}
 											/>
 										))}
 									</div>
@@ -580,13 +597,19 @@ function PostCard({
 	index,
 	featured,
 	onLike,
+	userId,
+	currentName,
 }: {
 	post: CommunityHubPost;
 	index: number;
 	featured: boolean;
 	onLike: () => void;
+	userId: string;
+	currentName: string;
 }) {
 	const cat = catMeta(post.category);
+	const [showReplies, setShowReplies] = useState(false);
+	const [repliesCount, setRepliesCount] = useState(post.repliesCount);
 	return (
 		<article
 			className={`cm-rise ${
@@ -654,15 +677,25 @@ function PostCard({
 							</span>
 							{post.likesCount}
 						</button>
-						<span
-							className="flex items-center gap-1.5 text-xs"
-							style={{ color: ON_VARIANT, opacity: 0.7 }}
+						<button
+							type="button"
+							onClick={() => setShowReplies((v) => !v)}
+							aria-expanded={showReplies}
+							className="flex items-center gap-1.5 font-medium text-xs transition-colors"
+							style={{ color: showReplies ? PRIMARY : ON_VARIANT }}
 						>
-							<span className="material-symbols-outlined text-base">
+							<span
+								className="material-symbols-outlined text-base"
+								style={{
+									fontVariationSettings: showReplies ? "'FILL' 1" : "'FILL' 0",
+								}}
+							>
 								chat_bubble
 							</span>
-							{post.repliesCount} replies
-						</span>
+							{repliesCount === 0
+								? "Reply"
+								: `${repliesCount} ${repliesCount === 1 ? "reply" : "replies"}`}
+						</button>
 						{featured && (
 							<span
 								className="material-symbols-outlined ml-auto transition-transform group-hover:translate-x-1"
@@ -672,9 +705,205 @@ function PostCard({
 							</span>
 						)}
 					</div>
+
+					{showReplies && (
+						<RepliesPanel
+							postId={post.id}
+							userId={userId}
+							currentName={currentName}
+							catColor={cat.color}
+							onAdded={() => setRepliesCount((c) => c + 1)}
+						/>
+					)}
 				</div>
 			</div>
 		</article>
+	);
+}
+
+type Reply = { id: string; body: string; name: string; initial: string };
+
+// Participation: the expandable thread under a discussion. Replies load on first
+// open (lazy), and anyone signed in can add one, there's no daily cap on taking
+// part. Inserts hit peer_replies; the DB trigger bumps replies_count + points.
+function RepliesPanel({
+	postId,
+	userId,
+	currentName,
+	catColor,
+	onAdded,
+}: {
+	postId: string;
+	userId: string;
+	currentName: string;
+	catColor: string;
+	onAdded: () => void;
+}) {
+	const [replies, setReplies] = useState<Reply[] | null>(null);
+	const [loading, setLoading] = useState(false);
+	const [draft, setDraft] = useState("");
+	const [busy, setBusy] = useState(false);
+
+	useEffect(() => {
+		let active = true;
+		(async () => {
+			setLoading(true);
+			const { data } = await supabase
+				.from("peer_replies")
+				.select("id, user_id, body, created_at")
+				.eq("post_id", postId)
+				.order("created_at", { ascending: true });
+			const rows = (data ?? []) as {
+				id: string;
+				user_id: string;
+				body: string;
+			}[];
+			const ids = [...new Set(rows.map((r) => r.user_id))];
+			const nameById = new Map<string, string>();
+			if (ids.length) {
+				const { data: authors } = await supabase
+					.from("public_profiles")
+					.select("user_id, display_name")
+					.in("user_id", ids);
+				for (const a of (authors ?? []) as {
+					user_id: string;
+					display_name: string | null;
+				}[])
+					nameById.set(a.user_id, a.display_name ?? "Member");
+			}
+			if (!active) return;
+			setReplies(
+				rows.map((r) => {
+					const name = nameById.get(r.user_id) ?? "Member";
+					return {
+						id: r.id,
+						body: r.body,
+						name,
+						initial: (name[0] ?? "·").toUpperCase(),
+					};
+				}),
+			);
+			setLoading(false);
+		})();
+		return () => {
+			active = false;
+		};
+	}, [postId]);
+
+	async function submit() {
+		if (!draft.trim() || busy) return;
+		setBusy(true);
+		const { data, error } = await supabase
+			.from("peer_replies")
+			.insert({ post_id: postId, user_id: userId, body: draft.trim() })
+			.select("id, body")
+			.single();
+		setBusy(false);
+		if (error || !data) return;
+		setReplies((prev) => [
+			...(prev ?? []),
+			{
+				id: data.id as string,
+				body: data.body as string,
+				name: currentName,
+				initial: (currentName[0] ?? "·").toUpperCase(),
+			},
+		]);
+		setDraft("");
+		onAdded();
+	}
+
+	return (
+		<div className="mt-4 border-black/5 border-t pt-4">
+			{loading && replies === null ? (
+				<p className="text-xs" style={{ color: ON_VARIANT, opacity: 0.6 }}>
+					Loading replies…
+				</p>
+			) : (
+				<div className="space-y-4">
+					{(replies ?? []).map((r) => (
+						<div key={r.id} className="flex items-start gap-3">
+							<span
+								className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-bold text-xs"
+								style={{ background: `${catColor}1f`, color: catColor }}
+							>
+								{r.initial}
+							</span>
+							<div className="min-w-0 flex-1">
+								<p className="font-bold text-xs">{r.name}</p>
+								<p
+									className="text-sm leading-relaxed"
+									style={{ color: ON_VARIANT, opacity: 0.9 }}
+								>
+									{r.body}
+								</p>
+							</div>
+						</div>
+					))}
+					{replies !== null && replies.length === 0 && (
+						<p className="text-xs" style={{ color: ON_VARIANT, opacity: 0.6 }}>
+							No replies yet. Be the first to respond.
+						</p>
+					)}
+				</div>
+			)}
+
+			<div className="mt-4 flex items-center gap-2">
+				<input
+					value={draft}
+					onChange={(e) => setDraft(e.target.value)}
+					onKeyDown={(e) => {
+						if (e.key === "Enter" && !e.shiftKey) {
+							e.preventDefault();
+							void submit();
+						}
+					}}
+					placeholder="Write a reply…"
+					maxLength={2000}
+					className="flex-1 rounded-xl border border-black/10 bg-white px-4 py-2.5 text-sm outline-none transition-colors placeholder:text-black/30 focus:border-[#005ac2]/40"
+					style={{ color: ON_SURFACE }}
+				/>
+				<button
+					type="button"
+					onClick={() => void submit()}
+					disabled={!draft.trim() || busy}
+					className="rounded-xl px-4 py-2.5 font-bold text-white text-xs uppercase tracking-wider transition-all active:scale-95 disabled:opacity-40"
+					style={{ background: PRIMARY }}
+				>
+					{busy ? "…" : "Reply"}
+				</button>
+			</div>
+		</div>
+	);
+}
+
+function DailyLimitNotice({ tail }: { tail: string }) {
+	return (
+		<div
+			className="cm-rise glass-panel rounded-[2rem] p-7 text-center sm:p-10"
+			style={{ animationDelay: "60ms" }}
+		>
+			<span
+				className="material-symbols-outlined text-4xl"
+				style={{ color: PRIMARY, opacity: 0.5 }}
+			>
+				check_circle
+			</span>
+			<h3
+				className="mt-3 font-bold text-2xl tracking-tight"
+				style={{ fontFamily: SERIF }}
+			>
+				You've started today's discussion{tail}.
+			</h3>
+			<p
+				className="mx-auto mt-2 max-w-md text-sm"
+				style={{ color: ON_VARIANT, opacity: 0.8 }}
+			>
+				One a day keeps it considered. Come back tomorrow to start another. In
+				the meantime, jump into the conversations below, replies are always
+				open.
+			</p>
+		</div>
 	);
 }
 
