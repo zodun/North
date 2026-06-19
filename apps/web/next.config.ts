@@ -1,3 +1,5 @@
+// Production deploy on Vercel (env configured in the project settings).
+// Harmless real change to trigger Vercel build for apps/web.
 import "@north/env/web";
 import withSerwistInit from "@serwist/next";
 import type { NextConfig } from "next";
