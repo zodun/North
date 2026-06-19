@@ -270,28 +270,117 @@ function parseRSS(xml: string): RSSItem[] {
 	return items;
 }
 
-// ── Strip HTML ─────────────────────────────────────────────────────────────
+// ── HTML entity decoder + strip ────────────────────────────────────────────
 
-function stripHtml(html: string): string {
-	return html
-		.replace(/<[^>]+>/g, " ")
-		.replace(/&nbsp;/g, " ")
+function decodeEntities(s: string): string {
+	return s
+		.replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
 		.replace(/&amp;/g, "&")
 		.replace(/&lt;/g, "<")
 		.replace(/&gt;/g, ">")
 		.replace(/&quot;/g, '"')
-		.replace(/\s+/g, " ")
-		.trim();
+		.replace(/&apos;/g, "'")
+		.replace(/&nbsp;/g, " ");
+}
+
+function stripHtml(html: string): string {
+	return decodeEntities(
+		html
+			.replace(/<[^>]+>/g, " ")
+			.replace(/\s+/g, " ")
+			.trim(),
+	);
+}
+
+// ── Title cleaner ──────────────────────────────────────────────────────────
+// RSS feeds from aggregator sites use long SEO blog titles like
+// "DAAD Programme 2027 in Germany: Fully Funded Master's Scholarships for..."
+// We take the part before the first colon when that makes the title shorter
+// and still meaningful (≥ 20 chars), then cap at 120 chars.
+
+function cleanTitle(raw: string): string {
+	let t = decodeEntities(raw).trim();
+	if (t.length > 80 && t.includes(":")) {
+		const before = t.split(":")[0].trim();
+		if (before.length >= 20) t = before;
+	}
+	return t.slice(0, 120);
 }
 
 // ── Org extractor ──────────────────────────────────────────────────────────
+// Tries, in order:
+//  1. A non-generic RSS category tag
+//  2. "[Org] at [Institution]" → Institution
+//  3. "[Institution] Opens/Announces/Awards/Calls/Launches/..."
+//  4. "[Institution] Scholarship/Fellowship/Grant/Programme/Jobs/Fund..."
+//  5. Falls back to "Various"
 
-function extractOrg(title: string, categories: string[]): string {
-	if (categories.length > 0) return categories[0];
-	const m = title.match(
-		/(?:by|from|–|—|-)\s*([A-Z][^–—|\n]{2,40}?)(?:\s*[|–—]|\s*$)/,
+const GENERIC_CATS = new Set([
+	"scholarship",
+	"scholarships",
+	"grant",
+	"grants",
+	"fellowship",
+	"fellowships",
+	"internship",
+	"internships",
+	"job",
+	"jobs",
+	"programme",
+	"programs",
+	"program",
+	"africa",
+	"asia",
+	"europe",
+	"americas",
+	"global",
+	"international",
+	"funding",
+	"opportunity",
+	"opportunities",
+	"news",
+	"latest",
+	"education",
+	"career",
+	"development",
+	"youth",
+	"student",
+	"students",
+	"research",
+	"award",
+	"awards",
+]);
+
+function extractOrg(rawTitle: string, categories: string[]): string {
+	const orgCat = categories.find(
+		(c) =>
+			!GENERIC_CATS.has(c.toLowerCase().trim()) &&
+			c.length > 3 &&
+			c.length < 60,
 	);
-	return m ? m[1].trim() : "Various";
+	if (orgCat) return orgCat;
+
+	const title = decodeEntities(rawTitle);
+
+	// "[Prog] at [University / Organisation] for/in/with/("
+	const atMatch = title.match(
+		/\bat\s+((?:University of\s+)?[A-Z][A-Za-z0-9\-/&'. ]{3,50}?)(?:\s+for\b|\s+in\b|\s+with\b|[,:(]|$)/,
+	);
+	if (atMatch) return atMatch[1].trim();
+
+	// "[Org] Opens / Announces / Awards / Invites / Offers / Launches..."
+	const verbMatch = title.match(
+		/^((?:University of\s+)?[A-Z][A-Za-z0-9\-/&'. ]{2,55}?)\s+(?:Opens|Announces|Awards|Invites|Offers|Launches|Releases|Accepts|Calls|Provides|Grants|Funds|Recruits|Seeks|Begins|Supports)\b/,
+	);
+	if (verbMatch) return verbMatch[1].trim();
+
+	// "[Org] Scholarship / Fellowship / Grant / Programme / Jobs / Fund / Award..."
+	const typeMatch = title.match(
+		/^((?:University of\s+)?[A-Z][A-Za-z0-9\-/&'. ]{2,55}?)\s+(?:Scholarship|Scholarships|Fellowship|Fellowships|Grant|Grants|Programme|Programs?|Jobs|Positions|Fund|Award|Research|Doctoral|PhD|Postdoc|Internship|Residency|Bursary|Accelerator|MBA|Master'?s|Bachelor)\b/,
+	);
+	if (typeMatch) return typeMatch[1].trim();
+
+	return "Various";
 }
 
 // ── HTML scraping helpers ──────────────────────────────────────────────────
@@ -604,13 +693,14 @@ Deno.serve(async (req: Request) => {
 			const opportunityType = inferType(fullText);
 			const categoryId = inferCategory(fullText);
 			const deadline = extractDeadline(plain);
-			const location = extractLocation(plain);
+			const location = extractLocation(`${item.title} ${plain}`);
 			const org = extractOrg(item.title, item.categories);
+			const title = cleanTitle(item.title);
 			const why =
 				plain.length > 220 ? `${plain.slice(0, 217)}…` : plain || null;
 
 			const { error } = await supabase.from("opportunities").insert({
-				title: stripDashes(item.title.slice(0, 255)),
+				title: stripDashes(title),
 				org: stripDashes(org.slice(0, 120)),
 				category_id: categoryId,
 				opportunity_type: opportunityType || null,
