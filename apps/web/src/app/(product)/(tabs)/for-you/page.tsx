@@ -158,17 +158,31 @@ export default async function ForYouPage() {
 	};
 	const ranked = [...onTopic].sort((a, b) => scoreItem(b) - scoreItem(a));
 
+	// Hard-filter to the user's preferred format so the feed honours what they
+	// chose in onboarding. Falls back to the unfiltered on-topic pool only when
+	// fewer than 3 matching items exist, so the page is never empty.
+	const formatFiltered = formats.size
+		? ranked.filter((i) => formats.has(formatOf(i.kind)))
+		: ranked;
+	const basePool = formatFiltered.length >= 3 ? formatFiltered : ranked;
+
 	// AI re-ranks around the user's direction. Premium sees the full order + a
 	// reason on the hero; free users get a one-pick preview (their best match
 	// surfaced as the hero) plus an upgrade prompt.
 	const isPremium = user ? await getIsPremium(supabase, user.id) : false;
 	const onTopicIds = new Set(onTopic.map((i) => i.id));
+	const offTopic = allItems.filter((i) => !onTopicIds.has(i.id));
+	const offTopicFiltered = formats.size
+		? offTopic.filter((i) => formats.has(formatOf(i.kind)))
+		: offTopic;
 	let feedItems: (NonNullable<typeof items>[number] & {
 		why?: string | null;
 	})[] =
 		onTopic.length > 0
-			? [...ranked, ...allItems.filter((i) => !onTopicIds.has(i.id))]
-			: allItems;
+			? [...basePool, ...offTopicFiltered]
+			: formats.size
+				? allItems.filter((i) => formats.has(formatOf(i.kind)))
+				: allItems;
 	let preview = false;
 	if (user && feedItems.length > 0) {
 		const res = await personalize(
