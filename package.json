@@ -22,6 +22,7 @@
 	"scripts": {
 		"dev": "turbo dev",
 		"build": "cd apps/web && npm run build",
+		"vercel-build": "cd apps/web && npm run build",
 		"check-types": "turbo check-types",
 		"dev:native": "turbo -F native dev",
 		"dev:web": "turbo -F web dev",
