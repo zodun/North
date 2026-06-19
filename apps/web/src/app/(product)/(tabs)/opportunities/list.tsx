@@ -5,15 +5,11 @@ import { supabase } from "@/lib/auth-client";
 import { SubmitOpportunityForm } from "./submit-form";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Opportunities, Stitch "Discovery Hub" design, WIRED to the real backend.
-// Sleek-light language (glass cards, blue/serif), consistent with the other
-// tabs. Every action hits Supabase; the fabricated finance content (Quantum
-// Equity, IRR%, $250k allocations) is dropped, cards show real opportunity
-// fields (type, org, location, deadline) + the AI match reason.
-//   • filter / search → client-side over the server-ranked list
-//   • save            → user_saved_opportunities (upsert/delete, optimistic)
-//   • apply           → user_saved_opportunities (applied=true) + open link
-//   • submit          → SubmitOpportunityForm (opportunity_submissions)
+// Opportunities list — real backend, Sleek Light design.
+//   • Card tap  → detail drawer with separate Open + Applied buttons
+//   • Applied   → persisted toggle (user_saved_opportunities.applied)
+//   • Open      → external link only (no implicit applied mark)
+//   • Applied section → compact tracker below main list
 // ─────────────────────────────────────────────────────────────────────────────
 
 type Category = { id: string; label: string };
@@ -52,7 +48,6 @@ const NAV = [
 	{ href: "/community", label: "Community", icon: "group" },
 ];
 
-// Per-category accent + icon. Drives the card header tint and chip.
 const CAT: Record<string, { color: string; icon: string; label: string }> = {
 	job: { color: "#0E9E73", icon: "work", label: "Jobs" },
 	internship: { color: "#7B61FF", icon: "school", label: "Internships" },
@@ -123,10 +118,20 @@ export function OpportunitiesList({
 	const [saved, setSaved] = useState<Set<string>>(new Set(initialSaved));
 	const [applied, setApplied] = useState<Set<string>>(new Set(initialApplied));
 	const [saving, setSaving] = useState<Set<string>>(new Set());
+	const [selected, setSelected] = useState<Item | null>(null);
 	const [showSubmit, setShowSubmit] = useState(false);
 	const [mounted, setMounted] = useState(false);
 
 	useEffect(() => setMounted(true), []);
+
+	// Close drawer on escape
+	useEffect(() => {
+		function onKey(e: KeyboardEvent) {
+			if (e.key === "Escape") setSelected(null);
+		}
+		document.addEventListener("keydown", onKey);
+		return () => document.removeEventListener("keydown", onKey);
+	}, []);
 
 	const filtered = useMemo(() => {
 		const f = items.filter((item) => {
@@ -141,6 +146,12 @@ export function OpportunitiesList({
 		});
 		return [...f].sort((a, b) => b.matchScore - a.matchScore);
 	}, [items, search, activeCategory]);
+
+	// Applied items derived from the full item list (not just filtered view)
+	const appliedItems = useMemo(
+		() => items.filter((i) => applied.has(i.id)),
+		[items, applied],
+	);
 
 	const hero = filtered[0] ?? null;
 	const rest = filtered.slice(1);
@@ -180,9 +191,33 @@ export function OpportunitiesList({
 		});
 	}
 
-	async function markApplied(item: Item) {
-		if (!applied.has(item.id)) {
+	function openLink(item: Item) {
+		if (item.external_url)
+			window.open(item.external_url, "_blank", "noopener,noreferrer");
+	}
+
+	async function toggleApplied(item: Item) {
+		const isApplied = applied.has(item.id);
+		if (isApplied) {
+			setApplied((prev) => {
+				const n = new Set(prev);
+				n.delete(item.id);
+				return n;
+			});
+			const {
+				data: { user },
+			} = await supabase.auth.getUser();
+			if (user) {
+				await supabase
+					.from("user_saved_opportunities")
+					.upsert(
+						{ user_id: user.id, opportunity_id: item.id, applied: false },
+						{ onConflict: "user_id,opportunity_id" },
+					);
+			}
+		} else {
 			setApplied((prev) => new Set([...prev, item.id]));
+			setSaved((prev) => new Set([...prev, item.id]));
 			const {
 				data: { user },
 			} = await supabase.auth.getUser();
@@ -196,11 +231,8 @@ export function OpportunitiesList({
 					},
 					{ onConflict: "user_id,opportunity_id" },
 				);
-				setSaved((prev) => new Set([...prev, item.id]));
 			}
 		}
-		if (item.external_url)
-			window.open(item.external_url, "_blank", "noopener,noreferrer");
 	}
 
 	const filterPills = categories.filter((c) => CAT[c.id]);
@@ -223,7 +255,7 @@ export function OpportunitiesList({
 				<TopBar search={search} onSearch={setSearch} />
 				<div className="px-5 pb-6 sm:px-6 lg:px-8">
 					<div className="mx-auto max-w-[1280px]">
-						{/* ── Header + filters ────────────────────────────── */}
+						{/* ── Header + filters ─────────────────────────────────────────── */}
 						<section className="mt-4 mb-10 flex flex-col justify-between gap-6 md:flex-row md:items-end">
 							<div>
 								<h1
@@ -273,7 +305,9 @@ export function OpportunitiesList({
 									applied={applied.has(hero.id)}
 									closes={closesLabel(hero.deadline, mounted)}
 									onSave={() => void toggleSave(hero)}
-									onApply={() => void markApplied(hero)}
+									onOpen={() => openLink(hero)}
+									onApplied={() => void toggleApplied(hero)}
+									onViewDetail={() => setSelected(hero)}
 								/>
 
 								{rest.length > 0 && (
@@ -297,17 +331,56 @@ export function OpportunitiesList({
 												<OppCard
 													key={item.id}
 													item={item}
-													locked={preview}
 													saved={saved.has(item.id)}
 													applied={applied.has(item.id)}
 													closes={closesLabel(item.deadline, mounted)}
 													userFocusAreas={userFocusAreas}
 													onSave={() => void toggleSave(item)}
-													onApply={() => void markApplied(item)}
+													onClick={() => setSelected(item)}
 												/>
 											))}
 										</div>
 										{preview && <UpgradeNote count={rest.length} />}
+									</section>
+								)}
+
+								{/* ── Applied tracker ──────────────────────────────────────── */}
+								{appliedItems.length > 0 && (
+									<section className="mt-14">
+										<div className="mb-5 flex items-center gap-3">
+											<span
+												className="material-symbols-outlined text-2xl"
+												style={{ color: "#0E9E73" }}
+											>
+												task_alt
+											</span>
+											<h2
+												className="font-bold text-xl tracking-tight"
+												style={{ fontFamily: SERIF }}
+											>
+												Your applications
+											</h2>
+											<span
+												className="ml-auto rounded-full px-3 py-1 font-bold text-xs"
+												style={{
+													background: "rgba(14,158,115,0.1)",
+													color: "#0E9E73",
+												}}
+											>
+												{appliedItems.length} tracked
+											</span>
+										</div>
+										<div className="flex flex-col gap-3">
+											{appliedItems.map((item) => (
+												<AppliedRow
+													key={item.id}
+													item={item}
+													onOpen={() => openLink(item)}
+													onUnapply={() => void toggleApplied(item)}
+													onViewDetail={() => setSelected(item)}
+												/>
+											))}
+										</div>
 									</section>
 								)}
 							</>
@@ -318,12 +391,319 @@ export function OpportunitiesList({
 				</div>
 			</div>
 
+			{/* ── Detail drawer ────────────────────────────────────────────────── */}
+			{selected && (
+				<DetailDrawer
+					item={selected}
+					applied={applied.has(selected.id)}
+					saved={saved.has(selected.id)}
+					mounted={mounted}
+					onClose={() => setSelected(null)}
+					onOpen={() => openLink(selected)}
+					onApplied={() => void toggleApplied(selected)}
+					onSave={() => void toggleSave(selected)}
+				/>
+			)}
+
 			{showSubmit && (
 				<SubmitOpportunityForm onClose={() => setShowSubmit(false)} />
 			)}
 		</div>
 	);
 }
+
+// ── Detail drawer ─────────────────────────────────────────────────────────────
+
+function DetailDrawer({
+	item,
+	applied,
+	saved,
+	mounted,
+	onClose,
+	onOpen,
+	onApplied,
+	onSave,
+}: {
+	item: Item;
+	applied: boolean;
+	saved: boolean;
+	mounted: boolean;
+	onClose: () => void;
+	onOpen: () => void;
+	onApplied: () => void;
+	onSave: () => void;
+}) {
+	const cat = catMeta(item.category_id);
+	const closes = closesLabel(item.deadline, mounted);
+
+	return (
+		<>
+			{/* Backdrop */}
+			<div className="drawer-backdrop" aria-hidden="true" onClick={onClose} />
+
+			{/* Sheet */}
+			<div
+				role="dialog"
+				aria-modal="true"
+				aria-label={item.title}
+				className="drawer-sheet"
+			>
+				{/* Top bar */}
+				<div className="mb-6 flex items-center justify-between">
+					<span
+						className="rounded-full border px-3 py-1 font-bold text-[10px] uppercase tracking-widest"
+						style={{
+							color: cat.color,
+							background: `${cat.color}14`,
+							borderColor: `${cat.color}33`,
+						}}
+					>
+						{cat.label}
+					</span>
+					<button
+						type="button"
+						onClick={onClose}
+						aria-label="Close"
+						className="flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-black/5"
+						style={{ color: ON_VARIANT }}
+					>
+						<span className="material-symbols-outlined text-xl">close</span>
+					</button>
+				</div>
+
+				{/* Title & org */}
+				<h2
+					className="mb-2 font-bold text-2xl leading-snug tracking-tight sm:text-3xl"
+					style={{ fontFamily: SERIF }}
+				>
+					{item.title}
+				</h2>
+				<p className="mb-6 text-base" style={{ color: ON_VARIANT }}>
+					{item.org}
+				</p>
+
+				{/* Meta row */}
+				<div
+					className="mb-6 grid gap-4 rounded-2xl p-4"
+					style={{
+						background: `${cat.color}08`,
+						gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))",
+					}}
+				>
+					{item.opportunity_type && (
+						<DrawerMeta
+							label="Type"
+							value={item.opportunity_type}
+							color={cat.color}
+						/>
+					)}
+					{item.location && (
+						<DrawerMeta
+							label="Location"
+							value={item.location}
+							color={cat.color}
+						/>
+					)}
+					<DrawerMeta
+						label="Deadline"
+						value={closes || "Rolling"}
+						color={cat.color}
+					/>
+				</div>
+
+				{/* Description */}
+				{item.why && (
+					<p
+						className="mb-8 text-sm leading-relaxed"
+						style={{ color: ON_VARIANT }}
+					>
+						{item.why}
+					</p>
+				)}
+
+				{/* Actions */}
+				<div className="flex flex-col gap-3 sm:flex-row">
+					{/* Open — goes to the external listing */}
+					<button
+						type="button"
+						onClick={onOpen}
+						className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-7 py-3.5 font-bold text-sm text-white uppercase tracking-wider transition-all active:scale-95"
+						style={{
+							background: cat.color,
+							boxShadow: `0 10px 24px ${cat.color}33`,
+						}}
+					>
+						Open
+						<span className="material-symbols-outlined text-base">
+							open_in_new
+						</span>
+					</button>
+
+					{/* Applied — persisted toggle, separate from opening the link */}
+					<button
+						type="button"
+						onClick={onApplied}
+						aria-pressed={applied}
+						className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border px-7 py-3.5 font-bold text-sm uppercase tracking-wider transition-all active:scale-95"
+						style={
+							applied
+								? {
+										background: "rgba(14,158,115,0.1)",
+										color: "#0E9E73",
+										borderColor: "rgba(14,158,115,0.3)",
+									}
+								: {
+										background: "#fff",
+										color: ON_SURFACE,
+										borderColor: "rgba(0,0,0,0.12)",
+									}
+						}
+					>
+						<span
+							className="material-symbols-outlined text-base"
+							style={{
+								fontVariationSettings: applied ? "'FILL' 1" : "'FILL' 0",
+							}}
+						>
+							{applied ? "task_alt" : "check_circle"}
+						</span>
+						{applied ? "Applied" : "Mark as applied"}
+					</button>
+				</div>
+
+				{/* Save footer */}
+				<div className="mt-6 border-black/5 border-t pt-5">
+					<button
+						type="button"
+						onClick={onSave}
+						aria-pressed={saved}
+						className="inline-flex items-center gap-2 rounded-full px-4 py-2 font-bold text-xs transition-colors"
+						style={{ color: saved ? PRIMARY : ON_VARIANT }}
+					>
+						<span
+							className="material-symbols-outlined text-base"
+							style={{ fontVariationSettings: saved ? "'FILL' 1" : "'FILL' 0" }}
+						>
+							bookmark
+						</span>
+						{saved ? "Saved" : "Save for later"}
+					</button>
+				</div>
+			</div>
+		</>
+	);
+}
+
+function DrawerMeta({
+	label,
+	value,
+	color,
+}: {
+	label: string;
+	value: string;
+	color: string;
+}) {
+	return (
+		<div>
+			<p
+				className="mb-0.5 font-bold text-[9px] uppercase tracking-widest"
+				style={{ color, opacity: 0.7 }}
+			>
+				{label}
+			</p>
+			<p className="font-bold text-sm" style={{ color: ON_SURFACE }}>
+				{value}
+			</p>
+		</div>
+	);
+}
+
+// ── Applied row (tracker section) ─────────────────────────────────────────────
+
+function AppliedRow({
+	item,
+	onOpen,
+	onUnapply,
+	onViewDetail,
+}: {
+	item: Item;
+	onOpen: () => void;
+	onUnapply: () => void;
+	onViewDetail: () => void;
+}) {
+	const cat = catMeta(item.category_id);
+	return (
+		<div
+			className="flex items-center gap-4 rounded-2xl border bg-white/70 px-5 py-4 backdrop-blur-sm transition-colors hover:border-[#0E9E73]/30"
+			style={{ borderColor: "rgba(0,0,0,0.06)" }}
+		>
+			{/* Applied badge */}
+			<div
+				className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+				style={{ background: "rgba(14,158,115,0.1)" }}
+			>
+				<span
+					className="material-symbols-outlined text-base"
+					style={{ color: "#0E9E73", fontVariationSettings: "'FILL' 1" }}
+				>
+					task_alt
+				</span>
+			</div>
+
+			{/* Info */}
+			<button
+				type="button"
+				onClick={onViewDetail}
+				className="min-w-0 flex-1 text-left"
+			>
+				<p className="truncate font-bold text-sm leading-snug">{item.title}</p>
+				<p
+					className="truncate text-xs"
+					style={{ color: ON_VARIANT, opacity: 0.8 }}
+				>
+					{item.org}
+					{item.location ? ` · ${item.location}` : ""}
+				</p>
+			</button>
+
+			{/* Category chip */}
+			<span
+				className="hidden shrink-0 rounded-full px-2.5 py-1 font-bold text-[10px] uppercase tracking-wider sm:block"
+				style={{ background: `${cat.color}14`, color: cat.color }}
+			>
+				{cat.label}
+			</span>
+
+			{/* Open link */}
+			{item.external_url && (
+				<button
+					type="button"
+					onClick={onOpen}
+					aria-label="Open listing"
+					className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-black/5"
+					style={{ color: ON_VARIANT }}
+				>
+					<span className="material-symbols-outlined text-base">
+						open_in_new
+					</span>
+				</button>
+			)}
+
+			{/* Unmark applied */}
+			<button
+				type="button"
+				onClick={onUnapply}
+				aria-label="Remove from applied"
+				className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors hover:bg-black/5"
+				style={{ color: ON_VARIANT, opacity: 0.5 }}
+			>
+				<span className="material-symbols-outlined text-base">close</span>
+			</button>
+		</div>
+	);
+}
+
+// ── Sub-components ─────────────────────────────────────────────────────────────
 
 function FilterPill({
 	active,
@@ -362,7 +742,9 @@ function HeroCard({
 	applied,
 	closes,
 	onSave,
-	onApply,
+	onOpen,
+	onApplied,
+	onViewDetail,
 }: {
 	item: Item;
 	preview: boolean;
@@ -370,11 +752,16 @@ function HeroCard({
 	applied: boolean;
 	closes: string;
 	onSave: () => void;
-	onApply: () => void;
+	onOpen: () => void;
+	onApplied: () => void;
+	onViewDetail: () => void;
 }) {
 	const cat = catMeta(item.category_id);
 	return (
-		<section className="glass-card signal-glow relative overflow-hidden rounded-[2rem] p-8 sm:p-10 lg:p-12">
+		<section
+			className="glass-card signal-glow relative overflow-hidden rounded-[2rem] p-8 sm:p-10 lg:p-12"
+			style={{ cursor: "default" }}
+		>
 			<div
 				aria-hidden="true"
 				className="absolute inset-0"
@@ -405,12 +792,19 @@ function HeroCard({
 					</span>
 				</div>
 
-				<h2
-					className="mb-3 font-bold text-3xl leading-tight tracking-tight sm:text-5xl"
-					style={{ fontFamily: SERIF }}
+				{/* Clickable title to open drawer */}
+				<button
+					type="button"
+					onClick={onViewDetail}
+					className="mb-3 block text-left transition-opacity hover:opacity-80"
 				>
-					{item.title}
-				</h2>
+					<h2
+						className="font-bold text-3xl leading-tight tracking-tight sm:text-5xl"
+						style={{ fontFamily: SERIF }}
+					>
+						{item.title}
+					</h2>
+				</button>
 				<p className="mb-8 text-lg" style={{ color: ON_VARIANT }}>
 					{item.org}
 				</p>
@@ -431,20 +825,50 @@ function HeroCard({
 				</div>
 
 				<div className="flex flex-wrap gap-3">
+					{/* Open — external link, no applied mark */}
 					<button
 						type="button"
-						onClick={onApply}
+						onClick={onOpen}
 						className="inline-flex items-center gap-2 rounded-full px-9 py-3.5 font-bold text-sm text-white uppercase tracking-wider transition-all active:scale-95"
 						style={{
 							background: PRIMARY,
 							boxShadow: "0 12px 30px rgba(0,90,194,0.3)",
 						}}
 					>
-						{applied ? "Applied" : "Apply"}
+						Open
 						<span className="material-symbols-outlined text-base">
-							{applied ? "check" : "arrow_forward"}
+							open_in_new
 						</span>
 					</button>
+
+					{/* Applied — persisted toggle */}
+					<button
+						type="button"
+						onClick={onApplied}
+						aria-pressed={applied}
+						className="inline-flex items-center gap-2 rounded-full border bg-white/60 px-7 py-3.5 font-bold text-sm transition-colors"
+						style={
+							applied
+								? {
+										borderColor: "#0E9E73",
+										color: "#0E9E73",
+										background: "rgba(14,158,115,0.08)",
+									}
+								: { borderColor: "rgba(0,0,0,0.1)", color: ON_SURFACE }
+						}
+					>
+						<span
+							className="material-symbols-outlined text-lg"
+							style={{
+								fontVariationSettings: applied ? "'FILL' 1" : "'FILL' 0",
+							}}
+						>
+							{applied ? "task_alt" : "check_circle"}
+						</span>
+						{applied ? "Applied" : "Mark as applied"}
+					</button>
+
+					{/* Save */}
 					<button
 						type="button"
 						onClick={onSave}
@@ -461,7 +885,7 @@ function HeroCard({
 						>
 							bookmark
 						</span>
-						{saved ? "Saved" : "Save for later"}
+						{saved ? "Saved" : "Save"}
 					</button>
 				</div>
 			</div>
@@ -498,30 +922,33 @@ function HeroStat({
 
 function OppCard({
 	item,
-	locked,
 	saved,
 	applied,
 	closes,
 	userFocusAreas,
 	onSave,
-	onApply,
+	onClick,
 }: {
 	item: Item;
-	locked: boolean;
 	saved: boolean;
 	applied: boolean;
 	closes: string;
 	userFocusAreas: string[];
 	onSave: () => void;
-	onApply: () => void;
+	onClick: () => void;
 }) {
 	const cat = catMeta(item.category_id);
 	const matchedTags = item.focus_area_tags.filter((t) =>
 		userFocusAreas.includes(t),
 	);
 	return (
-		<article className="glass-card group flex flex-col overflow-hidden rounded-[2rem]">
-			{/* Accent header (replaces the mockup's stock photo) */}
+		// biome-ignore lint/a11y/useKeyWithClickEvents lint/a11y/noStaticElementInteractions: convenience click-target; keyboard users reach the drawer via the "View details" button inside
+		<div
+			className="glass-card group flex flex-col overflow-hidden rounded-[2rem]"
+			style={{ cursor: "pointer" }}
+			onClick={onClick}
+		>
+			{/* Accent header */}
 			<div
 				className="relative flex h-28 items-end p-5"
 				style={{
@@ -535,15 +962,35 @@ function OppCard({
 				>
 					{cat.icon}
 				</span>
-				<span
-					className="rounded-full bg-white/80 px-3 py-1 font-bold text-[10px] uppercase tracking-wider backdrop-blur-sm"
-					style={{ color: cat.color }}
-				>
-					{cat.label}
-				</span>
+				<div className="flex items-center gap-2">
+					<span
+						className="rounded-full bg-white/80 px-3 py-1 font-bold text-[10px] uppercase tracking-wider backdrop-blur-sm"
+						style={{ color: cat.color }}
+					>
+						{cat.label}
+					</span>
+					{applied && (
+						<span
+							className="flex items-center gap-1 rounded-full px-2.5 py-1 font-bold text-[10px] uppercase tracking-wider"
+							style={{ background: "rgba(14,158,115,0.15)", color: "#0E9E73" }}
+						>
+							<span
+								className="material-symbols-outlined text-[11px]"
+								style={{ fontVariationSettings: "'FILL' 1" }}
+							>
+								task_alt
+							</span>
+							Applied
+						</span>
+					)}
+				</div>
+				{/* Save button — stops propagation so it doesn't open the drawer */}
 				<button
 					type="button"
-					onClick={onSave}
+					onClick={(e) => {
+						e.stopPropagation();
+						onSave();
+					}}
 					aria-label={saved ? "Saved" : "Save"}
 					className="absolute top-3 left-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm transition-colors"
 					style={{ color: saved ? PRIMARY : ON_VARIANT }}
@@ -614,23 +1061,18 @@ function OppCard({
 					</div>
 				</div>
 
-				<button
-					type="button"
-					onClick={onApply}
-					className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl py-3 font-bold text-sm uppercase tracking-wider transition-all active:scale-95"
-					style={
-						applied
-							? { background: "rgba(0,90,194,0.08)", color: PRIMARY }
-							: { background: PRIMARY, color: "#fff" }
-					}
+				{/* View prompt */}
+				<div
+					className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl py-3 font-bold text-sm uppercase tracking-wider"
+					style={{ background: "rgba(0,90,194,0.06)", color: PRIMARY }}
 				>
-					{applied ? "Applied" : locked ? "Open" : "Apply"}
+					View details
 					<span className="material-symbols-outlined text-base">
-						{applied ? "check" : "arrow_forward"}
+						chevron_right
 					</span>
-				</button>
+				</div>
 			</div>
-		</article>
+		</div>
 	);
 }
 
@@ -832,10 +1274,15 @@ const SCOPED_CSS = `
 .signal-glow { box-shadow: 0 20px 50px -10px rgba(0,90,194,0.14); }
 @keyframes pulse-signal { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.25); opacity: 0.7; } }
 .pulse-signal { animation: pulse-signal 2s infinite ease-in-out; }
-/* Critical layout, server-rendered: fixed sidebar + content offset before fonts
-   load. Phones use the bottom tab bar. */
+/* Drawer */
+.drawer-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.35); backdrop-filter: blur(4px); z-index: 60; }
+.drawer-sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 61; background: #fff; border-radius: 2rem 2rem 0 0; padding: 1.75rem 1.5rem 2.5rem; max-height: 92dvh; overflow-y: auto; animation: sheet-up .28s cubic-bezier(.32,1,.6,1); }
+@media (min-width: 640px) { .drawer-sheet { left: 50%; right: auto; bottom: 50%; transform: translate(-50%, 50%); border-radius: 2rem; padding: 2rem; width: 100%; max-width: 560px; max-height: 90dvh; animation: modal-in .22s cubic-bezier(.32,1,.6,1); } }
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes modal-in { from { opacity: 0; transform: translate(-50%, calc(50% + 16px)); } to { opacity: 1; transform: translate(-50%, 50%); } }
+/* Layout */
 .op-rail { position: fixed; left: 0; top: 0; height: 100%; width: 280px; z-index: 50; display: none; flex-direction: column; background: rgba(255,255,255,0.85); border-right: 1px solid rgba(0,0,0,0.06); backdrop-filter: blur(12px); }
 .op-main { margin-left: 0; padding-bottom: 7rem; }
 @media (min-width: 768px) { .op-rail { display: flex; } .op-main { margin-left: 280px; padding-bottom: 2.5rem; } }
-@media (prefers-reduced-motion: reduce) { .glass-card { transition: none; } .pulse-signal { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .glass-card { transition: none; } .pulse-signal { animation: none; } .drawer-sheet { animation: none; } }
 `;

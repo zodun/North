@@ -1,8 +1,9 @@
 // Edge Function: scrape-opportunities
 //
-// Fetches RSS feeds from global opportunity banks, normalises each item
-// into the public.opportunities schema, tags it with focus areas, and
-// upserts into Supabase.  Called daily at 06:00 UTC by pg_cron.
+// Fetches RSS feeds and HTML pages from global + Jamaica/Caribbean opportunity
+// sources, normalises each item into the public.opportunities schema, tags it
+// with focus areas and a region, and upserts into Supabase.
+// Called daily at 06:00 UTC by pg_cron.
 //
 // Environment secrets required:
 //   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SCRAPE_SECRET (optional auth)
@@ -116,6 +117,7 @@ const FOCUS_KEYWORDS: Record<string, string[]> = {
 		"postdoc",
 		"exchange",
 		"erasmus",
+		"bursary",
 	],
 };
 
@@ -155,9 +157,7 @@ function tagFocusAreas(text: string): string[] {
 	const lower = text.toLowerCase();
 	const matched: string[] = [];
 	for (const [area, keywords] of Object.entries(FOCUS_KEYWORDS)) {
-		if (keywords.some((kw) => lower.includes(kw))) {
-			matched.push(area);
-		}
+		if (keywords.some((kw) => lower.includes(kw))) matched.push(area);
 	}
 	return matched;
 }
@@ -198,6 +198,11 @@ function extractLocation(text: string): string | null {
 		"europe",
 		"americas",
 		"caribbean",
+		"jamaica",
+		"trinidad",
+		"barbados",
+		"guyana",
+		"belize",
 	];
 	const lower = text.toLowerCase();
 	for (const c of countries) {
@@ -210,7 +215,7 @@ function extractLocation(text: string): string | null {
 	return null;
 }
 
-// ── RSS parser (regex-based, no XML lib needed in Deno) ───────────────────
+// ── RSS parser ─────────────────────────────────────────────────────────────
 
 type RSSItem = {
 	title: string;
@@ -232,13 +237,10 @@ function extractCDATA(block: string, tag: string): string {
 }
 
 function extractLink(block: string): string {
-	// Atom-style href
 	const atom = block.match(/href="(https?:\/\/[^"]+)"/i);
 	if (atom) return atom[1];
-	// RSS <link>, may be plain text between tags
 	const linkTag = block.match(/<link[^>]*>\s*(https?:\/\/[^\s<]+)\s*<\/link>/i);
 	if (linkTag) return linkTag[1];
-	// Guid with URL
 	const guid = block.match(/<guid[^>]*>(https?:\/\/[^\s<]+)<\/guid>/i);
 	if (guid) return guid[1];
 	return "";
@@ -254,8 +256,6 @@ function parseRSS(xml: string): RSSItem[] {
 			extractCDATA(block, "content:encoded") ||
 			extractCDATA(block, "description");
 		const pubDate = extractCDATA(block, "pubDate");
-
-		// All <category> occurrences
 		const catRegex =
 			/<category[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/category>/gi;
 		const categories: string[] = [];
@@ -264,10 +264,8 @@ function parseRSS(xml: string): RSSItem[] {
 			categories.push(m[1].trim());
 			m = catRegex.exec(block);
 		}
-
-		if (title && link) {
+		if (title && link)
 			items.push({ title, link, description, pubDate, categories });
-		}
 	}
 	return items;
 }
@@ -296,10 +294,211 @@ function extractOrg(title: string, categories: string[]): string {
 	return m ? m[1].trim() : "Various";
 }
 
+// ── HTML scraping helpers ──────────────────────────────────────────────────
+
+async function fetchHtml(url: string): Promise<string | null> {
+	try {
+		const res = await fetch(url, {
+			headers: {
+				"User-Agent":
+					"Mozilla/5.0 (compatible; NorthApp/1.0; +https://gonorth.app)",
+				Accept:
+					"text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+			},
+			signal: AbortSignal.timeout(15_000),
+		});
+		if (!res.ok) return null;
+		return await res.text();
+	} catch {
+		return null;
+	}
+}
+
+// Keywords that indicate an opportunity-related link
+const OPP_LINK_KEYWORDS = [
+	"scholarship",
+	"bursary",
+	"grant",
+	"fellowship",
+	"internship",
+	"programme",
+	"program",
+	"fund",
+	"award",
+	"opportunity",
+	"training",
+	"job",
+	"vacancy",
+	"employment",
+	"apprenticeship",
+	"competition",
+	"accelerator",
+	"incubator",
+	"pitch",
+	"apply",
+];
+
+// Extract absolute links whose anchor text or href path contains an
+// opportunity keyword, capped to avoid scraping entire sites.
+function extractOpportunityLinks(
+	html: string,
+	baseUrl: string,
+	limit = 20,
+): string[] {
+	const seen = new Set<string>();
+	const links: string[] = [];
+	const anchorRe = /<a[^>]+href=["']([^"'#?][^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi;
+	for (
+		let m = anchorRe.exec(html);
+		m !== null && links.length < limit;
+		m = anchorRe.exec(html)
+	) {
+		const href = m[1].trim();
+		const text = m[2]
+			.replace(/<[^>]+>/g, "")
+			.toLowerCase()
+			.trim();
+		const hrefLower = href.toLowerCase();
+		if (
+			!OPP_LINK_KEYWORDS.some((k) => text.includes(k) || hrefLower.includes(k))
+		)
+			continue;
+		let abs = href;
+		if (href.startsWith("/")) {
+			try {
+				abs = new URL(href, baseUrl).toString();
+			} catch {
+				continue;
+			}
+		} else if (!href.startsWith("http")) {
+			continue;
+		}
+		if (!seen.has(abs)) {
+			seen.add(abs);
+			links.push(abs);
+		}
+	}
+	return links;
+}
+
+type HtmlOpp = {
+	title: string;
+	description: string | null;
+	url: string;
+	category: string;
+	deadline: string | null;
+	location: string | null;
+	focusTags: string[];
+};
+
+// Parse a single opportunity detail page into a normalised record.
+function parseDetailPage(html: string, url: string): HtmlOpp | null {
+	const h1 = html.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+	const h2 = html.match(/<h2[^>]*>([\s\S]*?)<\/h2>/i);
+	const rawTitle = stripHtml(h1?.[1] ?? h2?.[1] ?? "").trim();
+	if (rawTitle.length < 6) return null;
+	const title = rawTitle.slice(0, 255);
+
+	// First substantive paragraph as description
+	const parasRe = /<p[^>]*>([\s\S]{60,}?)<\/p>/gi;
+	let description: string | null = null;
+	for (let pm = parasRe.exec(html); pm !== null; pm = parasRe.exec(html)) {
+		const t = stripHtml(pm[1]).trim();
+		if (t.length > 60) {
+			description = t.slice(0, 400);
+			break;
+		}
+	}
+
+	const fullText = `${title} ${description ?? ""}`;
+	return {
+		title,
+		description,
+		url,
+		category: inferCategory(fullText),
+		deadline: extractDeadline(description ?? ""),
+		location: extractLocation(fullText),
+		focusTags: tagFocusAreas(fullText),
+	};
+}
+
+// ── MOF Jamaica scraper ────────────────────────────────────────────────────
+//
+// The Ministry of Finance Jamaica (mof.gov.jm) publishes the GOJ Scholarship
+// Programme, bursaries, budget-linked SME/grant announcements, and social fund
+// programmes. It has no RSS feed so we fetch known entry pages and follow
+// opportunity-tagged links one level deep.
+
+const MOF_ENTRY_PAGES = [
+	"https://mof.gov.jm/scholarships-bursaries/",
+	"https://mof.gov.jm/scholarships/",
+	"https://mof.gov.jm/grants/",
+	"https://mof.gov.jm/programmes/",
+	"https://mof.gov.jm/news/",
+	"https://mof.gov.jm/press-releases/",
+	"https://mof.gov.jm/",
+];
+
+async function scrapeMofJamaica(): Promise<HtmlOpp[]> {
+	const seenUrls = new Set<string>();
+	const results: HtmlOpp[] = [];
+
+	for (const entryUrl of MOF_ENTRY_PAGES) {
+		const html = await fetchHtml(entryUrl);
+		if (!html) continue;
+
+		// Try parsing the entry page itself as a detail page (some pages are
+		// standalone programme descriptions, not listings)
+		const direct = parseDetailPage(html, entryUrl);
+		if (direct && direct.title.length > 10 && !seenUrls.has(entryUrl)) {
+			seenUrls.add(entryUrl);
+			results.push(direct);
+		}
+
+		// Follow opportunity links found on the page
+		const links = extractOpportunityLinks(html, "https://mof.gov.jm", 15);
+		for (const link of links) {
+			if (seenUrls.has(link) || !link.includes("mof.gov.jm")) continue;
+			seenUrls.add(link);
+			const detailHtml = await fetchHtml(link);
+			if (!detailHtml) continue;
+			const opp = parseDetailPage(detailHtml, link);
+			if (opp) results.push(opp);
+		}
+	}
+
+	return results;
+}
+
+// ── Generic HTML source scraper ────────────────────────────────────────────
+// Used for HTML sources that don't need custom logic. Fetches the source's
+// feed_url and follows up to 15 opportunity-tagged links one level deep.
+
+async function scrapeGenericHtml(baseUrl: string): Promise<HtmlOpp[]> {
+	const html = await fetchHtml(baseUrl);
+	if (!html) return [];
+
+	const seenUrls = new Set<string>([baseUrl]);
+	const results: HtmlOpp[] = [];
+
+	const origin = new URL(baseUrl).origin;
+	const links = extractOpportunityLinks(html, origin, 15);
+
+	for (const link of links) {
+		if (seenUrls.has(link)) continue;
+		seenUrls.add(link);
+		const detailHtml = await fetchHtml(link);
+		if (!detailHtml) continue;
+		const opp = parseDetailPage(detailHtml, link);
+		if (opp) results.push(opp);
+	}
+
+	return results;
+}
+
 // ── Main handler ───────────────────────────────────────────────────────────
 
 Deno.serve(async (req: Request) => {
-	// Optional secret check (set SCRAPE_SECRET env + app.scrape_secret Postgres setting)
 	const secret = Deno.env.get("SCRAPE_SECRET");
 	if (secret) {
 		const header = req.headers.get("x-trigger-secret");
@@ -313,10 +512,9 @@ Deno.serve(async (req: Request) => {
 		Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
 	);
 
-	// Load enabled sources
 	const { data: sources, error: srcErr } = await supabase
 		.from("scrape_sources")
-		.select("id, name, feed_url")
+		.select("id, name, feed_url, scrape_type, region")
 		.eq("enabled", true);
 
 	if (srcErr || !sources) {
@@ -325,12 +523,65 @@ Deno.serve(async (req: Request) => {
 		});
 	}
 
-	const results: Record<string, { added: number; error?: string }> = {};
+	const results: Record<string, unknown> = {};
 
 	for (const source of sources) {
+		const scrapeType = (source.scrape_type as string | null) ?? "rss";
+		const region = (source.region as string | null) ?? null;
+
+		// ── HTML sources ────────────────────────────────────────────────────
+		if (scrapeType === "html") {
+			let htmlOpps: HtmlOpp[] = [];
+			try {
+				if (source.id === "mof-jamaica") {
+					htmlOpps = await scrapeMofJamaica();
+				} else {
+					htmlOpps = await scrapeGenericHtml(source.feed_url as string);
+				}
+			} catch (e) {
+				results[source.id] = { added: 0, error: String(e) };
+				continue;
+			}
+
+			let added = 0;
+			for (const opp of htmlOpps.slice(0, 30)) {
+				const { error } = await supabase.from("opportunities").insert({
+					title: stripDashes(opp.title),
+					org: source.name as string,
+					category_id: opp.category,
+					opportunity_type: opp.category,
+					location: stripDashes(opp.location) ?? "Jamaica",
+					deadline: stripDashes(opp.deadline),
+					why: stripDashes(opp.description),
+					tags: [],
+					external_url: opp.url,
+					focus_area_tags: opp.focusTags,
+					region,
+					source: source.id as string,
+					source_id: opp.url,
+					scraped_at: new Date().toISOString(),
+					license_status: "cleared",
+					attribution_text: source.name as string,
+					published_at: new Date().toISOString(),
+				});
+				if (!error || error.code === "23505") {
+					if (!error) added++;
+				}
+			}
+
+			await supabase
+				.from("scrape_sources")
+				.update({ last_scraped_at: new Date().toISOString() })
+				.eq("id", source.id);
+
+			results[source.id] = { scraped: htmlOpps.length, added };
+			continue;
+		}
+
+		// ── RSS sources (existing path) ─────────────────────────────────────
 		let xml: string;
 		try {
-			const res = await fetch(source.feed_url, {
+			const res = await fetch(source.feed_url as string, {
 				headers: { "User-Agent": "NorthApp/1.0 (+https://gonorth.app)" },
 				signal: AbortSignal.timeout(15_000),
 			});
@@ -343,13 +594,11 @@ Deno.serve(async (req: Request) => {
 
 		const items = parseRSS(xml);
 		let added = 0;
-
 		const insertErrors: string[] = [];
 
 		for (const item of items.slice(0, 30)) {
 			const plain = stripHtml(item.description);
-			const fullText =
-				item.title + " " + plain + " " + item.categories.join(" ");
+			const fullText = `${item.title} ${plain} ${item.categories.join(" ")}`;
 
 			const focusAreaTags = tagFocusAreas(fullText);
 			const opportunityType = inferType(fullText);
@@ -358,7 +607,7 @@ Deno.serve(async (req: Request) => {
 			const location = extractLocation(plain);
 			const org = extractOrg(item.title, item.categories);
 			const why =
-				plain.length > 220 ? plain.slice(0, 217) + "…" : plain || null;
+				plain.length > 220 ? `${plain.slice(0, 217)}…` : plain || null;
 
 			const { error } = await supabase.from("opportunities").insert({
 				title: stripDashes(item.title.slice(0, 255)),
@@ -371,25 +620,24 @@ Deno.serve(async (req: Request) => {
 				tags: item.categories.slice(0, 6),
 				external_url: item.link,
 				focus_area_tags: focusAreaTags,
-				source: source.id,
+				region,
+				source: source.id as string,
 				source_id: item.link,
 				scraped_at: new Date().toISOString(),
 				license_status: "cleared",
-				attribution_text: source.name,
+				attribution_text: source.name as string,
 				published_at: item.pubDate
 					? new Date(item.pubDate).toISOString()
 					: new Date().toISOString(),
 			});
 
 			if (error) {
-				// 23505 = unique_violation, item already exists, not a real error
 				if (error.code !== "23505") insertErrors.push(error.message);
 			} else {
 				added++;
 			}
 		}
 
-		// Update scrape_sources metadata
 		await supabase
 			.from("scrape_sources")
 			.update({ last_scraped_at: new Date().toISOString() })

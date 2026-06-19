@@ -6,6 +6,54 @@ import { OpportunitiesList } from "./list";
 
 export const metadata: Metadata = { title: "Opportunities" };
 
+// ── Region boost ──────────────────────────────────────────────────────────────
+// Items tagged with a region (jamaica/caribbean) score higher for users from
+// that region, surfacing locally-sourced opportunities first without hiding
+// global options (which stay available below).
+const CARIBBEAN_COUNTRIES = new Set([
+	"jamaica",
+	"trinidad",
+	"tobago",
+	"barbados",
+	"guyana",
+	"belize",
+	"bahamas",
+	"haiti",
+	"dominican",
+	"cuba",
+	"cayman",
+	"bermuda",
+	"antigua",
+	"lucia",
+	"grenada",
+	"vincent",
+	"kitts",
+	"dominica",
+	"martinique",
+	"guadeloupe",
+	"aruba",
+	"curacao",
+	"suriname",
+	"puerto rico",
+]);
+
+function isCaribbean(country: string): boolean {
+	const c = country.toLowerCase();
+	return [...CARIBBEAN_COUNTRIES].some((n) => c.includes(n));
+}
+
+function regionScore(
+	itemRegion: string | null,
+	userCountry: string | null,
+): number {
+	if (!itemRegion || !userCountry) return 0;
+	const c = userCountry.toLowerCase();
+	if (itemRegion === "jamaica" && c.includes("jamaica")) return 4;
+	if (itemRegion === "caribbean" && isCaribbean(c)) return 3;
+	if (itemRegion === "jamaica" && isCaribbean(c)) return 2; // Jamaica item, other Caribbean user
+	return 0;
+}
+
 // ── Onboarding-driven eligibility (location + education) ─────────────────────
 // Opportunities carry only free-text location and no structured education field,
 // so this is a soft signal that re-ranks rather than a hard filter (fuzzy data
@@ -75,7 +123,7 @@ export default async function OpportunitiesPage() {
 			supabase
 				.from("opportunities")
 				.select(
-					"id, title, org, opportunity_type, location, deadline, external_url, why, category_id, source, focus_area_tags",
+					"id, title, org, opportunity_type, location, deadline, external_url, why, category_id, source, focus_area_tags, region",
 				)
 				.order("scraped_at", { ascending: false, nullsFirst: false })
 				.order("created_at", { ascending: false })
@@ -162,10 +210,19 @@ export default async function OpportunitiesPage() {
 			`${item.title} ${item.why ?? ""} ${item.opportunity_type ?? ""}`,
 			educationLevel,
 		);
+		const regScore = regionScore(
+			(item.region as string | null) ?? null,
+			country,
+		);
 		return {
 			...item,
 			matchScore:
-				focusScore + categoryScore + interestScore + locScore + eduScore,
+				focusScore +
+				categoryScore +
+				interestScore +
+				locScore +
+				eduScore +
+				regScore,
 		};
 	});
 
