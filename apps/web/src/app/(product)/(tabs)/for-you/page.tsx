@@ -18,56 +18,25 @@ export default async function ForYouPage() {
 		data: { user },
 	} = await supabase.auth.getUser();
 
-	const { data: items } = await supabase
-		.from("content_items")
-		.select(
-			"id, kind, title, eyebrow, body, source, external_url, cloudinary_public_id, thumbnail_url, content_category_id, published_at",
-		)
-		.not("license_status", "eq", "blocked")
-		.order("sort_order", { ascending: true })
-		.order("published_at", { ascending: false })
-		.limit(30);
+	// Fetch user preferences first so we can filter the content query at the DB
+	// level rather than filtering a generic latest-30 pool in memory.
+	const [focusRes, profileRes, categoriesRes] = await Promise.all([
+		user
+			? supabase
+					.from("user_focus_areas")
+					.select("focus_area_id")
+					.eq("user_id", user.id)
+			: Promise.resolve({ data: [] as { focus_area_id: string }[] }),
+		user
+			? supabase
+					.from("profiles")
+					.select("aspiration, content_formats, fields, purpose_mode")
+					.eq("user_id", user.id)
+					.maybeSingle()
+			: Promise.resolve({ data: null }),
+		supabase.from("content_categories").select("id, label").order("sort_order"),
+	]);
 
-	const { data: existingInteractions } = user
-		? await supabase
-				.from("content_interactions")
-				.select("content_item_id, action")
-				.eq("user_id", user.id)
-				.in("action", ["save", "matters"])
-				.in(
-					"content_item_id",
-					(items ?? []).map((i) => i.id),
-				)
-		: { data: [] };
-
-	const initialSaved = new Set(
-		(existingInteractions ?? [])
-			.filter((r) => r.action === "save")
-			.map((r) => r.content_item_id),
-	);
-
-	const { data: categories } = await supabase
-		.from("content_categories")
-		.select("id, label")
-		.order("sort_order");
-
-	// Aspiration captured in onboarding, personalises the hero's reason line.
-	const { data: profile } = user
-		? await supabase
-				.from("profiles")
-				.select("aspiration, content_formats, fields, purpose_mode")
-				.eq("user_id", user.id)
-				.maybeSingle()
-		: { data: null };
-
-	// Onboarding focus areas → keep the feed specific to chosen topics. Falls back
-	// to the full pool when the user has no focus areas or too few on-topic cards.
-	const { data: focusRows } = user
-		? await supabase
-				.from("user_focus_areas")
-				.select("focus_area_id")
-				.eq("user_id", user.id)
-		: { data: [] };
 	const FOCUS_EYEBROW: Record<string, string> = {
 		money: "Money",
 		learn: "Skills",
@@ -77,11 +46,58 @@ export default async function ForYouPage() {
 		venture: "Entrepreneurship",
 	};
 	const focusEyebrows = new Set(
-		(focusRows ?? [])
+		(focusRes.data ?? [])
 			.map((r) => FOCUS_EYEBROW[r.focus_area_id as string])
 			.filter(Boolean),
 	);
-	const allItems = items ?? [];
+
+	// Pull content items filtered by focus-area eyebrow at the DB level so the
+	// pool is already on-topic for this user. Falls back to an unfiltered fetch
+	// when the focused pool is too thin (< 6 items).
+	const CONTENT_SELECT =
+		"id, kind, title, eyebrow, body, source, external_url, cloudinary_public_id, thumbnail_url, content_category_id, published_at";
+	const buildContentQuery = () =>
+		supabase
+			.from("content_items")
+			.select(CONTENT_SELECT)
+			.not("license_status", "eq", "blocked")
+			.order("sort_order", { ascending: true })
+			.order("published_at", { ascending: false });
+
+	const { data: focusedItems } = focusEyebrows.size
+		? await buildContentQuery()
+				.in("eyebrow", [...focusEyebrows])
+				.limit(30)
+		: await buildContentQuery().limit(30);
+
+	const allItems: NonNullable<typeof focusedItems> =
+		focusEyebrows.size && (focusedItems ?? []).length < 6
+			? ((await buildContentQuery().limit(30)).data ?? focusedItems ?? [])
+			: (focusedItems ?? []);
+
+	const { data: existingInteractions } = user
+		? await supabase
+				.from("content_interactions")
+				.select("content_item_id, action")
+				.eq("user_id", user.id)
+				.in("action", ["save", "matters"])
+				.in(
+					"content_item_id",
+					allItems.map((i) => i.id),
+				)
+		: { data: [] };
+
+	const initialSaved = new Set(
+		(existingInteractions ?? [])
+			.filter((r) => r.action === "save")
+			.map((r) => r.content_item_id),
+	);
+
+	const profile = profileRes.data;
+	const categories = categoriesRes.data;
+
+	// Since items are already focus-filtered at DB level, onTopic ≈ allItems.
+	// Keep the in-memory pass to handle the fallback case where we widened back.
 	const onTopic = focusEyebrows.size
 		? allItems.filter((i) => i.eyebrow && focusEyebrows.has(i.eyebrow))
 		: allItems;
@@ -175,7 +191,7 @@ export default async function ForYouPage() {
 	const offTopicFiltered = formats.size
 		? offTopic.filter((i) => formats.has(formatOf(i.kind)))
 		: offTopic;
-	let feedItems: (NonNullable<typeof items>[number] & {
+	let feedItems: ((typeof allItems)[number] & {
 		why?: string | null;
 	})[] =
 		onTopic.length > 0

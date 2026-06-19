@@ -109,8 +109,26 @@ export default async function OpportunitiesPage() {
 	const items = itemsRes.data ?? [];
 	const savedRows = savedRes.data ?? [];
 	const userFocusAreas = (focusRes.data ?? []).map((r) => r.focus_area_id);
-	const preferredCategories: string[] =
+	const explicitCategories: string[] =
 		profileRes.data?.preferred_opportunity_categories ?? [];
+	// Map focus areas to opportunity categories when the user hasn't pinned
+	// specific categories, so the category boost is always active and differs per
+	// user based on their onboarding answers.
+	const FOCUS_TO_OPP_CATS: Record<string, string[]> = {
+		craft: ["job", "creator-programme", "event", "accelerator"],
+		venture: ["accelerator", "grant", "event"],
+		mind: ["community", "event"],
+		people: ["community", "event", "job"],
+		money: ["scholarship", "grant"],
+		learn: ["scholarship", "internship", "event"],
+	};
+	const preferredCategories: string[] = explicitCategories.length
+		? explicitCategories
+		: [
+				...new Set(
+					userFocusAreas.flatMap((f) => FOCUS_TO_OPP_CATS[f as string] ?? []),
+				),
+			];
 	const interests: string[] =
 		(profileRes.data?.interests as string[] | null) ?? [];
 	const country = (profileRes.data?.country as string | null) ?? null;
