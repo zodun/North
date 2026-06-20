@@ -280,7 +280,7 @@ export default function OnboardingPage() {
 			const { error: err } = await supabase
 				.from("profiles")
 				.update({
-					country: country || null,
+					country: country && country !== "Somewhere else" ? country : null,
 					open_to_remote: openToRemote,
 					open_to_relocate: openToRelocate,
 				})

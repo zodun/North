@@ -76,7 +76,7 @@ export function PreferencesSection({
 
 	function onCountry(value: string) {
 		setCountry(value);
-		save({ country: value || null });
+		save({ country: value && value !== "Somewhere else" ? value : null });
 	}
 
 	function onRemote(value: boolean) {
