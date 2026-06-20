@@ -219,7 +219,7 @@ export function CommunityHub({
 							>
 								You are not building alone.
 							</h1>
-							<div className="flex gap-2">
+							<div className="flex gap-2 sm:hidden">
 								<Pill tone="primary">{memberCount} members</Pill>
 								{samePathCount > 0 && (
 									<Pill tone="muted">{samePathCount} on your path</Pill>
