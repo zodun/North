@@ -193,10 +193,12 @@ function useArticleImage(item: Item, categoryLabel: string | null) {
 	});
 	const yt = item.external_url ? youtubeThumbnail(item.external_url) : null;
 	const canFetch = !item.thumbnail_url && !yt && Boolean(item.external_url);
-	const initial = item.thumbnail_url ?? yt ?? (canFetch ? null : fallback);
+	// Always start with fallback so every card shows art immediately; OG fetch
+	// replaces it when it resolves.
+	const initial = item.thumbnail_url ?? yt ?? fallback;
 	const [src, setSrc] = useState<string | null>(initial);
 	const [phase, setPhase] = useState<"have" | "idle" | "loading" | "done">(
-		initial ? "have" : "idle",
+		canFetch ? "idle" : "have",
 	);
 	const ref = useRef<HTMLElement | null>(null);
 
@@ -460,10 +462,10 @@ function Hero({
 	onRead: () => void;
 }) {
 	const conf = kindConf(item.kind);
-	// An always-engaging hero: a dark aurora backdrop with drifting colour blobs,
-	// a North compass-constellation motif, and an accent tint chosen by category so
-	// each featured pick feels distinct. Article images aren't used, North's
-	// covers/OG images bake in text that would collide with the headline.
+	const { src: heroImg, onError: heroImgError } = useArticleImage(
+		item,
+		categoryLabel,
+	);
 	const accent = HERO_ACCENT[(categoryLabel ?? "").trim()] ?? "#4d8eff";
 	const why = (
 		item.why ??
@@ -481,6 +483,15 @@ function Hero({
 						"linear-gradient(135deg, #06224d 0%, #001233 58%, #00081c 100%)",
 				}}
 			>
+				{heroImg && (
+					// biome-ignore lint/performance/noImgElement: hero background photo, dynamic
+					<img
+						src={proxiedImage(heroImg)}
+						alt=""
+						onError={heroImgError}
+						className="absolute inset-0 h-full w-full object-cover opacity-35 transition-opacity duration-700"
+					/>
+				)}
 				<div
 					className="hero-blob hero-blob--a"
 					style={{
