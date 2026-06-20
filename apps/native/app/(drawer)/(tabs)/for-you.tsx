@@ -1,5 +1,5 @@
 import { useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	ActivityIndicator,
 	FlatList,
@@ -19,11 +19,15 @@ import { useInteractions } from "@/lib/feed/use-interactions";
 export default function ForYou() {
 	const { items: allItems, loading, error, refresh } = useFeed(null);
 	// Only show direct-hosted videos (not YouTube links) — native player only.
-	const items = allItems.filter(
-		(i) =>
-			i.kind === "video" &&
-			!!i.external_url &&
-			!i.external_url.includes("youtube"),
+	const items = useMemo(
+		() =>
+			allItems.filter(
+				(i) =>
+					i.kind === "video" &&
+					!!i.external_url &&
+					!i.external_url.includes("youtube"),
+			),
+		[allItems],
 	);
 	const { isSaved, record } = useInteractions(items);
 
@@ -34,9 +38,12 @@ export default function ForYou() {
 	const [activeId, setActiveId] = useState<string | null>(null);
 
 	// Re-fetch when this tab comes back into focus (picks up newly uploaded videos).
+	// Cleanup pauses all video players when the tab loses focus — prevents them
+	// from buffering and consuming CPU/memory while the user is on other tabs.
 	useFocusEffect(
 		useCallback(() => {
 			void refresh();
+			return () => setActiveId(null);
 		}, [refresh]),
 	);
 

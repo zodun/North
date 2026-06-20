@@ -11,12 +11,12 @@ import type { ReactNode } from "react";
 import {
 	KeyboardAvoidingView,
 	Platform,
-	SafeAreaView,
 	ScrollView,
 	StyleSheet,
 	Text,
 	View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { TOTAL_QUESTIONS } from "@/lib/onboarding/questions";
 

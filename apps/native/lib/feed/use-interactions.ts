@@ -104,9 +104,11 @@ export function useInteractions(items: FeedItem[]) {
 		[session, itemsById, posthog],
 	);
 
-	return {
-		isSaved: (id: string) => savedIds.has(id),
-		isMatters: (id: string) => mattersIds.has(id),
-		record,
-	};
+	const isSaved = useCallback((id: string) => savedIds.has(id), [savedIds]);
+	const isMatters = useCallback(
+		(id: string) => mattersIds.has(id),
+		[mattersIds],
+	);
+
+	return { isSaved, isMatters, record };
 }

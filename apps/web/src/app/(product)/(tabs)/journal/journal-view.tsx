@@ -279,7 +279,7 @@ export function JournalView({
 							>
 								Signal &amp; Noise
 							</h1>
-							<div className="flex gap-2">
+							<div className="flex gap-2 sm:hidden">
 								<Pill tone="primary">{bandLabel}</Pill>
 								<Pill tone="muted">{todayLabel}</Pill>
 							</div>

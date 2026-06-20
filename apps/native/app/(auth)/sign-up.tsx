@@ -78,7 +78,6 @@ export default function SignUpScreen() {
 
 	return (
 		<AuthShell
-			canGoBack
 			footer={
 				<Text style={[styles.terms, { color: p.inkDim, fontFamily: t.ui }]}>
 					Continuing means you accept our Terms and Privacy.
