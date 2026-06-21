@@ -651,10 +651,13 @@ function ObservationCard({
 					{obs.dateLabel}
 				</span>
 				<span
-					className="material-symbols-outlined transition-transform group-hover:translate-x-1"
+					className="flex items-center gap-1 font-bold text-[10px] uppercase tracking-widest transition-transform group-hover:translate-x-0.5"
 					style={{ color: accent }}
 				>
-					arrow_forward
+					Read more
+					<span className="material-symbols-outlined text-base">
+						arrow_forward
+					</span>
 				</span>
 			</div>
 		</button>

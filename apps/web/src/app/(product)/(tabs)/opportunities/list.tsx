@@ -115,6 +115,7 @@ export function OpportunitiesList({
 }) {
 	const [search, setSearch] = useState("");
 	const [activeCategory, setActiveCategory] = useState<string | null>(null);
+	const [showAppliedView, setShowAppliedView] = useState(false);
 	const [saved, setSaved] = useState<Set<string>>(new Set(initialSaved));
 	const [applied, setApplied] = useState<Set<string>>(new Set(initialApplied));
 	const [saving, setSaving] = useState<Set<string>>(new Set());
@@ -282,21 +283,102 @@ export function OpportunitiesList({
 
 						<div className="mb-10 flex flex-wrap gap-2">
 							<FilterPill
-								active={activeCategory === null}
-								onClick={() => setActiveCategory(null)}
+								active={!showAppliedView && activeCategory === null}
+								onClick={() => {
+									setShowAppliedView(false);
+									setActiveCategory(null);
+								}}
 								label="All matches"
 							/>
 							{filterPills.map((c) => (
 								<FilterPill
 									key={c.id}
-									active={activeCategory === c.id}
-									onClick={() => setActiveCategory(c.id)}
+									active={!showAppliedView && activeCategory === c.id}
+									onClick={() => {
+										setShowAppliedView(false);
+										setActiveCategory(c.id);
+									}}
 									label={catMeta(c.id).label}
 								/>
 							))}
+							{applied.size > 0 && (
+								<FilterPill
+									active={showAppliedView}
+									onClick={() => {
+										setShowAppliedView(true);
+										setActiveCategory(null);
+									}}
+									label={`Applied · ${applied.size}`}
+									accent="#0E9E73"
+								/>
+							)}
 						</div>
 
-						{hero ? (
+						{showAppliedView ? (
+							<section>
+								<div className="mb-6 flex items-center gap-3">
+									<span
+										className="material-symbols-outlined text-2xl"
+										style={{
+											color: "#0E9E73",
+											fontVariationSettings: "'FILL' 1",
+										}}
+									>
+										task_alt
+									</span>
+									<h2
+										className="font-bold text-2xl tracking-tight"
+										style={{ fontFamily: SERIF }}
+									>
+										Your applications
+									</h2>
+									<span
+										className="ml-auto rounded-full px-3 py-1 font-bold text-xs"
+										style={{
+											background: "rgba(14,158,115,0.1)",
+											color: "#0E9E73",
+										}}
+									>
+										{appliedItems.length} tracked
+									</span>
+								</div>
+								{appliedItems.length > 0 ? (
+									<div className="flex flex-col gap-3">
+										{appliedItems.map((item) => (
+											<AppliedRow
+												key={item.id}
+												item={item}
+												onOpen={() => openLink(item)}
+												onUnapply={() => void toggleApplied(item)}
+												onViewDetail={() => setSelected(item)}
+											/>
+										))}
+									</div>
+								) : (
+									<div className="glass-card rounded-[2rem] p-12 text-center">
+										<span
+											className="material-symbols-outlined text-4xl"
+											style={{ color: "#0E9E73", opacity: 0.35 }}
+										>
+											task_alt
+										</span>
+										<p
+											className="mt-3 font-bold text-xl"
+											style={{ fontFamily: SERIF }}
+										>
+											No applications yet
+										</p>
+										<p
+											className="mt-1 text-sm"
+											style={{ color: ON_VARIANT, opacity: 0.7 }}
+										>
+											When you mark an opportunity as applied it will show up
+											here.
+										</p>
+									</div>
+								)}
+							</section>
+						) : hero ? (
 							<>
 								<HeroCard
 									item={hero}
@@ -709,11 +791,14 @@ function FilterPill({
 	active,
 	onClick,
 	label,
+	accent,
 }: {
 	active: boolean;
 	onClick: () => void;
 	label: string;
+	accent?: string;
 }) {
+	const color = accent ?? PRIMARY;
 	return (
 		<button
 			type="button"
@@ -722,12 +807,15 @@ function FilterPill({
 			style={
 				active
 					? {
-							background: PRIMARY,
+							background: color,
 							color: "#fff",
-							borderColor: PRIMARY,
-							boxShadow: "0 4px 12px rgba(0,90,194,0.25)",
+							borderColor: color,
+							boxShadow: `0 4px 12px ${color}40`,
 						}
-					: { color: ON_VARIANT, borderColor: "rgba(0,0,0,0.1)" }
+					: {
+							color: accent ?? ON_VARIANT,
+							borderColor: accent ? `${accent}40` : "rgba(0,0,0,0.1)",
+						}
 			}
 		>
 			{label}
