@@ -246,9 +246,9 @@ export function MonthlyMissionView({
 													"radial-gradient(120% 100% at 100% 0%, rgba(0,90,194,0.12), transparent 55%), radial-gradient(90% 90% at 0% 100%, rgba(62,207,191,0.10), transparent 55%)",
 											}}
 										/>
-										<div className="relative flex flex-col gap-5 md:flex-row md:gap-0">
+										<div className="relative flex flex-col gap-5">
 											{/* Left: mission info */}
-											<div className="flex flex-col md:flex-1 md:pr-6">
+											<div className="flex flex-col">
 												<div
 													className="mb-3 inline-flex items-center gap-2 self-start rounded-full px-3 py-1 text-white"
 													style={{ background: PRIMARY }}
@@ -303,10 +303,10 @@ export function MonthlyMissionView({
 											</div>
 
 											{/* Divider */}
-											<div className="h-px bg-black/5 md:h-auto md:w-px md:self-stretch" />
+											<div className="h-px bg-black/5" />
 
 											{/* Right: today's pulse */}
-											<div className="flex flex-col md:w-[300px] md:shrink-0 md:pl-6">
+											<div className="flex flex-col">
 												<div className="mb-1 flex items-center justify-between gap-3">
 													<span
 														className="font-bold text-[11px] uppercase tracking-[0.18em]"
