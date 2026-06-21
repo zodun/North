@@ -58,6 +58,7 @@ type Observation = {
 	kind: "signal" | "noise";
 	text: string;
 	read: string;
+	body: string;
 	dateLabel: string;
 };
 
@@ -94,6 +95,7 @@ function flatten(entries: JournalEntry[]): Observation[] {
 				kind: "signal",
 				text,
 				read: e.read,
+				body: e.body,
 				dateLabel: e.dateLabel,
 			});
 		});
@@ -103,6 +105,7 @@ function flatten(entries: JournalEntry[]): Observation[] {
 				kind: "noise",
 				text,
 				read: e.read,
+				body: e.body,
 				dateLabel: e.dateLabel,
 			});
 		});
@@ -137,6 +140,7 @@ export function JournalView({
 	const [listening, setListening] = useState(false);
 	const [voiceSupported, setVoiceSupported] = useState(false);
 	const [filter, setFilter] = useState<Filter>("all");
+	const [selected, setSelected] = useState<Observation | null>(null);
 	const [latest, setLatest] = useState<Analysis | null>(
 		initialEntries[0]
 			? {
@@ -500,6 +504,7 @@ export function JournalView({
 										obs={o}
 										featured={i === 0}
 										showRead={i === 0}
+										onSelect={() => setSelected(o)}
 									/>
 								))}
 							</div>
@@ -513,6 +518,9 @@ export function JournalView({
 					</section>
 				</div>
 			</div>
+			{selected && (
+				<DetailModal obs={selected} onClose={() => setSelected(null)} />
+			)}
 		</div>
 	);
 }
@@ -580,23 +588,27 @@ function ObservationCard({
 	obs,
 	featured,
 	showRead,
+	onSelect,
 }: {
 	obs: Observation;
 	featured: boolean;
 	showRead: boolean;
+	onSelect: () => void;
 }) {
 	const accent = obs.kind === "signal" ? SIGNAL : NOISE;
 	const tag = obs.kind === "signal" ? "Signal" : "Noise";
 	const eyebrow = featured
-		? `${tag} • Latest reflection`
+		? `${tag} · Latest reflection`
 		: obs.kind === "signal"
 			? "Signal"
-			: "Noise filtered";
+			: "Noise";
 	return (
-		<article
+		<button
+			type="button"
+			onClick={onSelect}
 			className={`${
 				featured ? "glass-gradient-border" : "glass-panel"
-			} group relative flex flex-col rounded-[2rem] p-8`}
+			} group relative flex w-full cursor-pointer flex-col rounded-[2rem] p-8 text-left`}
 		>
 			{featured && (
 				<span
@@ -638,21 +650,131 @@ function ObservationCard({
 				>
 					{obs.dateLabel}
 				</span>
-				{featured ? (
+				<span
+					className="material-symbols-outlined transition-transform group-hover:translate-x-1"
+					style={{ color: accent }}
+				>
+					arrow_forward
+				</span>
+			</div>
+		</button>
+	);
+}
+
+function DetailModal({
+	obs,
+	onClose,
+}: {
+	obs: Observation;
+	onClose: () => void;
+}) {
+	const accent = obs.kind === "signal" ? SIGNAL : NOISE;
+	const label = obs.kind === "signal" ? "Signal" : "Noise";
+	const nudge =
+		obs.kind === "signal"
+			? "Build on this. Find one concrete way to create more of this in your next session."
+			: "Watch for this pattern. Next time it shows up, pause and redirect your attention toward what matters.";
+
+	useEffect(() => {
+		function onKey(e: KeyboardEvent) {
+			if (e.key === "Escape") onClose();
+		}
+		document.addEventListener("keydown", onKey);
+		return () => document.removeEventListener("keydown", onKey);
+	}, [onClose]);
+
+	return (
+		<>
+			<div
+				className="obs-backdrop fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
+				onClick={onClose}
+				aria-hidden="true"
+			/>
+			<div
+				role="dialog"
+				aria-modal="true"
+				className="obs-sheet fixed inset-x-0 bottom-0 z-50 rounded-t-[2rem] bg-white px-6 pt-5 pb-10 sm:inset-x-auto sm:top-1/2 sm:bottom-auto sm:left-1/2 sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[2rem] sm:px-8 sm:py-8"
+			>
+				<div className="mx-auto mb-5 h-1 w-10 rounded-full bg-black/10 sm:hidden" />
+
+				<div className="mb-4 flex items-center justify-between gap-4">
 					<span
-						className="material-symbols-outlined transition-transform group-hover:translate-x-1"
+						className="font-bold text-[11px] uppercase tracking-[0.2em]"
 						style={{ color: accent }}
 					>
-						arrow_forward
+						{label}
 					</span>
-				) : (
-					<span
-						className="h-1.5 w-1.5 rounded-full"
-						style={{ background: accent }}
-					/>
+					<button
+						type="button"
+						onClick={onClose}
+						aria-label="Close"
+						className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-black/5"
+						style={{ color: ON_VARIANT }}
+					>
+						<span className="material-symbols-outlined text-xl">close</span>
+					</button>
+				</div>
+
+				<h3
+					className="mb-5 font-bold text-2xl leading-snug tracking-tight"
+					style={{ fontFamily: SERIF }}
+				>
+					{cap(obs.text)}
+				</h3>
+
+				{obs.read && (
+					<div className="mb-4 rounded-xl bg-black/[0.03] px-4 py-3">
+						<p
+							className="text-sm italic leading-relaxed"
+							style={{ color: ON_VARIANT }}
+						>
+							{obs.read}
+						</p>
+					</div>
 				)}
+
+				<div
+					className="mb-5 rounded-xl px-4 py-3"
+					style={{
+						background:
+							obs.kind === "signal"
+								? "rgba(14,158,115,0.07)"
+								: "rgba(123,97,255,0.07)",
+					}}
+				>
+					<p
+						className="font-medium text-sm leading-relaxed"
+						style={{ color: accent }}
+					>
+						{nudge}
+					</p>
+				</div>
+
+				{obs.body && (
+					<details className="group/det mb-5">
+						<summary
+							className="cursor-pointer select-none font-bold text-[11px] uppercase tracking-wider"
+							style={{ color: ON_VARIANT, opacity: 0.5 }}
+						>
+							View full reflection
+						</summary>
+						<p
+							className="mt-3 text-sm leading-relaxed"
+							style={{ color: ON_VARIANT, opacity: 0.75 }}
+						>
+							{obs.body}
+						</p>
+					</details>
+				)}
+
+				<span
+					className="font-bold text-[10px] uppercase tracking-widest"
+					style={{ color: ON_VARIANT, opacity: 0.4 }}
+				>
+					{obs.dateLabel}
+				</span>
 			</div>
-		</article>
+		</>
 	);
 }
 
@@ -877,6 +999,14 @@ const SCOPED_CSS = `
 .glass-panel:hover { border-color: rgba(0,90,194,0.2); box-shadow: 0 16px 38px rgba(0,0,0,0.07); transform: translateY(-2px); }
 .rec-dot > span:first-child { animation: rec-ping 1.4s cubic-bezier(0,0,0.2,1) infinite; }
 @keyframes rec-ping { 75%, 100% { transform: scale(2.2); opacity: 0; } }
+.obs-backdrop { animation: obs-fade 0.15s ease-out; }
+.obs-sheet { animation: obs-slide-up 0.22s cubic-bezier(0.32,0.72,0,1); }
+@keyframes obs-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes obs-slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@media (min-width: 640px) {
+  .obs-sheet { animation: obs-pop 0.18s ease-out; }
+  @keyframes obs-pop { from { opacity: 0; transform: translate(-50%, -48%) scale(0.97); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+}
 /* Critical layout, server-rendered: fixed sidebar + content offset before fonts
    load, so content never sits behind the nav. Phones use the bottom tab bar. */
 .ch-rail { position: fixed; left: 0; top: 0; height: 100%; width: 280px; z-index: 50; display: none; flex-direction: column; background: rgba(255,255,255,0.85); border-right: 1px solid rgba(0,0,0,0.06); backdrop-filter: blur(12px); }
