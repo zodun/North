@@ -235,8 +235,19 @@ export function MonthlyMissionView({
 							<EmptyState onSet={() => setShowGoal(true)} />
 						) : (
 							<>
+								{/* ── Greeting ───────────────────────────────────── */}
+								<div className="mt-4 mb-3">
+									<h1
+										className="font-bold text-2xl tracking-tight"
+										style={{ fontFamily: SERIF }}
+									>
+										{greeting}
+										{tail}
+									</h1>
+								</div>
+
 								{/* ── Mission + Today (merged) ───────────────────── */}
-								<section className="mt-3 mb-4">
+								<section className="mb-4">
 									<div className="glass-card signal-glow relative overflow-hidden rounded-[2rem] p-5">
 										<div
 											aria-hidden="true"
@@ -307,25 +318,18 @@ export function MonthlyMissionView({
 
 											{/* Right: today's pulse */}
 											<div className="flex flex-col">
-												<div className="mb-1 flex items-center justify-between gap-3">
-													<span
-														className="font-bold text-[11px] uppercase tracking-[0.18em]"
-														style={{ color: PRIMARY }}
+												<div className="mb-3 flex items-center justify-between gap-3">
+													<h2
+														className="font-bold text-xl tracking-tight"
+														style={{ fontFamily: SERIF }}
 													>
-														{greeting}
-														{tail}
-													</span>
+														{cadence === "daily" ? "Today" : "This week"}
+													</h2>
 													<CadenceToggle
 														value={cadence}
 														onChange={changeCadence}
 													/>
 												</div>
-												<h2
-													className="mb-3 font-bold text-xl tracking-tight"
-													style={{ fontFamily: SERIF }}
-												>
-													{cadence === "daily" ? "Today" : "This week"}
-												</h2>
 
 												{focalStep ? (
 													<button
@@ -710,7 +714,7 @@ function TaskRow({
 			onClick={locked ? undefined : onToggle}
 			disabled={locked}
 			aria-pressed={step.done}
-			className={`flex w-full items-start gap-3 rounded-xl p-3 text-left transition-colors ${
+			className={`flex w-full items-start gap-3 rounded-xl p-3 text-left transition-[colors,opacity] duration-300 ${
 				locked ? "cursor-not-allowed" : "hover:bg-black/[0.03]"
 			}`}
 			style={{
