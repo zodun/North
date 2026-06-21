@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { countryFlag } from "@/lib/flag";
 import { getServerSupabase } from "@/lib/supabase-server";
 import {
+	type CommunityCountry,
 	CommunityHub,
-	type CommunityHubMember,
 	type CommunityHubPost,
 } from "./community-hub";
 
@@ -114,30 +114,31 @@ export default async function CommunityPage() {
 
 	const { data: memberRows } = await supabase
 		.from("public_profiles")
-		.select("user_id, display_name, country, focus_area_ids");
-	const members: CommunityHubMember[] = (
-		(memberRows ?? []) as {
-			user_id: string;
-			display_name: string | null;
-			country: string | null;
-			focus_area_ids: string[] | null;
-		}[]
-	).map((m) => {
-		const name = m.display_name ?? "Member";
-		return {
-			id: m.user_id,
-			initial: (name[0] ?? "·").toUpperCase(),
-			name,
-			flag: countryFlag(m.country),
-			detail: m.country ?? focusLabel[m.focus_area_ids?.[0] ?? ""] ?? "Member",
-			samePath:
-				myFocus.length > 0 &&
-				(m.focus_area_ids ?? []).some((f) => myFocus.includes(f)),
-		};
-	});
-	// People on your path lead the rail.
-	members.sort((a, b) => Number(b.samePath) - Number(a.samePath));
-	const samePathCount = members.filter((m) => m.samePath).length;
+		.select("user_id, country, focus_area_ids");
+	const typedMembers = (memberRows ?? []) as {
+		user_id: string;
+		country: string | null;
+		focus_area_ids: string[] | null;
+	}[];
+
+	const samePathCount = typedMembers.filter(
+		(m) =>
+			myFocus.length > 0 &&
+			(m.focus_area_ids ?? []).some((f) => myFocus.includes(f)),
+	).length;
+
+	const countryTotals: Record<string, number> = {};
+	for (const m of typedMembers) {
+		if (!m.country) continue;
+		countryTotals[m.country] = (countryTotals[m.country] ?? 0) + 1;
+	}
+	const countryCounts: CommunityCountry[] = Object.entries(countryTotals)
+		.sort((a, b) => b[1] - a[1])
+		.map(([country, count]) => ({
+			country,
+			flag: countryFlag(country),
+			count,
+		}));
 
 	const { count: memberCount } = await supabase
 		.from("public_profiles")
@@ -161,8 +162,8 @@ export default async function CommunityPage() {
 			userId={user.id}
 			displayName={me?.display_name ?? "You"}
 			initialPosts={initialPosts}
-			members={members}
-			memberCount={memberCount ?? members.length + 1}
+			countryCounts={countryCounts}
+			memberCount={memberCount ?? typedMembers.length + 1}
 			greeting={greeting}
 			firstName={firstName}
 			focusLabel={focusTopLabel}

@@ -19,8 +19,13 @@ export type OnboardingAnswers = {
 	name: string | null;
 	season: string | null;
 	focus: string[];
+	careerStage: string | null;
+	country: string | null;
+	openToRemote: boolean;
+	openToRelocate: boolean;
 	time: string | null;
 	avoid: string | null;
+	purposeMode: string | null;
 	baseline: number | null;
 };
 
@@ -28,8 +33,13 @@ const emptyAnswers: OnboardingAnswers = {
 	name: null,
 	season: null,
 	focus: [],
+	careerStage: null,
+	country: null,
+	openToRemote: false,
+	openToRelocate: false,
 	time: null,
 	avoid: null,
+	purposeMode: null,
 	baseline: null,
 };
 
@@ -50,7 +60,9 @@ export function useOnboardingState() {
 			const [profileRes, respRes, ufaRes] = await Promise.all([
 				supabase
 					.from("profiles")
-					.select("display_name, season_label, time_budget_label, avoid_note")
+					.select(
+						"display_name, season_label, time_budget_label, avoid_note, career_stage, country, open_to_remote, open_to_relocate, purpose_mode",
+					)
 					.eq("user_id", userId)
 					.maybeSingle(),
 				supabase
@@ -71,8 +83,13 @@ export function useOnboardingState() {
 				name: profile?.display_name ?? null,
 				season: profile?.season_label ?? responses?.what_feels_missing ?? null,
 				focus: focusRows.map((r) => r.focus_area_id as string),
+				careerStage: profile?.career_stage ?? null,
+				country: profile?.country ?? null,
+				openToRemote: profile?.open_to_remote ?? false,
+				openToRelocate: profile?.open_to_relocate ?? false,
 				time: profile?.time_budget_label ?? null,
 				avoid: profile?.avoid_note ?? responses?.biggest_distraction ?? null,
+				purposeMode: profile?.purpose_mode ?? null,
 				baseline: null,
 			});
 			setLoaded(true);
@@ -145,6 +162,43 @@ export function useOnboardingState() {
 		[userId],
 	);
 
+	const saveCareerStage = useCallback(
+		async (careerStage: string) => {
+			if (!userId) return;
+			await supabase
+				.from("profiles")
+				.update({
+					career_stage: careerStage,
+					updated_at: new Date().toISOString(),
+				})
+				.eq("user_id", userId);
+			setAnswers((prev) => ({ ...prev, careerStage }));
+		},
+		[userId],
+	);
+
+	const saveLocation = useCallback(
+		async (country: string, openToRemote: boolean, openToRelocate: boolean) => {
+			if (!userId) return;
+			await supabase
+				.from("profiles")
+				.update({
+					country: country || null,
+					open_to_remote: openToRemote,
+					open_to_relocate: openToRelocate,
+					updated_at: new Date().toISOString(),
+				})
+				.eq("user_id", userId);
+			setAnswers((prev) => ({
+				...prev,
+				country,
+				openToRemote,
+				openToRelocate,
+			}));
+		},
+		[userId],
+	);
+
 	const saveTime = useCallback(
 		async (time: string) => {
 			if (!userId) return;
@@ -185,6 +239,21 @@ export function useOnboardingState() {
 		[userId],
 	);
 
+	const savePurposeMode = useCallback(
+		async (purposeMode: string) => {
+			if (!userId) return;
+			await supabase
+				.from("profiles")
+				.update({
+					purpose_mode: purposeMode,
+					updated_at: new Date().toISOString(),
+				})
+				.eq("user_id", userId);
+			setAnswers((prev) => ({ ...prev, purposeMode }));
+		},
+		[userId],
+	);
+
 	const setBaseline = useCallback((baseline: number) => {
 		setAnswers((prev) => ({ ...prev, baseline }));
 	}, []);
@@ -196,8 +265,11 @@ export function useOnboardingState() {
 		saveName,
 		saveSeason,
 		saveFocus,
+		saveCareerStage,
+		saveLocation,
 		saveTime,
 		saveAvoid,
+		savePurposeMode,
 		setBaseline,
 	};
 }
@@ -208,9 +280,11 @@ export function firstIncompleteIndex(answers: OnboardingAnswers): number {
 	if (!answers.name) return 0;
 	if (!answers.season) return 1;
 	if (answers.focus.length === 0) return 2;
-	if (!answers.time) return 3;
-	// Q5 is optional — always require an explicit advance, never auto-skip past.
-	// Q6 (baseline) lives in memory; resume always lands on it after Q5.
-	// Q7 (consent) is the terminal screen.
-	return 4;
+	if (!answers.careerStage) return 3;
+	if (!answers.country) return 4;
+	if (!answers.time) return 5;
+	// avoid (6) is optional — land there so user can skip explicitly.
+	// purpose (7) is required; baseline (8) lives in memory.
+	if (!answers.purposeMode) return 7;
+	return 6;
 }

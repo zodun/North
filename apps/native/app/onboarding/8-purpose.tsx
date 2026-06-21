@@ -1,42 +1,41 @@
-// Q3 — focus areas (multi-select, max 3). Maps to user_focus_areas
-// rows + a comma-joined summary in onboarding_responses.desired_future.
+// Q8 — Builder or Explorer stance. Maps to profiles.purpose_mode.
 
 import { useRouter } from "expo-router";
 import { useState } from "react";
 
-import { FocusMultiSelect } from "@/components/onboarding/FocusMultiSelect";
+import { PurposeSelector } from "@/components/onboarding/PurposeSelector";
 import { QuestionShell } from "@/components/onboarding/QuestionShell";
 import { ONBOARDING_QUESTIONS } from "@/lib/onboarding/questions";
 import { useOnboardingState } from "@/lib/onboarding/use-onboarding-state";
 
-const Q = ONBOARDING_QUESTIONS[2];
+const Q = ONBOARDING_QUESTIONS[7];
 
-export default function OnboardingFocusScreen() {
+export default function OnboardingPurposeScreen() {
 	const router = useRouter();
-	const { answers, saveFocus } = useOnboardingState();
+	const { answers, savePurposeMode } = useOnboardingState();
 	const [saving, setSaving] = useState(false);
 
 	return (
 		<QuestionShell
-			index={2}
+			index={7}
 			prompt={Q.prompt}
 			sub={Q.sub}
-			nextDisabled={answers.focus.length === 0}
+			nextDisabled={!answers.purposeMode}
 			nextLoading={saving}
 			onNext={async () => {
-				if (answers.focus.length === 0) return;
+				if (!answers.purposeMode) return;
 				setSaving(true);
 				try {
-					router.push("/onboarding/4-career");
+					router.push("/onboarding/9-baseline");
 				} finally {
 					setSaving(false);
 				}
 			}}
 		>
-			<FocusMultiSelect
-				value={answers.focus}
+			<PurposeSelector
+				value={answers.purposeMode}
 				onChange={(next) => {
-					void saveFocus(next);
+					void savePurposeMode(next);
 				}}
 			/>
 		</QuestionShell>

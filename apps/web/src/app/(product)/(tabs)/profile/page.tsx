@@ -155,6 +155,17 @@ export default async function ProfilePage() {
 
 	const isPremium = await getIsPremium(supabase, user.id);
 
+	// Check for an active paid subscription separately so we only show the
+	// "Manage subscription" portal link to users with a real Polar subscription
+	// (not free-trial / monthly-allowance users who have no Polar customer record).
+	const { data: subRow } = await supabase
+		.from("subscriptions")
+		.select("status")
+		.eq("user_id", user.id)
+		.in("status", ["active", "trialing", "canceled"])
+		.maybeSingle<{ status: string }>();
+	const hasSubscription = Boolean(subRow);
+
 	const scores = signalRows ?? [];
 	const signalBand = (scores[0] as { band: string } | undefined)?.band ?? null;
 	const signalScore =
@@ -208,6 +219,7 @@ export default async function ProfilePage() {
 			savedCount={savedRows?.length ?? 0}
 			savedOpportunities={savedOpps}
 			isPremium={isPremium}
+			hasSubscription={hasSubscription}
 			userId={user.id}
 			careerStage={profile?.career_stage ?? null}
 			fields={profile?.fields ?? []}

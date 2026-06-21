@@ -7,8 +7,11 @@ export type OnboardingQId =
 	| "name"
 	| "season"
 	| "focus"
+	| "career"
+	| "location"
 	| "time"
 	| "avoid"
+	| "purpose"
 	| "baseline"
 	| "consent";
 
@@ -62,6 +65,16 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
 		max: FOCUS_AREAS_MAX,
 	},
 	{
+		id: "career",
+		prompt: "Where are you in your career?",
+		sub: "This is the biggest filter for what’s actually open to you.",
+	},
+	{
+		id: "location",
+		prompt: "Where are you based?",
+		sub: "So we only show you what you’re eligible for, and rank remote-friendly picks for you.",
+	},
+	{
 		id: "time",
 		prompt: "How much time can you give this on a real day?",
 		sub: "Be honest. We tune your missions to fit.",
@@ -75,6 +88,11 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
 		optional: true,
 	},
 	{
+		id: "purpose",
+		prompt: "Do you already know your purpose?",
+		sub: "No wrong answer. This names how you’ll move through North.",
+	},
+	{
 		id: "baseline",
 		prompt:
 			"In a typical week, how much of your time goes toward what matters to you?",
@@ -84,6 +102,31 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
 		id: "consent",
 		prompt: "One last thing.",
 		sub: "North learns from what you do. You can see, export, or delete this any time.",
+	},
+];
+
+export type PurposeOption = {
+	id: string;
+	title: string;
+	creed: string;
+	sealed: string;
+	color: string;
+};
+
+export const PURPOSE_OPTIONS: PurposeOption[] = [
+	{
+		id: "builder",
+		title: "Builder",
+		creed: "I know what I'm working toward. I'm here to make it real.",
+		sealed: "You're a Builder. North will move with you toward it.",
+		color: "#F5C842",
+	},
+	{
+		id: "explorer",
+		title: "Explorer",
+		creed: "I'm still finding my direction. I'm here to discover it.",
+		sealed: "You're an Explorer. North will help you find the way.",
+		color: "#3ECFBF",
 	},
 ];
 

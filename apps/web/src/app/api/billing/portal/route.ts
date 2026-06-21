@@ -7,22 +7,20 @@ import { CustomerPortal } from "@polar-sh/nextjs";
 import { type NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase-server";
 
+// Uses externalCustomerId (the user's Supabase id) rather than Polar's internal
+// customer id. The checkout sets customerExternalId = user.id, so Polar already
+// has the mapping. This avoids a DB lookup and works even if the subscriptions
+// row was not written yet.
 const portal = env.POLAR_ACCESS_TOKEN
 	? CustomerPortal({
 			accessToken: env.POLAR_ACCESS_TOKEN,
 			server: env.POLAR_SERVER,
-			getCustomerId: async () => {
+			getExternalCustomerId: async () => {
 				const supabase = await getServerSupabase();
 				const {
 					data: { user },
 				} = await supabase.auth.getUser();
-				if (!user) return "";
-				const { data } = await supabase
-					.from("subscriptions")
-					.select("polar_customer_id")
-					.eq("user_id", user.id)
-					.maybeSingle<{ polar_customer_id: string | null }>();
-				return data?.polar_customer_id ?? "";
+				return user?.id ?? "";
 			},
 		})
 	: null;

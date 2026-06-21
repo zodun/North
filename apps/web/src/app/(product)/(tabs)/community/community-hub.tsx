@@ -29,13 +29,10 @@ export type CommunityHubPost = {
 	liked: boolean;
 	createdAt: string;
 };
-export type CommunityHubMember = {
-	id: string;
-	initial: string;
-	name: string;
-	flag?: string;
-	detail: string;
-	samePath: boolean;
+export type CommunityCountry = {
+	country: string;
+	flag: string;
+	count: number;
 };
 
 const PRIMARY = "#005ac2";
@@ -86,7 +83,7 @@ export function CommunityHub({
 	userId,
 	displayName,
 	initialPosts,
-	members,
+	countryCounts,
 	memberCount,
 	greeting,
 	firstName,
@@ -97,7 +94,7 @@ export function CommunityHub({
 	userId: string;
 	displayName: string;
 	initialPosts: CommunityHubPost[];
-	members: CommunityHubMember[];
+	countryCounts: CommunityCountry[];
 	memberCount: number;
 	greeting: string;
 	firstName: string;
@@ -198,7 +195,7 @@ export function CommunityHub({
 			<Sidebar />
 
 			<div className="ch-main relative min-h-screen">
-				<TopBar memberCount={memberCount} samePathCount={samePathCount} />
+				<TopBar samePathCount={samePathCount} />
 				{/* Soft Sky colour wash, blue, teal and a whisper of gold light the
 				    top of the canvas without competing with the cards. */}
 				<div aria-hidden="true" className="cm-aura" />
@@ -396,61 +393,50 @@ export function CommunityHub({
 							{/* Right rail — appears first on mobile, right side on desktop */}
 							<aside className="order-1 col-span-12 space-y-6 lg:col-span-4">
 								<div className="glass-panel rounded-[2rem] p-7">
-									<h3 className="mb-5 font-bold text-base">Active now</h3>
-									{members.length > 0 ? (
-										<div className="space-y-4">
-											{members.map((m) => (
-												<div key={m.id} className="flex items-center gap-3">
-													<span className="relative">
-														<span
-															className="flex h-10 w-10 items-center justify-center rounded-full font-bold text-sm"
-															style={{
-																background: "rgba(0,90,194,0.1)",
-																color: PRIMARY,
-															}}
-														>
-															{m.initial}
-														</span>
-														<span
-															className="cm-presence absolute right-0 bottom-0 h-3 w-3 rounded-full border-2 border-white"
-															style={{ background: "#34c759" }}
-														/>
+									<div className="mb-4 flex items-baseline gap-2">
+										<span
+											className="font-bold text-3xl leading-none"
+											style={{ fontFamily: SERIF, color: ON_SURFACE }}
+										>
+											{memberCount}
+										</span>
+										<span
+											className="font-bold text-[10px] uppercase tracking-[0.18em]"
+											style={{ color: ON_VARIANT, opacity: 0.5 }}
+										>
+											members
+										</span>
+									</div>
+									{countryCounts.length > 0 && (
+										<div className="flex flex-wrap gap-2">
+											{countryCounts.map(({ country, flag, count }) => (
+												<span
+													key={country}
+													className="flex items-center gap-1.5 rounded-full px-3 py-1.5 font-bold text-[11px]"
+													style={{
+														background: "rgba(0,0,0,0.04)",
+														color: ON_VARIANT,
+													}}
+												>
+													<span
+														className="text-sm leading-none"
+														aria-hidden="true"
+													>
+														{flag}
 													</span>
-													<div className="min-w-0 flex-1">
-														<p className="flex items-center gap-1.5 truncate font-bold text-sm">
-															{m.name}
-															{m.flag && (
-																<span aria-hidden="true">{m.flag}</span>
-															)}
-															{m.samePath && (
-																<span
-																	className="rounded-full px-1.5 py-0.5 font-bold text-[9px] uppercase tracking-wider"
-																	style={{
-																		background: "rgba(0,90,194,0.1)",
-																		color: PRIMARY,
-																	}}
-																>
-																	Same path
-																</span>
-															)}
-														</p>
-														<p
-															className="truncate text-xs"
-															style={{ color: ON_VARIANT, opacity: 0.7 }}
-														>
-															{m.detail}
-														</p>
-													</div>
-												</div>
+													{country}
+													<span
+														className="rounded-full px-1.5 py-0.5 font-bold text-[10px]"
+														style={{
+															background: "rgba(0,90,194,0.09)",
+															color: PRIMARY,
+														}}
+													>
+														{count}
+													</span>
+												</span>
 											))}
 										</div>
-									) : (
-										<p
-											className="text-sm"
-											style={{ color: ON_VARIANT, opacity: 0.7 }}
-										>
-											No one else here yet. Be the first to post.
-										</p>
 									)}
 								</div>
 
@@ -719,13 +705,7 @@ function EmptyFeed({
 	);
 }
 
-function TopBar({
-	memberCount,
-	samePathCount,
-}: {
-	memberCount: number;
-	samePathCount: number;
-}) {
+function TopBar({ samePathCount }: { samePathCount: number }) {
 	return (
 		<header
 			className="sticky top-0 z-40 px-5 py-3 backdrop-blur-md sm:px-6 lg:px-8"

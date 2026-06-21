@@ -1,4 +1,4 @@
-// Q5 — biggest distraction (optional free text). Maps to
+// Q7 — biggest distraction (optional free text). Maps to
 // profiles.avoid_note + onboarding_responses.biggest_distraction.
 
 import { Input } from "@north/native-ui";
@@ -10,7 +10,7 @@ import { QuestionShell } from "@/components/onboarding/QuestionShell";
 import { ONBOARDING_QUESTIONS } from "@/lib/onboarding/questions";
 import { useOnboardingState } from "@/lib/onboarding/use-onboarding-state";
 
-const Q = ONBOARDING_QUESTIONS[4];
+const Q = ONBOARDING_QUESTIONS[6];
 
 export default function OnboardingAvoidScreen() {
 	const router = useRouter();
@@ -27,7 +27,7 @@ export default function OnboardingAvoidScreen() {
 
 	return (
 		<QuestionShell
-			index={4}
+			index={6}
 			prompt={Q.prompt}
 			sub={Q.sub}
 			nextLabel={nextLabel}
@@ -36,7 +36,7 @@ export default function OnboardingAvoidScreen() {
 				setSaving(true);
 				try {
 					await saveAvoid(value);
-					router.push("/onboarding/6-baseline");
+					router.push("/onboarding/8-purpose");
 				} finally {
 					setSaving(false);
 				}

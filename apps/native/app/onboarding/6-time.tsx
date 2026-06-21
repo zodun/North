@@ -1,42 +1,43 @@
-// Q3 — focus areas (multi-select, max 3). Maps to user_focus_areas
-// rows + a comma-joined summary in onboarding_responses.desired_future.
+// Q6 — daily time budget (single-select). Maps to
+// profiles.time_budget_label.
 
 import { useRouter } from "expo-router";
 import { useState } from "react";
 
-import { FocusMultiSelect } from "@/components/onboarding/FocusMultiSelect";
+import { ChoiceSelector } from "@/components/onboarding/ChoiceSelector";
 import { QuestionShell } from "@/components/onboarding/QuestionShell";
 import { ONBOARDING_QUESTIONS } from "@/lib/onboarding/questions";
 import { useOnboardingState } from "@/lib/onboarding/use-onboarding-state";
 
-const Q = ONBOARDING_QUESTIONS[2];
+const Q = ONBOARDING_QUESTIONS[5];
 
-export default function OnboardingFocusScreen() {
+export default function OnboardingTimeScreen() {
 	const router = useRouter();
-	const { answers, saveFocus } = useOnboardingState();
+	const { answers, saveTime } = useOnboardingState();
 	const [saving, setSaving] = useState(false);
 
 	return (
 		<QuestionShell
-			index={2}
+			index={5}
 			prompt={Q.prompt}
 			sub={Q.sub}
-			nextDisabled={answers.focus.length === 0}
+			nextDisabled={!answers.time}
 			nextLoading={saving}
 			onNext={async () => {
-				if (answers.focus.length === 0) return;
+				if (!answers.time) return;
 				setSaving(true);
 				try {
-					router.push("/onboarding/4-career");
+					router.push("/onboarding/7-avoid");
 				} finally {
 					setSaving(false);
 				}
 			}}
 		>
-			<FocusMultiSelect
-				value={answers.focus}
+			<ChoiceSelector
+				options={Q.options ?? []}
+				value={answers.time}
 				onChange={(next) => {
-					void saveFocus(next);
+					void saveTime(next);
 				}}
 			/>
 		</QuestionShell>

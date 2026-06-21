@@ -69,6 +69,7 @@ type Props = {
 	savedCount: number;
 	savedOpportunities: { id: string; title: string; org: string }[];
 	isPremium: boolean;
+	hasSubscription: boolean;
 	userId: string;
 	careerStage: string | null;
 	fields: string[];
@@ -102,6 +103,7 @@ export function ProfileView({
 	savedCount,
 	savedOpportunities,
 	isPremium,
+	hasSubscription,
 	userId,
 	careerStage,
 	fields,
@@ -413,13 +415,23 @@ export function ProfileView({
 										>
 											AI tailors your feed and opportunities to you.
 										</p>
-										<a
-											href="/api/billing/portal"
-											className="mt-auto pt-5 font-semibold text-xs underline-offset-2 hover:underline"
-											style={{ color: ON_VARIANT }}
-										>
-											Manage subscription
-										</a>
+										{hasSubscription ? (
+											<a
+												href="/api/billing/portal"
+												className="mt-auto pt-5 font-semibold text-xs underline-offset-2 hover:underline"
+												style={{ color: ON_VARIANT }}
+											>
+												Manage subscription
+											</a>
+										) : (
+											<a
+												href="/api/billing/checkout"
+												className="mt-auto pt-5 font-semibold text-xs underline-offset-2 hover:underline"
+												style={{ color: ON_VARIANT }}
+											>
+												Upgrade to keep Premium
+											</a>
+										)}
 									</>
 								) : (
 									<>

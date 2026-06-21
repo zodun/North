@@ -35,7 +35,6 @@ export function SetGoalModal({
 	monthName,
 	monthStart,
 	initialGoal,
-	initialCadence,
 	autosuggest = false,
 	onDismiss,
 	onGoalSet,
@@ -44,14 +43,12 @@ export function SetGoalModal({
 	monthStart: string;
 	initialGoal: string;
 	initialIntent: string;
-	initialCadence: "daily" | "weekly";
 	autosuggest?: boolean;
 	onDismiss: () => void;
 	onGoalSet: (result: GoalSetResult) => void;
 }) {
 	const [goal, setGoal] = useState("");
 	const [measure, setMeasure] = useState("");
-	const [cadence, setCadence] = useState<"daily" | "weekly">(initialCadence);
 	const [submitting, setSubmitting] = useState(false);
 	const [suggesting, setSuggesting] = useState(autosuggest);
 	const [suggestion, setSuggestion] = useState<string | null>(null);
@@ -103,7 +100,7 @@ export function SetGoalModal({
 			body: {
 				goal_title: title,
 				goal_intent: `I'll know it's done when ${measure.trim()}`,
-				cadence,
+				cadence: "daily",
 				month_start: monthStart,
 			},
 		});
@@ -311,72 +308,6 @@ export function SetGoalModal({
 							))}
 						</ul>
 					</div>
-
-					<fieldset>
-						<legend className={labelCls}>How do you want to work on it?</legend>
-						<div className="flex flex-col gap-2">
-							{(
-								[
-									{
-										value: "daily",
-										title: "A step a day",
-										desc: "One small task to do each day.",
-									},
-									{
-										value: "weekly",
-										title: "A focus a week",
-										desc: "One thing to reach by the end of each week.",
-									},
-								] as const
-							).map((opt) => {
-								const active = cadence === opt.value;
-								return (
-									<label
-										key={opt.value}
-										className="flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition-colors focus-within:ring-1 focus-within:ring-[#F5C842]/60"
-										style={{
-											borderColor: active ? GOLD : "rgba(14,20,32,0.10)",
-											backgroundColor: active
-												? "rgba(245,200,66,0.10)"
-												: "#F4F7FC",
-										}}
-									>
-										<input
-											type="radio"
-											name="cadence"
-											value={opt.value}
-											checked={active}
-											onChange={() => setCadence(opt.value)}
-											className="sr-only"
-										/>
-										<span
-											className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border"
-											style={{
-												borderColor: active
-													? colors.goldInk
-													: "rgba(14,20,32,0.28)",
-											}}
-										>
-											{active && (
-												<span
-													className="h-2 w-2 rounded-full"
-													style={{ backgroundColor: colors.goldInk }}
-												/>
-											)}
-										</span>
-										<span>
-											<span className="block font-semibold text-[#0E1420] text-[14px]">
-												{opt.title}
-											</span>
-											<span className="block text-[#0E1420]/55 text-[12px]">
-												{opt.desc}
-											</span>
-										</span>
-									</label>
-								);
-							})}
-						</div>
-					</fieldset>
 
 					{error && <p className="text-[#DC2626] text-[12px]">{error}</p>}
 

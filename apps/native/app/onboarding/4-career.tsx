@@ -1,19 +1,18 @@
-// Q4 — daily time budget (single-select). Maps to
-// profiles.time_budget_label.
+// Q4 — career stage (single-select). Maps to profiles.career_stage.
 
 import { useRouter } from "expo-router";
 import { useState } from "react";
 
-import { ChoiceSelector } from "@/components/onboarding/ChoiceSelector";
+import { CareerSelector } from "@/components/onboarding/CareerSelector";
 import { QuestionShell } from "@/components/onboarding/QuestionShell";
 import { ONBOARDING_QUESTIONS } from "@/lib/onboarding/questions";
 import { useOnboardingState } from "@/lib/onboarding/use-onboarding-state";
 
 const Q = ONBOARDING_QUESTIONS[3];
 
-export default function OnboardingTimeScreen() {
+export default function OnboardingCareerScreen() {
 	const router = useRouter();
-	const { answers, saveTime } = useOnboardingState();
+	const { answers, saveCareerStage } = useOnboardingState();
 	const [saving, setSaving] = useState(false);
 
 	return (
@@ -21,23 +20,22 @@ export default function OnboardingTimeScreen() {
 			index={3}
 			prompt={Q.prompt}
 			sub={Q.sub}
-			nextDisabled={!answers.time}
+			nextDisabled={!answers.careerStage}
 			nextLoading={saving}
 			onNext={async () => {
-				if (!answers.time) return;
+				if (!answers.careerStage) return;
 				setSaving(true);
 				try {
-					router.push("/onboarding/5-avoid");
+					router.push("/onboarding/5-location");
 				} finally {
 					setSaving(false);
 				}
 			}}
 		>
-			<ChoiceSelector
-				options={Q.options ?? []}
-				value={answers.time}
+			<CareerSelector
+				value={answers.careerStage}
 				onChange={(next) => {
-					void saveTime(next);
+					void saveCareerStage(next);
 				}}
 			/>
 		</QuestionShell>

@@ -633,7 +633,6 @@ export function MonthlyMissionView({
 					monthStart={mission.month_start}
 					initialGoal={mission.goal_title}
 					initialIntent={mission.goal_intent ?? ""}
-					initialCadence={cadence}
 					autosuggest={isTemplate}
 					onDismiss={() => setShowGoal(false)}
 					onGoalSet={handleGoalSet}

@@ -15,10 +15,13 @@ const ROUTES = [
 	"/onboarding/1-name",
 	"/onboarding/2-season",
 	"/onboarding/3-focus",
-	"/onboarding/4-time",
-	"/onboarding/5-avoid",
-	"/onboarding/6-baseline",
-	"/onboarding/7-consent",
+	"/onboarding/4-career",
+	"/onboarding/5-location",
+	"/onboarding/6-time",
+	"/onboarding/7-avoid",
+	"/onboarding/8-purpose",
+	"/onboarding/9-baseline",
+	"/onboarding/10-consent",
 ] as const;
 
 export default function OnboardingLayout() {
@@ -49,10 +52,13 @@ export default function OnboardingLayout() {
 				<Stack.Screen name="1-name" />
 				<Stack.Screen name="2-season" />
 				<Stack.Screen name="3-focus" />
-				<Stack.Screen name="4-time" />
-				<Stack.Screen name="5-avoid" />
-				<Stack.Screen name="6-baseline" />
-				<Stack.Screen name="7-consent" />
+				<Stack.Screen name="4-career" />
+				<Stack.Screen name="5-location" />
+				<Stack.Screen name="6-time" />
+				<Stack.Screen name="7-avoid" />
+				<Stack.Screen name="8-purpose" />
+				<Stack.Screen name="9-baseline" />
+				<Stack.Screen name="10-consent" />
 			</Stack>
 		);
 	}
@@ -64,10 +70,13 @@ export default function OnboardingLayout() {
 			<Stack.Screen name="1-name" />
 			<Stack.Screen name="2-season" />
 			<Stack.Screen name="3-focus" />
-			<Stack.Screen name="4-time" />
-			<Stack.Screen name="5-avoid" />
-			<Stack.Screen name="6-baseline" />
-			<Stack.Screen name="7-consent" />
+			<Stack.Screen name="4-career" />
+			<Stack.Screen name="5-location" />
+			<Stack.Screen name="6-time" />
+			<Stack.Screen name="7-avoid" />
+			<Stack.Screen name="8-purpose" />
+			<Stack.Screen name="9-baseline" />
+			<Stack.Screen name="10-consent" />
 		</Stack>
 	);
 }
