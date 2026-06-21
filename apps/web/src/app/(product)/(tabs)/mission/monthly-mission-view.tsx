@@ -400,7 +400,7 @@ export function MonthlyMissionView({
 											{encouragement}
 										</p>
 
-										{cadence === "daily" && weekDays.length > 1 && (
+										{cadence === "daily" && weekDays.length > 0 && (
 											<div className="mt-5 border-black/5 border-t pt-4">
 												<button
 													type="button"
