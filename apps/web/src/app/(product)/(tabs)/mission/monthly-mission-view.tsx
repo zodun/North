@@ -449,10 +449,10 @@ export function MonthlyMissionView({
 								</section>
 
 								{/* ── Stats bento ───────────────────────────────── */}
-								<section className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+								<section className="grid grid-cols-2 gap-3 lg:grid-cols-3">
 									{/* Monthly progress */}
-									<div className="glass-card flex flex-col rounded-[2rem] border-primary/40 border-b-4 p-5 sm:p-8">
-										<div className="mb-8 flex items-start justify-between">
+									<div className="glass-card flex flex-col rounded-[2rem] border-primary/40 border-b-4 p-4 sm:p-6">
+										<div className="mb-3 flex items-start justify-between">
 											<div>
 												<p
 													className="font-bold text-[11px] uppercase tracking-[0.2em]"
@@ -461,14 +461,14 @@ export function MonthlyMissionView({
 													Monthly progress
 												</p>
 												<h3
-													className="mt-2 font-bold text-4xl tracking-tight"
+													className="mt-1 font-bold text-3xl tracking-tight"
 													style={{ color: PRIMARY, fontFamily: SERIF }}
 												>
 													{goalPct}%
 												</h3>
 											</div>
 											<span
-												className="material-symbols-outlined rounded-2xl p-3 text-3xl"
+												className="material-symbols-outlined rounded-xl p-2 text-2xl"
 												style={{
 													background: "rgba(0,90,194,0.06)",
 													color: PRIMARY,
@@ -477,7 +477,7 @@ export function MonthlyMissionView({
 												target
 											</span>
 										</div>
-										<div className="flex h-20 items-end gap-3">
+										<div className="flex h-12 items-end gap-2">
 											{Array.from({ length: weeksTotal }, (_, i) => {
 												const done = weekly[i]?.done ?? false;
 												const current = i === currentWeekIndex;
@@ -522,9 +522,9 @@ export function MonthlyMissionView({
 									</div>
 
 									{/* This month's focus */}
-									<div className="glass-card relative flex flex-col overflow-hidden rounded-[2rem] p-5 sm:p-8">
+									<div className="glass-card relative flex flex-col overflow-hidden rounded-[2rem] p-4 sm:p-6">
 										<div className="relative z-10">
-											<div className="mb-6 flex items-center gap-3">
+											<div className="mb-3 flex items-center gap-2">
 												<span
 													className="material-symbols-outlined text-2xl"
 													style={{
@@ -542,7 +542,7 @@ export function MonthlyMissionView({
 												</span>
 											</div>
 											<h3
-												className="mb-4 font-bold text-2xl leading-snug tracking-tight"
+												className="mb-2 font-bold text-xl leading-snug tracking-tight"
 												style={{ fontFamily: SERIF }}
 											>
 												{focusLabel ?? "Your direction"}
@@ -565,17 +565,17 @@ export function MonthlyMissionView({
 									</div>
 
 									{/* Rhythm */}
-									<div className="glass-card flex flex-col justify-between rounded-[2rem] border-secondary/40 border-b-4 p-5 sm:p-8">
+									<div className="glass-card col-span-2 flex flex-col justify-between rounded-[2rem] border-secondary/40 border-b-4 p-4 sm:p-6 lg:col-span-1">
 										<p
-											className="mb-6 font-bold text-[11px] uppercase tracking-[0.2em]"
+											className="mb-3 font-bold text-[11px] uppercase tracking-[0.2em]"
 											style={{ color: ON_VARIANT, opacity: 0.7 }}
 										>
 											Your rhythm
 										</p>
-										<div className="flex items-center gap-6">
+										<div className="flex items-center gap-4">
 											<Ring pct={goalPct} center={String(streak)} />
 											<div>
-												<p className="font-bold text-lg tracking-tight">
+												<p className="font-bold text-base tracking-tight">
 													{streak} {streak === 1 ? "day" : "days"} in rhythm
 												</p>
 												<p
@@ -586,7 +586,7 @@ export function MonthlyMissionView({
 												</p>
 											</div>
 										</div>
-										<div className="mt-7 space-y-2">
+										<div className="mt-3 space-y-2">
 											<div
 												className="flex justify-between font-bold text-[11px] uppercase tracking-widest"
 												style={{ color: ON_SURFACE }}
@@ -612,7 +612,7 @@ export function MonthlyMissionView({
 								<section className="mt-4">
 									<div className="glass-card rounded-[2rem] p-5 sm:p-8">
 										<h3
-											className="mb-6 font-bold text-2xl tracking-tight"
+											className="mb-4 font-bold text-2xl tracking-tight"
 											style={{ fontFamily: SERIF }}
 										>
 											Your month
