@@ -219,12 +219,11 @@ export function CommunityHub({
 							>
 								You are not building alone.
 							</h1>
-							<div className="flex gap-2 sm:hidden">
-								<Pill tone="primary">{memberCount} members</Pill>
-								{samePathCount > 0 && (
+							{samePathCount > 0 && (
+								<div className="flex gap-2 sm:hidden">
 									<Pill tone="muted">{samePathCount} on your path</Pill>
-								)}
-							</div>
+								</div>
+							)}
 						</div>
 						<p
 							className="mt-3 max-w-2xl text-sm"
@@ -741,12 +740,11 @@ function TopBar({
 				</span>
 				<span className="hidden md:block" />
 				<div className="flex items-center gap-4">
-					<span className="hidden items-center gap-2 sm:flex">
-						<Pill tone="primary">{memberCount} members</Pill>
-						{samePathCount > 0 && (
+					{samePathCount > 0 && (
+						<span className="hidden items-center gap-2 sm:flex">
 							<Pill tone="muted">{samePathCount} on your path</Pill>
-						)}
-					</span>
+						</span>
+					)}
 					<a
 						href="/profile"
 						aria-label="Your profile"

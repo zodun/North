@@ -97,13 +97,14 @@ const CTA_LABELS = [
 	"That's my aim", // 9 aim
 	"This is my pace", // 10 time
 	"That's where I am", // 11 purpose (explorer / builder)
-	"Take me to North", // 12 consent
+	"That's who I am", // 12 demographics (gender + race)
+	"Take me to North", // 13 consent
 ];
 
-// 13 steps: a welcome (name) + 11 questions + consent. The counter shows the 11
+// 14 steps: a welcome (name) + 12 questions + consent. The counter shows the 12
 // questions; the welcome and consent are framing steps.
-const TOTAL_STEPS = 13;
-const QUESTION_COUNT = 11;
+const TOTAL_STEPS = 14;
+const QUESTION_COUNT = 12;
 
 // How the user likes to consume content → For You can favour matching kinds.
 const CONTENT_FORMATS = [
@@ -164,6 +165,8 @@ export default function OnboardingPage() {
 	const [educationLevel, setEducationLevel] = useState<string | null>(null);
 	const [aspiration, setAspiration] = useState("");
 	const [purposeMode, setPurposeMode] = useState<string | null>(null);
+	const [gender, setGender] = useState<string>("");
+	const [race, setRace] = useState<string>("");
 	const [consent, setConsent] = useState(false);
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -322,6 +325,15 @@ export default function OnboardingPage() {
 				.update({ purpose_mode: purposeMode })
 				.eq("user_id", userId);
 		}
+		if (step === 12) {
+			await supabase
+				.from("profiles")
+				.update({
+					gender: gender || null,
+					race: race || null,
+				})
+				.eq("user_id", userId);
+		}
 	}
 
 	async function handleComplete() {
@@ -392,7 +404,8 @@ export default function OnboardingPage() {
 		if (step === 9) return true; // aim optional
 		if (step === 10) return time !== null;
 		if (step === 11) return purposeMode !== null;
-		if (step === 12) return focus.length > 0 && consent;
+		if (step === 12) return true; // demographics optional
+		if (step === 13) return focus.length > 0 && consent;
 		return false;
 	})();
 
@@ -486,6 +499,14 @@ export default function OnboardingPage() {
 					<StepPurpose value={purposeMode} onSelect={setPurposeMode} />
 				)}
 				{step === 12 && (
+					<StepDemographics
+						gender={gender}
+						race={race}
+						onGender={setGender}
+						onRace={setRace}
+					/>
+				)}
+				{step === 13 && (
 					<StepConsent consent={consent} onConsent={setConsent} />
 				)}
 
@@ -498,7 +519,7 @@ export default function OnboardingPage() {
 					>
 						{CTA_LABELS[step]}
 					</CtaButton>
-					{(step === 4 || step === 5 || step === 9) && (
+					{(step === 4 || step === 5 || step === 9 || step === 12) && (
 						<button
 							type="button"
 							onClick={handleNext}
@@ -507,7 +528,7 @@ export default function OnboardingPage() {
 							Skip for now
 						</button>
 					)}
-					{step === 12 && !consent && (
+					{step === 13 && !consent && (
 						<p className="mt-2 text-center text-[#0E1420]/50 text-[11px]">
 							You must agree to continue
 						</p>
@@ -1277,6 +1298,101 @@ function StepAspiration({
 				placeholder="e.g. land my first role in design"
 				className="h-[110px] w-full resize-none rounded-[14px] border border-[#0E1420]/10 bg-white px-4 py-3.5 font-medium text-[#0E1420] text-[14px] outline-none transition-all placeholder:text-[#0E1420]/35 focus:border-[#F5C842] focus:bg-[rgba(245,200,66,0.04)]"
 			/>
+		</div>
+	);
+}
+
+const GENDER_OPTIONS = ["Man", "Woman", "Non-binary", "Prefer not to say"];
+
+const RACE_OPTIONS = [
+	"Black / African descent",
+	"White / European descent",
+	"Asian",
+	"Hispanic / Latino",
+	"Middle Eastern / North African",
+	"Mixed / Multiracial",
+	"Indigenous",
+	"Prefer not to say",
+];
+
+function StepDemographics({
+	gender,
+	race,
+	onGender,
+	onRace,
+}: {
+	gender: string;
+	race: string;
+	onGender: (v: string) => void;
+	onRace: (v: string) => void;
+}) {
+	return (
+		<div>
+			<StepHead
+				eyebrow="Who you are"
+				headline="A little more about you."
+				sub="Optional. North uses this to understand who we're serving. This is never shown publicly."
+			/>
+			<div className="mb-6">
+				<p className="mb-3 font-semibold text-[#0E1420]/70 text-[12px] uppercase tracking-[0.1em]">
+					Gender
+				</p>
+				<div className="flex flex-wrap gap-2">
+					{GENDER_OPTIONS.map((opt) => (
+						<button
+							key={opt}
+							type="button"
+							onClick={() => onGender(gender === opt ? "" : opt)}
+							className="cursor-pointer rounded-full border px-4 py-2.5 font-semibold text-[13px] transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3ECFBF] motion-reduce:transition-none"
+							style={
+								gender === opt
+									? {
+											backgroundColor: "rgba(62,207,191,0.12)",
+											borderColor: "rgba(62,207,191,0.5)",
+											color: "#0A8F7F",
+										}
+									: {
+											backgroundColor: "#FFFFFF",
+											borderColor: "rgba(14,20,32,0.10)",
+											color: "rgba(14,20,32,0.65)",
+										}
+							}
+						>
+							{opt}
+						</button>
+					))}
+				</div>
+			</div>
+			<div>
+				<p className="mb-3 font-semibold text-[#0E1420]/70 text-[12px] uppercase tracking-[0.1em]">
+					Race / Ethnicity
+				</p>
+				<div className="flex flex-wrap gap-2">
+					{RACE_OPTIONS.map((opt) => (
+						<button
+							key={opt}
+							type="button"
+							onClick={() => onRace(race === opt ? "" : opt)}
+							className="cursor-pointer rounded-full border px-4 py-2.5 font-semibold text-[13px] transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3ECFBF] motion-reduce:transition-none"
+							style={
+								race === opt
+									? {
+											backgroundColor: "rgba(62,207,191,0.12)",
+											borderColor: "rgba(62,207,191,0.5)",
+											color: "#0A8F7F",
+										}
+									: {
+											backgroundColor: "#FFFFFF",
+											borderColor: "rgba(14,20,32,0.10)",
+											color: "rgba(14,20,32,0.65)",
+										}
+							}
+						>
+							{opt}
+						</button>
+					))}
+				</div>
+			</div>
 		</div>
 	);
 }
