@@ -346,7 +346,33 @@ export function JournalView({
 								style={{ color: ON_SURFACE }}
 							/>
 
-							<div className="mt-8 flex items-center justify-between gap-4 border-black/5 border-t pt-7">
+							<div className="mt-5 flex items-start gap-2.5 rounded-xl bg-black/[0.03] px-4 py-3">
+								<span
+									className="material-symbols-outlined mt-0.5 shrink-0 text-base"
+									style={{ color: ON_VARIANT, opacity: 0.45 }}
+								>
+									tips_and_updates
+								</span>
+								<p
+									className="text-xs leading-relaxed"
+									style={{ color: ON_VARIANT, opacity: 0.65 }}
+								>
+									To maximize{" "}
+									<span style={{ color: SIGNAL, opacity: 1, fontWeight: 700 }}>
+										signals
+									</span>
+									, write about specific things you did that moved your goal
+									forward. To minimize{" "}
+									<span style={{ color: NOISE, opacity: 1, fontWeight: 700 }}>
+										noise
+									</span>
+									, name what grabbed your attention but didn't serve your
+									direction. The more honest and specific you are, the cleaner
+									the separation.
+								</p>
+							</div>
+
+							<div className="mt-6 flex items-center justify-between gap-4 border-black/5 border-t pt-7">
 								{voiceSupported ? (
 									<button
 										type="button"
