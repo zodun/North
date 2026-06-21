@@ -235,9 +235,9 @@ export function MonthlyMissionView({
 							<EmptyState onSet={() => setShowGoal(true)} />
 						) : (
 							<>
-								{/* ── Hero + Today's Pulse ───────────────────────── */}
-								<section className="mt-3 mb-4 grid grid-cols-12 gap-4">
-									<div className="glass-card signal-glow relative col-span-12 flex flex-col justify-start overflow-hidden rounded-[2rem] p-5 md:col-span-7 lg:col-span-8">
+								{/* ── Mission + Today (merged) ───────────────────── */}
+								<section className="mt-3 mb-4">
+									<div className="glass-card signal-glow relative overflow-hidden rounded-[2rem] p-5">
 										<div
 											aria-hidden="true"
 											className="absolute inset-0"
@@ -246,205 +246,220 @@ export function MonthlyMissionView({
 													"radial-gradient(120% 100% at 100% 0%, rgba(0,90,194,0.12), transparent 55%), radial-gradient(90% 90% at 0% 100%, rgba(62,207,191,0.10), transparent 55%)",
 											}}
 										/>
-										<div className="relative">
-											<div
-												className="mb-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-white"
-												style={{ background: PRIMARY }}
-											>
-												<span className="pulse-dot h-2 w-2 rounded-full bg-white" />
-												<span className="font-bold text-[10px] uppercase tracking-[0.18em]">
-													{monthName} mission
-												</span>
-											</div>
-											<h1
-												className="mb-2 max-w-2xl font-bold text-2xl leading-tight tracking-tight"
-												style={{ fontFamily: SERIF }}
-											>
-												{mission.goal_title}
-											</h1>
-											{mission.goal_intent && (
-												<p
-													className="mb-4 max-w-xl text-sm leading-relaxed"
-													style={{ color: ON_VARIANT, opacity: 0.85 }}
+										<div className="relative flex flex-col gap-5 md:flex-row md:gap-0">
+											{/* Left: mission info */}
+											<div className="flex flex-col md:flex-1 md:pr-6">
+												<div
+													className="mb-3 inline-flex items-center gap-2 self-start rounded-full px-3 py-1 text-white"
+													style={{ background: PRIMARY }}
 												>
-													{mission.goal_intent}
-												</p>
-											)}
-											<div className="flex flex-wrap items-center gap-4">
-												<button
-													type="button"
-													onClick={() => setShowGoal(true)}
-													className="rounded-xl px-7 py-3.5 font-bold text-sm text-white uppercase tracking-wider transition-all active:scale-95"
-													style={{
-														background: ON_SURFACE,
-														boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-													}}
-												>
-													{isTemplate ? "Set your goal" : "Edit goal"}
-												</button>
-												<div className="flex items-center gap-3">
-													<div className="h-2 w-40 overflow-hidden rounded-full bg-black/10">
-														<div
-															className="h-full rounded-full transition-[width] duration-500 motion-reduce:transition-none"
-															style={{
-																width: `${goalPct}%`,
-																background: PRIMARY,
-																boxShadow: "0 0 8px rgba(0,90,194,0.5)",
-															}}
-														/>
-													</div>
-													<span className="font-bold text-sm">
-														{goalPct}% complete
+													<span className="pulse-dot h-2 w-2 rounded-full bg-white" />
+													<span className="font-bold text-[10px] uppercase tracking-[0.18em]">
+														{monthName} mission
 													</span>
 												</div>
-											</div>
-										</div>
-									</div>
-
-									{/* Today, one micro-step in focus */}
-									<div className="glass-card col-span-12 flex flex-col rounded-[2rem] p-5 sm:p-7 md:col-span-5 lg:col-span-4">
-										<div className="mb-1 flex items-center justify-between gap-3">
-											<span
-												className="font-bold text-[11px] uppercase tracking-[0.18em]"
-												style={{ color: PRIMARY }}
-											>
-												{greeting}
-												{tail}
-											</span>
-											<CadenceToggle value={cadence} onChange={changeCadence} />
-										</div>
-										<h2
-											className="mb-3 font-bold text-xl tracking-tight"
-											style={{ fontFamily: SERIF }}
-										>
-											{cadence === "daily" ? "Today" : "This week"}
-										</h2>
-
-										{focalStep ? (
-											<button
-												type="button"
-												onClick={() =>
-													void setStepDone(focalStep.id, !focalStep.done)
-												}
-												aria-pressed={focalStep.done}
-												className="flex items-start gap-4 rounded-2xl border p-5 text-left transition-colors"
-												style={{
-													borderColor: focalStep.done
-														? "rgba(0,90,194,0.2)"
-														: "rgba(0,90,194,0.3)",
-													background: focalStep.done
-														? "transparent"
-														: "rgba(0,90,194,0.05)",
-												}}
-											>
-												<span
-													className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border-2 transition-colors"
-													style={{
-														borderColor: focalStep.done
-															? PRIMARY
-															: "rgba(0,90,194,0.4)",
-														background: focalStep.done
-															? PRIMARY
-															: "transparent",
-													}}
+												<h1
+													className="mb-2 max-w-2xl font-bold text-2xl leading-tight tracking-tight"
+													style={{ fontFamily: SERIF }}
 												>
-													{focalStep.done && (
-														<span
-															className="material-symbols-outlined text-[20px] text-white"
-															style={{ fontVariationSettings: "'wght' 700" }}
-														>
-															check
-														</span>
-													)}
-												</span>
-												<span className="min-w-0 flex-1">
-													<span
-														className="mb-1.5 block font-bold text-[10px] uppercase tracking-[0.16em]"
-														style={{ color: PRIMARY }}
+													{mission.goal_title}
+												</h1>
+												{mission.goal_intent && (
+													<p
+														className="mb-4 max-w-xl text-sm leading-relaxed"
+														style={{ color: ON_VARIANT, opacity: 0.85 }}
 													>
-														{cadence === "daily"
-															? "Your one thing today"
-															: `Week ${currentWeekIndex + 1} milestone`}
-													</span>
-													<span
-														className={`block font-bold text-lg leading-snug tracking-tight ${
-															focalStep.done ? "line-through opacity-50" : ""
-														}`}
-														style={{ fontFamily: SERIF }}
-													>
-														{focalStep.title}
-													</span>
-													{(focalStep.detail || focalStep.estimate_label) && (
-														<span
-															className="mt-1.5 block text-sm leading-relaxed"
-															style={{ color: ON_VARIANT, opacity: 0.8 }}
-														>
-															{focalStep.detail ?? focalStep.estimate_label}
-														</span>
-													)}
-												</span>
-											</button>
-										) : (
-											<p
-												className="rounded-2xl border border-black/5 p-5 text-sm"
-												style={{ color: ON_VARIANT, opacity: 0.7 }}
-											>
-												No step scheduled right now.
-											</p>
-										)}
-
-										<p
-											className="mt-4 text-sm leading-relaxed"
-											style={{ color: ON_VARIANT, opacity: 0.85 }}
-										>
-											{encouragement}
-										</p>
-
-										{cadence === "daily" && weekDays.length > 0 && (
-											<div className="mt-5 border-black/5 border-t pt-4">
-												<button
-													type="button"
-													onClick={() => setWeekOpen((v) => !v)}
-													className="flex w-full items-center justify-between font-bold text-[11px] uppercase tracking-widest"
-													style={{ color: ON_VARIANT, opacity: 0.7 }}
-												>
-													<span>
-														This week · {tasksDone}/{tasksTotal} done ·{" "}
-														{daysLeft} left
-													</span>
-													<span
-														className="material-symbols-outlined text-base transition-transform"
+														{mission.goal_intent}
+													</p>
+												)}
+												<div className="flex flex-wrap items-center gap-4">
+													<button
+														type="button"
+														onClick={() => setShowGoal(true)}
+														className="rounded-xl px-5 py-2.5 font-bold text-sm text-white uppercase tracking-wider transition-all active:scale-95"
 														style={{
-															transform: weekOpen ? "rotate(180deg)" : "none",
+															background: ON_SURFACE,
+															boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
 														}}
 													>
-														expand_more
+														{isTemplate ? "Set your goal" : "Edit goal"}
+													</button>
+													<div className="flex items-center gap-3">
+														<div className="h-2 w-32 overflow-hidden rounded-full bg-black/10">
+															<div
+																className="h-full rounded-full transition-[width] duration-500 motion-reduce:transition-none"
+																style={{
+																	width: `${goalPct}%`,
+																	background: PRIMARY,
+																	boxShadow: "0 0 8px rgba(0,90,194,0.5)",
+																}}
+															/>
+														</div>
+														<span className="font-bold text-sm">
+															{goalPct}% complete
+														</span>
+													</div>
+												</div>
+											</div>
+
+											{/* Divider */}
+											<div className="h-px bg-black/5 md:h-auto md:w-px md:self-stretch" />
+
+											{/* Right: today's pulse */}
+											<div className="flex flex-col md:w-[300px] md:shrink-0 md:pl-6">
+												<div className="mb-1 flex items-center justify-between gap-3">
+													<span
+														className="font-bold text-[11px] uppercase tracking-[0.18em]"
+														style={{ color: PRIMARY }}
+													>
+														{greeting}
+														{tail}
 													</span>
-												</button>
-												{weekOpen && (
-													<div className="custom-scrollbar mt-3 max-h-[320px] space-y-1 overflow-y-auto">
-														{weekDays.map((s, i) => {
-															// Locked until every earlier day this week is done.
-															const locked =
-																!s.done &&
-																firstUndoneIdx !== -1 &&
-																i > firstUndoneIdx;
-															return (
-																<TaskRow
-																	key={s.id}
-																	step={s}
-																	today={today}
-																	locked={locked}
-																	onToggle={() =>
-																		void setStepDone(s.id, !s.done)
-																	}
-																/>
-															);
-														})}
+													<CadenceToggle
+														value={cadence}
+														onChange={changeCadence}
+													/>
+												</div>
+												<h2
+													className="mb-3 font-bold text-xl tracking-tight"
+													style={{ fontFamily: SERIF }}
+												>
+													{cadence === "daily" ? "Today" : "This week"}
+												</h2>
+
+												{focalStep ? (
+													<button
+														type="button"
+														onClick={() =>
+															void setStepDone(focalStep.id, !focalStep.done)
+														}
+														aria-pressed={focalStep.done}
+														className="flex items-start gap-4 rounded-2xl border p-4 text-left transition-colors"
+														style={{
+															borderColor: focalStep.done
+																? "rgba(0,90,194,0.2)"
+																: "rgba(0,90,194,0.3)",
+															background: focalStep.done
+																? "transparent"
+																: "rgba(0,90,194,0.05)",
+														}}
+													>
+														<span
+															className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border-2 transition-colors"
+															style={{
+																borderColor: focalStep.done
+																	? PRIMARY
+																	: "rgba(0,90,194,0.4)",
+																background: focalStep.done
+																	? PRIMARY
+																	: "transparent",
+															}}
+														>
+															{focalStep.done && (
+																<span
+																	className="material-symbols-outlined text-[18px] text-white"
+																	style={{
+																		fontVariationSettings: "'wght' 700",
+																	}}
+																>
+																	check
+																</span>
+															)}
+														</span>
+														<span className="min-w-0 flex-1">
+															<span
+																className="mb-1.5 block font-bold text-[10px] uppercase tracking-[0.16em]"
+																style={{ color: PRIMARY }}
+															>
+																{cadence === "daily"
+																	? "Your one thing today"
+																	: `Week ${currentWeekIndex + 1} milestone`}
+															</span>
+															<span
+																className={`block font-bold text-base leading-snug tracking-tight ${
+																	focalStep.done
+																		? "line-through opacity-50"
+																		: ""
+																}`}
+																style={{ fontFamily: SERIF }}
+															>
+																{focalStep.title}
+															</span>
+															{(focalStep.detail ||
+																focalStep.estimate_label) && (
+																<span
+																	className="mt-1 block text-sm leading-relaxed"
+																	style={{ color: ON_VARIANT, opacity: 0.8 }}
+																>
+																	{focalStep.detail ?? focalStep.estimate_label}
+																</span>
+															)}
+														</span>
+													</button>
+												) : (
+													<p
+														className="rounded-2xl border border-black/5 p-4 text-sm"
+														style={{ color: ON_VARIANT, opacity: 0.7 }}
+													>
+														No step scheduled right now.
+													</p>
+												)}
+
+												<p
+													className="mt-3 text-sm leading-relaxed"
+													style={{ color: ON_VARIANT, opacity: 0.85 }}
+												>
+													{encouragement}
+												</p>
+
+												{cadence === "daily" && weekDays.length > 0 && (
+													<div className="mt-4 border-black/5 border-t pt-3">
+														<button
+															type="button"
+															onClick={() => setWeekOpen((v) => !v)}
+															className="flex w-full items-center justify-between font-bold text-[11px] uppercase tracking-widest"
+															style={{ color: ON_VARIANT, opacity: 0.7 }}
+														>
+															<span>
+																This week · {tasksDone}/{tasksTotal} done ·{" "}
+																{daysLeft} left
+															</span>
+															<span
+																className="material-symbols-outlined text-base transition-transform"
+																style={{
+																	transform: weekOpen
+																		? "rotate(180deg)"
+																		: "none",
+																}}
+															>
+																expand_more
+															</span>
+														</button>
+														{weekOpen && (
+															<div className="custom-scrollbar mt-3 max-h-[280px] space-y-1 overflow-y-auto">
+																{weekDays.map((s, i) => {
+																	const locked =
+																		!s.done &&
+																		firstUndoneIdx !== -1 &&
+																		i > firstUndoneIdx;
+																	return (
+																		<TaskRow
+																			key={s.id}
+																			step={s}
+																			today={today}
+																			locked={locked}
+																			onToggle={() =>
+																				void setStepDone(s.id, !s.done)
+																			}
+																		/>
+																	);
+																})}
+															</div>
+														)}
 													</div>
 												)}
 											</div>
-										)}
+										</div>
 									</div>
 								</section>
 
