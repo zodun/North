@@ -349,7 +349,7 @@ export function CommunityHub({
 					{/* ── Discussions (forum) + rail ──────────────────────────── */}
 					<section className="mx-auto max-w-6xl">
 						<div className="grid grid-cols-12 gap-6">
-							<div className="col-span-12 lg:col-span-8">
+							<div className="order-2 col-span-12 lg:col-span-8">
 								<div className="mb-6">
 									<span
 										className="mb-2 block font-bold text-[11px] uppercase tracking-[0.2em]"
@@ -394,8 +394,8 @@ export function CommunityHub({
 								)}
 							</div>
 
-							{/* Right rail */}
-							<aside className="col-span-12 space-y-6 lg:col-span-4">
+							{/* Right rail — appears first on mobile, right side on desktop */}
+							<aside className="order-1 col-span-12 space-y-6 lg:col-span-4">
 								<div className="glass-panel rounded-[2rem] p-7">
 									<h3 className="mb-5 font-bold text-base">Active now</h3>
 									{members.length > 0 ? (
