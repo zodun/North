@@ -108,7 +108,6 @@ export function MonthlyMissionView({
 	const [steps, setSteps] = useState(initialSteps);
 	const [cadence, setCadence] = useState(initialCadence);
 	const [showGoal, setShowGoal] = useState(promptGoal);
-	const [weekOpen, setWeekOpen] = useState(true);
 
 	const name = firstName && firstName !== "there" ? firstName : null;
 	const tail = name ? `, ${name}` : "";
@@ -331,83 +330,86 @@ export function MonthlyMissionView({
 													/>
 												</div>
 
-												{focalStep ? (
-													<button
-														type="button"
-														onClick={() =>
-															void setStepDone(focalStep.id, !focalStep.done)
-														}
-														aria-pressed={focalStep.done}
-														className="flex items-start gap-4 rounded-2xl border p-4 text-left transition-colors"
-														style={{
-															borderColor: focalStep.done
-																? "rgba(0,90,194,0.2)"
-																: "rgba(0,90,194,0.3)",
-															background: focalStep.done
-																? "transparent"
-																: "rgba(0,90,194,0.05)",
-														}}
-													>
-														<span
-															className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border-2 transition-colors"
+												<div key={focalStep?.id} className="step-reveal">
+													{focalStep ? (
+														<button
+															type="button"
+															onClick={() =>
+																void setStepDone(focalStep.id, !focalStep.done)
+															}
+															aria-pressed={focalStep.done}
+															className="flex w-full items-start gap-4 rounded-2xl border p-4 text-left transition-colors"
 															style={{
 																borderColor: focalStep.done
-																	? PRIMARY
-																	: "rgba(0,90,194,0.4)",
+																	? "rgba(0,90,194,0.2)"
+																	: "rgba(0,90,194,0.3)",
 																background: focalStep.done
-																	? PRIMARY
-																	: "transparent",
+																	? "transparent"
+																	: "rgba(0,90,194,0.05)",
 															}}
 														>
-															{focalStep.done && (
-																<span
-																	className="material-symbols-outlined text-[18px] text-white"
-																	style={{
-																		fontVariationSettings: "'wght' 700",
-																	}}
-																>
-																	check
-																</span>
-															)}
-														</span>
-														<span className="min-w-0 flex-1">
 															<span
-																className="mb-1.5 block font-bold text-[10px] uppercase tracking-[0.16em]"
-																style={{ color: PRIMARY }}
+																className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border-2 transition-colors"
+																style={{
+																	borderColor: focalStep.done
+																		? PRIMARY
+																		: "rgba(0,90,194,0.4)",
+																	background: focalStep.done
+																		? PRIMARY
+																		: "transparent",
+																}}
 															>
-																{cadence === "daily"
-																	? "Your one thing today"
-																	: `Week ${currentWeekIndex + 1} milestone`}
+																{focalStep.done && (
+																	<span
+																		className="material-symbols-outlined text-[18px] text-white"
+																		style={{
+																			fontVariationSettings: "'wght' 700",
+																		}}
+																	>
+																		check
+																	</span>
+																)}
 															</span>
-															<span
-																className={`block font-bold text-base leading-snug tracking-tight ${
-																	focalStep.done
-																		? "line-through opacity-50"
-																		: ""
-																}`}
-																style={{ fontFamily: SERIF }}
-															>
-																{focalStep.title}
-															</span>
-															{(focalStep.detail ||
-																focalStep.estimate_label) && (
+															<span className="min-w-0 flex-1">
 																<span
-																	className="mt-1 block text-sm leading-relaxed"
-																	style={{ color: ON_VARIANT, opacity: 0.8 }}
+																	className="mb-1.5 block font-bold text-[10px] uppercase tracking-[0.16em]"
+																	style={{ color: PRIMARY }}
 																>
-																	{focalStep.detail ?? focalStep.estimate_label}
+																	{cadence === "daily"
+																		? "Your one thing today"
+																		: `Week ${currentWeekIndex + 1} milestone`}
 																</span>
-															)}
-														</span>
-													</button>
-												) : (
-													<p
-														className="rounded-2xl border border-black/5 p-4 text-sm"
-														style={{ color: ON_VARIANT, opacity: 0.7 }}
-													>
-														No step scheduled right now.
-													</p>
-												)}
+																<span
+																	className={`block font-bold text-base leading-snug tracking-tight ${
+																		focalStep.done
+																			? "line-through opacity-50"
+																			: ""
+																	}`}
+																	style={{ fontFamily: SERIF }}
+																>
+																	{focalStep.title}
+																</span>
+																{(focalStep.detail ||
+																	focalStep.estimate_label) && (
+																	<span
+																		className="mt-1 block text-sm leading-relaxed"
+																		style={{ color: ON_VARIANT, opacity: 0.8 }}
+																	>
+																		{focalStep.detail ??
+																			focalStep.estimate_label}
+																	</span>
+																)}
+															</span>
+														</button>
+													) : (
+														<p
+															className="rounded-2xl border border-black/5 p-4 text-sm"
+															style={{ color: ON_VARIANT, opacity: 0.7 }}
+														>
+															No step scheduled right now.
+														</p>
+													)}
+												</div>
 
 												<p
 													className="mt-3 text-sm leading-relaxed"
@@ -418,48 +420,27 @@ export function MonthlyMissionView({
 
 												{cadence === "daily" && weekDays.length > 0 && (
 													<div className="mt-4 border-black/5 border-t pt-3">
-														<button
-															type="button"
-															onClick={() => setWeekOpen((v) => !v)}
-															className="flex w-full items-center justify-between font-bold text-[11px] uppercase tracking-widest"
-															style={{ color: ON_VARIANT, opacity: 0.7 }}
+														<div className="mb-1.5 flex items-center gap-1.5">
+															{weekDays.map((s) => (
+																<div
+																	key={s.id}
+																	className="h-1.5 flex-1 rounded-full transition-all duration-500"
+																	style={{
+																		background: s.done
+																			? PRIMARY
+																			: s.id === focalStep?.id
+																				? "rgba(0,90,194,0.3)"
+																				: "rgba(0,0,0,0.07)",
+																	}}
+																/>
+															))}
+														</div>
+														<p
+															className="font-bold text-[10px] uppercase tracking-widest"
+															style={{ color: ON_VARIANT, opacity: 0.5 }}
 														>
-															<span>
-																This week · {tasksDone}/{tasksTotal} done ·{" "}
-																{daysLeft} left
-															</span>
-															<span
-																className="material-symbols-outlined text-base transition-transform"
-																style={{
-																	transform: weekOpen
-																		? "rotate(180deg)"
-																		: "none",
-																}}
-															>
-																expand_more
-															</span>
-														</button>
-														{weekOpen && (
-															<div className="custom-scrollbar mt-3 max-h-[280px] space-y-1 overflow-y-auto">
-																{weekDays.map((s, i) => {
-																	const locked =
-																		!s.done &&
-																		firstUndoneIdx !== -1 &&
-																		i > firstUndoneIdx;
-																	return (
-																		<TaskRow
-																			key={s.id}
-																			step={s}
-																			today={today}
-																			locked={locked}
-																			onToggle={() =>
-																				void setStepDone(s.id, !s.done)
-																			}
-																		/>
-																	);
-																})}
-															</div>
-														)}
+															{tasksDone}/{tasksTotal} tasks this week
+														</p>
 													</div>
 												)}
 											</div>
@@ -1023,6 +1004,8 @@ const SCOPED_CSS = `
 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,90,194,0.15); border-radius: 10px; }
 @keyframes pulse-signal { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.1); } }
 .pulse-dot { animation: pulse-signal 2s infinite ease-in-out; }
+@keyframes step-reveal-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.step-reveal { animation: step-reveal-in 0.35s ease-out both; }
 /* Critical layout, server-rendered: fixed sidebar + content offset before fonts
    load. Phones use the bottom tab bar. */
 .mm-rail { position: fixed; left: 0; top: 0; height: 100%; width: 280px; z-index: 50; display: none; flex-direction: column; background: rgba(255,255,255,0.6); border-right: 1px solid rgba(0,0,0,0.05); backdrop-filter: blur(20px); }
