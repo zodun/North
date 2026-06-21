@@ -108,7 +108,7 @@ export function MonthlyMissionView({
 	const [steps, setSteps] = useState(initialSteps);
 	const [cadence, setCadence] = useState(initialCadence);
 	const [showGoal, setShowGoal] = useState(promptGoal);
-	const [weekOpen, setWeekOpen] = useState(false);
+	const [weekOpen, setWeekOpen] = useState(true);
 
 	const name = firstName && firstName !== "there" ? firstName : null;
 	const tail = name ? `, ${name}` : "";
@@ -236,8 +236,8 @@ export function MonthlyMissionView({
 						) : (
 							<>
 								{/* ── Hero + Today's Pulse ───────────────────────── */}
-								<section className="mt-4 mb-7 grid grid-cols-12 gap-6">
-									<div className="glass-card signal-glow relative col-span-12 flex min-h-[340px] flex-col justify-end overflow-hidden rounded-[2rem] p-8 sm:p-10 md:col-span-7 lg:col-span-8">
+								<section className="mt-3 mb-4 grid grid-cols-12 gap-4">
+									<div className="glass-card signal-glow relative col-span-12 flex min-h-[200px] flex-col justify-end overflow-hidden rounded-[2rem] p-5 sm:min-h-[300px] sm:p-10 md:col-span-7 lg:col-span-8">
 										<div
 											aria-hidden="true"
 											className="absolute inset-0"
@@ -302,7 +302,7 @@ export function MonthlyMissionView({
 									</div>
 
 									{/* Today, one micro-step in focus */}
-									<div className="glass-card col-span-12 flex flex-col rounded-[2rem] p-7 md:col-span-5 lg:col-span-4">
+									<div className="glass-card col-span-12 flex flex-col rounded-[2rem] p-5 sm:p-7 md:col-span-5 lg:col-span-4">
 										<div className="mb-1 flex items-center justify-between gap-3">
 											<span
 												className="font-bold text-[11px] uppercase tracking-[0.18em]"
@@ -422,7 +422,7 @@ export function MonthlyMissionView({
 													</span>
 												</button>
 												{weekOpen && (
-													<div className="custom-scrollbar mt-3 max-h-[220px] space-y-1 overflow-y-auto">
+													<div className="custom-scrollbar mt-3 max-h-[320px] space-y-1 overflow-y-auto">
 														{weekDays.map((s, i) => {
 															// Locked until every earlier day this week is done.
 															const locked =
@@ -449,9 +449,9 @@ export function MonthlyMissionView({
 								</section>
 
 								{/* ── Stats bento ───────────────────────────────── */}
-								<section className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+								<section className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
 									{/* Monthly progress */}
-									<div className="glass-card flex flex-col rounded-[2rem] border-primary/40 border-b-4 p-8">
+									<div className="glass-card flex flex-col rounded-[2rem] border-primary/40 border-b-4 p-5 sm:p-8">
 										<div className="mb-8 flex items-start justify-between">
 											<div>
 												<p
@@ -522,7 +522,7 @@ export function MonthlyMissionView({
 									</div>
 
 									{/* This month's focus */}
-									<div className="glass-card relative flex flex-col overflow-hidden rounded-[2rem] p-8">
+									<div className="glass-card relative flex flex-col overflow-hidden rounded-[2rem] p-5 sm:p-8">
 										<div className="relative z-10">
 											<div className="mb-6 flex items-center gap-3">
 												<span
@@ -565,7 +565,7 @@ export function MonthlyMissionView({
 									</div>
 
 									{/* Rhythm */}
-									<div className="glass-card flex flex-col justify-between rounded-[2rem] border-secondary/40 border-b-4 p-8">
+									<div className="glass-card flex flex-col justify-between rounded-[2rem] border-secondary/40 border-b-4 p-5 sm:p-8">
 										<p
 											className="mb-6 font-bold text-[11px] uppercase tracking-[0.2em]"
 											style={{ color: ON_VARIANT, opacity: 0.7 }}
@@ -609,8 +609,8 @@ export function MonthlyMissionView({
 								</section>
 
 								{/* ── 4-week plan ───────────────────────────────── */}
-								<section className="mt-7">
-									<div className="glass-card rounded-[2rem] p-8">
+								<section className="mt-4">
+									<div className="glass-card rounded-[2rem] p-5 sm:p-8">
 										<h3
 											className="mb-6 font-bold text-2xl tracking-tight"
 											style={{ fontFamily: SERIF }}
@@ -1007,7 +1007,7 @@ const SCOPED_CSS = `
 /* Critical layout, server-rendered: fixed sidebar + content offset before fonts
    load. Phones use the bottom tab bar. */
 .mm-rail { position: fixed; left: 0; top: 0; height: 100%; width: 280px; z-index: 50; display: none; flex-direction: column; background: rgba(255,255,255,0.6); border-right: 1px solid rgba(0,0,0,0.05); backdrop-filter: blur(20px); }
-.mm-main { margin-left: 0; padding-bottom: 7rem; }
+.mm-main { margin-left: 0; padding-bottom: 5rem; }
 @media (min-width: 768px) { .mm-rail { display: flex; } .mm-main { margin-left: 280px; padding-bottom: 2.5rem; } }
 @media (prefers-reduced-motion: reduce) { .pulse-dot { animation: none; } }
 `;
