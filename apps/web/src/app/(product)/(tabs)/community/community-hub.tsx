@@ -393,18 +393,30 @@ export function CommunityHub({
 							{/* Right rail — appears first on mobile, right side on desktop */}
 							<aside className="order-1 col-span-12 space-y-6 lg:col-span-4">
 								<div className="glass-panel rounded-[2rem] p-7">
-									<div className="mb-4 flex items-baseline gap-2">
+									<div className="mb-4 flex items-center justify-between gap-2">
+										<div className="flex items-baseline gap-2">
+											<span
+												className="font-bold text-3xl leading-none"
+												style={{ fontFamily: SERIF, color: ON_SURFACE }}
+											>
+												{memberCount}
+											</span>
+											<span
+												className="font-bold text-[10px] uppercase tracking-[0.18em]"
+												style={{ color: ON_VARIANT, opacity: 0.5 }}
+											>
+												members
+											</span>
+										</div>
 										<span
-											className="font-bold text-3xl leading-none"
-											style={{ fontFamily: SERIF, color: ON_SURFACE }}
+											className="flex items-center gap-1.5 font-bold text-[10px] uppercase tracking-[0.12em]"
+											style={{ color: "#34c759" }}
 										>
-											{memberCount}
-										</span>
-										<span
-											className="font-bold text-[10px] uppercase tracking-[0.18em]"
-											style={{ color: ON_VARIANT, opacity: 0.5 }}
-										>
-											members
+											<span
+												className="h-1.5 w-1.5 rounded-full bg-[#34c759]"
+												aria-hidden="true"
+											/>
+											Active now
 										</span>
 									</div>
 									{countryCounts.length > 0 && (
