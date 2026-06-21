@@ -154,6 +154,18 @@ export function OpportunitiesList({
 		[items, applied],
 	);
 
+	// Country breakdown from all items
+	const countryCounts = useMemo(() => {
+		const counts: Record<string, number> = {};
+		for (const item of items) {
+			if (!item.location) continue;
+			const parts = item.location.split(",");
+			const country = parts[parts.length - 1].trim();
+			if (country) counts[country] = (counts[country] ?? 0) + 1;
+		}
+		return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+	}, [items]);
+
 	const hero = filtered[0] ?? null;
 	const rest = filtered.slice(1);
 
@@ -280,6 +292,31 @@ export function OpportunitiesList({
 								Submit one
 							</button>
 						</section>
+
+						{/* ── Summary bar ─────────────────────────────────────────────── */}
+						{items.length > 0 && (
+							<div className="mb-5 flex flex-wrap items-center gap-2">
+								<span
+									className="font-bold text-sm"
+									style={{ color: ON_SURFACE }}
+								>
+									{items.length} active
+								</span>
+								<span style={{ color: ON_VARIANT, opacity: 0.3 }}>·</span>
+								{countryCounts.map(([country, count]) => (
+									<span
+										key={country}
+										className="rounded-full px-2.5 py-0.5 font-bold text-xs"
+										style={{
+											background: "rgba(0,0,0,0.05)",
+											color: ON_VARIANT,
+										}}
+									>
+										{country} {count}
+									</span>
+								))}
+							</div>
+						)}
 
 						<div className="mb-10 flex flex-wrap gap-2">
 							<FilterPill
