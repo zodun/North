@@ -114,8 +114,7 @@ export default async function CommunityPage() {
 
 	const { data: memberRows } = await supabase
 		.from("public_profiles")
-		.select("user_id, display_name, country, focus_area_ids")
-		.neq("user_id", user.id);
+		.select("user_id, display_name, country, focus_area_ids");
 	const members: CommunityHubMember[] = (
 		(memberRows ?? []) as {
 			user_id: string;
