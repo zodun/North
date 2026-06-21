@@ -237,7 +237,7 @@ export function MonthlyMissionView({
 							<>
 								{/* ── Hero + Today's Pulse ───────────────────────── */}
 								<section className="mt-3 mb-4 grid grid-cols-12 gap-4">
-									<div className="glass-card signal-glow relative col-span-12 flex min-h-[200px] flex-col justify-end overflow-hidden rounded-[2rem] p-5 sm:min-h-[300px] sm:p-10 md:col-span-7 lg:col-span-8">
+									<div className="glass-card signal-glow relative col-span-12 flex flex-col justify-start overflow-hidden rounded-[2rem] p-5 sm:min-h-[260px] sm:justify-end sm:p-10 md:col-span-7 lg:col-span-8">
 										<div
 											aria-hidden="true"
 											className="absolute inset-0"
@@ -248,7 +248,7 @@ export function MonthlyMissionView({
 										/>
 										<div className="relative">
 											<div
-												className="mb-5 inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-white"
+												className="mb-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-white"
 												style={{ background: PRIMARY }}
 											>
 												<span className="pulse-dot h-2 w-2 rounded-full bg-white" />
@@ -257,20 +257,20 @@ export function MonthlyMissionView({
 												</span>
 											</div>
 											<h1
-												className="mb-3 max-w-2xl font-bold text-4xl leading-tight tracking-tight sm:text-5xl"
+												className="mb-2 max-w-2xl font-bold text-2xl leading-tight tracking-tight sm:mb-3 sm:text-4xl lg:text-5xl"
 												style={{ fontFamily: SERIF }}
 											>
 												{mission.goal_title}
 											</h1>
 											{mission.goal_intent && (
 												<p
-													className="mb-7 max-w-xl text-base leading-relaxed"
+													className="mb-4 max-w-xl text-sm leading-relaxed sm:mb-7 sm:text-base"
 													style={{ color: ON_VARIANT, opacity: 0.85 }}
 												>
 													{mission.goal_intent}
 												</p>
 											)}
-											<div className="flex flex-wrap items-center gap-6">
+											<div className="flex flex-wrap items-center gap-4">
 												<button
 													type="button"
 													onClick={() => setShowGoal(true)}
@@ -314,7 +314,7 @@ export function MonthlyMissionView({
 											<CadenceToggle value={cadence} onChange={changeCadence} />
 										</div>
 										<h2
-											className="mb-5 font-bold text-2xl tracking-tight"
+											className="mb-3 font-bold text-xl tracking-tight"
 											style={{ fontFamily: SERIF }}
 										>
 											{cadence === "daily" ? "Today" : "This week"}
