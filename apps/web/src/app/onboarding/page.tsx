@@ -325,27 +325,34 @@ export default function OnboardingPage() {
 	}
 
 	async function handleComplete() {
-		if (!userId || focus.length === 0) return;
-		setSaving(true);
-		setError(null);
-		try {
-			const topFocusId = focus[0];
-			const topFocusLabel =
-				FOCUS_AREAS.find((f) => f.id === topFocusId)?.label ?? topFocusId;
-			// Signal baseline is no longer asked; seed the neutral midpoint of the
-			// 1..5 scale (3) and let the Direction Score build from real behaviour.
-			const { error: rpcErr } = await supabase.rpc("complete_onboarding", {
-				p_focus_area_id: topFocusId,
-				p_focus_area_label: topFocusLabel,
-				p_pulse_score: 3,
-			});
-			if (rpcErr) throw new Error(rpcErr.message);
-			router.replace("/for-you");
-		} catch (e) {
-			setError(e instanceof Error ? e.message : "Something went wrong.");
-		} finally {
-			setSaving(false);
+		if (!userId)
+			throw new Error("Session expired. Please refresh and try again.");
+		if (focus.length === 0)
+			throw new Error("Please go back and choose your focus areas first.");
+
+		const topFocusId = focus[0];
+		const topFocusLabel =
+			FOCUS_AREAS.find((f) => f.id === topFocusId)?.label ?? topFocusId;
+		// Signal baseline is no longer asked; seed the neutral midpoint of the
+		// 1..5 scale (3) and let the Direction Score build from real behaviour.
+		const { error: rpcErr } = await supabase.rpc("complete_onboarding", {
+			p_focus_area_id: topFocusId,
+			p_focus_area_label: topFocusLabel,
+			p_pulse_score: 3,
+		});
+
+		if (rpcErr) {
+			// RPC failed — check whether a previous attempt already set onboarded_at.
+			// If so, navigate through; otherwise surface the error.
+			const { data: profile } = await supabase
+				.from("profiles")
+				.select("onboarded_at")
+				.eq("user_id", userId)
+				.maybeSingle();
+			if (!profile?.onboarded_at) throw new Error(rpcErr.message);
 		}
+
+		router.replace("/for-you");
 	}
 
 	async function handleNext() {
@@ -359,7 +366,11 @@ export default function OnboardingPage() {
 				await handleComplete();
 			}
 		} catch (e) {
-			setError(e instanceof Error ? e.message : "Something went wrong.");
+			setError(
+				e instanceof Error
+					? e.message
+					: "Something went wrong. Please try again.",
+			);
 		} finally {
 			setSaving(false);
 		}
@@ -476,12 +487,6 @@ export default function OnboardingPage() {
 					<StepConsent consent={consent} onConsent={setConsent} />
 				)}
 
-				{error && (
-					<p className="mt-5 text-[13px] text-red-600" role="alert">
-						{error}
-					</p>
-				)}
-
 				{/* CTA */}
 				<div className="mt-8">
 					<CtaButton
@@ -503,6 +508,14 @@ export default function OnboardingPage() {
 					{step === 12 && !consent && (
 						<p className="mt-2 text-center text-[#0E1420]/50 text-[11px]">
 							You must agree to continue
+						</p>
+					)}
+					{error && (
+						<p
+							className="mt-3 text-center text-[13px] text-red-600"
+							role="alert"
+						>
+							{error}
 						</p>
 					)}
 				</div>
