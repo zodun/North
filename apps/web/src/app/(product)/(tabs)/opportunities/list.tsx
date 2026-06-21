@@ -82,6 +82,34 @@ const FOCUS_LABELS: Record<string, string> = {
 	learn: "Learning",
 };
 
+function countryFlag(name: string): string {
+	const map: Record<string, string> = {
+		Jamaica: "🇯🇲",
+		"United States": "🇺🇸",
+		USA: "🇺🇸",
+		"United Kingdom": "🇬🇧",
+		UK: "🇬🇧",
+		England: "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+		Canada: "🇨🇦",
+		Nigeria: "🇳🇬",
+		Ghana: "🇬🇭",
+		Kenya: "🇰🇪",
+		"South Africa": "🇿🇦",
+		"Trinidad and Tobago": "🇹🇹",
+		Trinidad: "🇹🇹",
+		Barbados: "🇧🇧",
+		Guyana: "🇬🇾",
+		"Cayman Islands": "🇰🇾",
+		Bermuda: "🇧🇲",
+		Remote: "🌐",
+		Global: "🌍",
+		Worldwide: "🌍",
+		International: "🌍",
+		Online: "🌐",
+	};
+	return map[name] ?? "📍";
+}
+
 function daysLeft(deadline: string | null): number | null {
 	if (!deadline) return null;
 	const t = Date.parse(deadline);
@@ -295,26 +323,55 @@ export function OpportunitiesList({
 
 						{/* ── Summary bar ─────────────────────────────────────────────── */}
 						{items.length > 0 && (
-							<div className="mb-5 flex flex-wrap items-center gap-2">
-								<span
-									className="font-bold text-sm"
-									style={{ color: ON_SURFACE }}
-								>
-									{items.length} active
-								</span>
-								<span style={{ color: ON_VARIANT, opacity: 0.3 }}>·</span>
-								{countryCounts.map(([country, count]) => (
+							<div className="glass-card mb-6 flex flex-wrap items-center gap-x-5 gap-y-3 rounded-2xl px-5 py-4">
+								{/* Big count */}
+								<div className="flex shrink-0 items-baseline gap-2">
 									<span
-										key={country}
-										className="rounded-full px-2.5 py-0.5 font-bold text-xs"
-										style={{
-											background: "rgba(0,0,0,0.05)",
-											color: ON_VARIANT,
-										}}
+										className="font-bold text-3xl leading-none"
+										style={{ fontFamily: SERIF, color: ON_SURFACE }}
 									>
-										{country} {count}
+										{items.length}
 									</span>
-								))}
+									<span
+										className="font-bold text-[10px] uppercase tracking-[0.18em]"
+										style={{ color: ON_VARIANT, opacity: 0.5 }}
+									>
+										opportunities
+									</span>
+								</div>
+
+								{/* Vertical rule */}
+								{countryCounts.length > 0 && (
+									<div className="hidden h-6 w-px shrink-0 bg-black/8 sm:block" />
+								)}
+
+								{/* Country chips */}
+								<div className="flex flex-wrap gap-2">
+									{countryCounts.map(([country, count]) => (
+										<span
+											key={country}
+											className="flex items-center gap-1.5 rounded-full px-3 py-1.5 font-bold text-[11px]"
+											style={{
+												background: "rgba(0,0,0,0.04)",
+												color: ON_VARIANT,
+											}}
+										>
+											<span className="text-sm leading-none">
+												{countryFlag(country)}
+											</span>
+											{country}
+											<span
+												className="rounded-full px-1.5 py-0.5 font-bold text-[10px]"
+												style={{
+													background: "rgba(0,90,194,0.09)",
+													color: PRIMARY,
+												}}
+											>
+												{count}
+											</span>
+										</span>
+									))}
+								</div>
 							</div>
 						)}
 
