@@ -266,6 +266,30 @@ function CalloutCard({
 	t: ReturnType<typeof getTokens>["t"];
 	onRated: (idx: number, rating: "up" | "down") => void;
 }) {
+	const [expansions, setExpansions] = useState<Record<number, string>>({});
+	const [expanding, setExpanding] = useState<Record<number, boolean>>({});
+	const [expanded, setExpanded] = useState<Record<number, boolean>>({});
+
+	async function expandCallout(idx: number, body: string, label: string) {
+		if (expanding[idx]) return;
+		if (expansions[idx]) {
+			setExpanded((prev) => ({ ...prev, [idx]: !prev[idx] }));
+			return;
+		}
+		setExpanded((prev) => ({ ...prev, [idx]: true }));
+		setExpanding((prev) => ({ ...prev, [idx]: true }));
+		try {
+			const { data } = await supabase.functions.invoke("callout-expand", {
+				body: { body, label },
+			});
+			const text =
+				data && typeof data.expansion === "string" ? data.expansion : null;
+			if (text) setExpansions((prev) => ({ ...prev, [idx]: text }));
+		} finally {
+			setExpanding((prev) => ({ ...prev, [idx]: false }));
+		}
+	}
+
 	if (callouts.length === 0) return null;
 	return (
 		<Card p={p}>
@@ -277,44 +301,99 @@ function CalloutCard({
 			>
 				SIGNAL · NOISE
 			</Text>
-			{callouts.map((callout, i) => (
-				<View
-					key={callout.label}
-					style={[{ marginBottom: i < callouts.length - 1 ? 12 : 0 }]}
-				>
+			{callouts.map((callout, i) => {
+				const isNoise = callout.label.toLowerCase().includes("noise");
+				const expandColor = isNoise ? p.warn : p.accent;
+				return (
 					<View
-						style={{ flexDirection: "row", alignItems: "flex-start", gap: 12 }}
+						key={callout.label}
+						style={[{ marginBottom: i < callouts.length - 1 ? 16 : 0 }]}
 					>
 						<View
 							style={{
-								width: 7,
-								height: 7,
-								borderRadius: 3.5,
-								backgroundColor: DOT_COLORS[i % DOT_COLORS.length],
-								marginTop: 5,
+								flexDirection: "row",
+								alignItems: "flex-start",
+								gap: 12,
 							}}
-						/>
-						<Text
-							style={[
-								styles.calloutBody,
-								{ color: p.inkMid, fontFamily: t.ui, flex: 1 },
-							]}
 						>
-							{callout.body}
-						</Text>
+							<View
+								style={{
+									width: 7,
+									height: 7,
+									borderRadius: 3.5,
+									backgroundColor: DOT_COLORS[i % DOT_COLORS.length],
+									marginTop: 5,
+								}}
+							/>
+							<Text
+								style={[
+									styles.calloutBody,
+									{ color: p.inkMid, fontFamily: t.ui, flex: 1 },
+								]}
+							>
+								{callout.body}
+							</Text>
+						</View>
+						{expanded[i] && (
+							<View
+								style={{
+									marginTop: 8,
+									marginLeft: 19,
+									paddingHorizontal: 10,
+									paddingVertical: 8,
+									borderRadius: 8,
+									borderLeftWidth: 2,
+									borderLeftColor: `${expandColor}55`,
+									backgroundColor: `${expandColor}0d`,
+								}}
+							>
+								{expanding[i] ? (
+									<ActivityIndicator size="small" color={expandColor} />
+								) : expansions[i] ? (
+									<Text
+										style={{
+											fontSize: 12,
+											lineHeight: 18,
+											color: p.inkMid,
+											fontFamily: t.ui,
+										}}
+									>
+										{expansions[i]}
+									</Text>
+								) : null}
+							</View>
+						)}
+						<View style={{ paddingLeft: 19, marginTop: 6 }}>
+							<TouchableOpacity
+								onPress={() =>
+									void expandCallout(i, callout.body, callout.label)
+								}
+								hitSlop={8}
+							>
+								<Text
+									style={{
+										fontSize: 11,
+										fontWeight: "600",
+										color: expandColor,
+										fontFamily: t.ui,
+										marginBottom: 4,
+									}}
+								>
+									{expanded[i] ? "Show less" : "Read more"}
+								</Text>
+							</TouchableOpacity>
+							<ThumbsRow
+								calloutIdx={i}
+								weekEnding={weekEnding}
+								currentRating={ratings[i]}
+								p={p}
+								t={t}
+								onRated={onRated}
+							/>
+						</View>
 					</View>
-					<View style={{ paddingLeft: 19 }}>
-						<ThumbsRow
-							calloutIdx={i}
-							weekEnding={weekEnding}
-							currentRating={ratings[i]}
-							p={p}
-							t={t}
-							onRated={onRated}
-						/>
-					</View>
-				</View>
-			))}
+				);
+			})}
 		</Card>
 	);
 }

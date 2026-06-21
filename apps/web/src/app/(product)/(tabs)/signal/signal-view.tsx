@@ -103,6 +103,33 @@ export function SignalView({
 	const [ratings, setRatings] =
 		useState<Record<number, "up" | "down">>(initialRatings);
 	const [ratingSaving, setRatingSaving] = useState<Record<number, boolean>>({});
+	const [expansions, setExpansions] = useState<Record<number, string>>({});
+	const [expanding, setExpanding] = useState<Record<number, boolean>>({});
+	const [expanded, setExpanded] = useState<Record<number, boolean>>({});
+
+	async function expandCallout(o: Observation) {
+		if (expanding[o.idx]) return;
+		if (expansions[o.idx]) {
+			setExpanded((prev) => ({ ...prev, [o.idx]: !prev[o.idx] }));
+			return;
+		}
+		setExpanded((prev) => ({ ...prev, [o.idx]: true }));
+		setExpanding((prev) => ({ ...prev, [o.idx]: true }));
+		try {
+			const { data } = await supabase.functions.invoke("callout-expand", {
+				body: {
+					body: o.body,
+					label: o.type,
+					journalBody: lastJournal?.body ?? undefined,
+				},
+			});
+			const text =
+				data && typeof data.expansion === "string" ? data.expansion : null;
+			if (text) setExpansions((prev) => ({ ...prev, [o.idx]: text }));
+		} finally {
+			setExpanding((prev) => ({ ...prev, [o.idx]: false }));
+		}
+	}
 
 	async function rate(idx: number, rating: "up" | "down") {
 		if (ratingSaving[idx] || !weekEnding) return;
@@ -258,9 +285,52 @@ export function SignalView({
 							{isSignal ? <ThumbsUp size={11} /> : <ThumbsDown size={11} />}
 							<span>{isSignal ? "Signal" : "Noise"}</span>
 						</div>
-						<p className="mb-3 font-medium text-[#0E1420]/80 text-[12px] leading-[1.5]">
+						<p className="mb-2 font-medium text-[#0E1420]/80 text-[12px] leading-[1.5]">
 							{o.body}
 						</p>
+						{expanded[o.idx] && (
+							<div
+								className="mb-2 rounded-[10px] px-3 py-2.5"
+								style={{
+									background: isSignal
+										? "rgba(62,207,191,0.07)"
+										: "rgba(239,68,68,0.06)",
+									borderLeft: `2px solid ${isSignal ? "rgba(62,207,191,0.4)" : "rgba(239,68,68,0.3)"}`,
+								}}
+							>
+								{expanding[o.idx] ? (
+									<div className="flex items-center gap-2">
+										<span
+											className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"
+											style={{ color: accentInk, opacity: 0.5 }}
+										/>
+										<span
+											className="font-medium text-[11px]"
+											style={{ color: accentInk, opacity: 0.6 }}
+										>
+											Thinking...
+										</span>
+									</div>
+								) : expansions[o.idx] ? (
+									<p
+										className="font-medium text-[11px] leading-[1.6]"
+										style={{ color: isSignal ? TEAL_INK : RED_INK }}
+									>
+										{expansions[o.idx]}
+									</p>
+								) : null}
+							</div>
+						)}
+						<div className="mb-3 flex items-center gap-3">
+							<button
+								type="button"
+								onClick={() => void expandCallout(o)}
+								className="font-semibold text-[11px] transition-opacity hover:opacity-70"
+								style={{ color: accentInk }}
+							>
+								{expanded[o.idx] ? "Show less" : "Read more"}
+							</button>
+						</div>
 						<div className="flex gap-2">
 							<FeedbackButton
 								active={current === "up"}
