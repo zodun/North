@@ -26,6 +26,12 @@ const portal = env.POLAR_ACCESS_TOKEN
 	: null;
 
 export async function GET(req: NextRequest) {
+	if (!env.POLAR_ACCESS_TOKEN) {
+		return NextResponse.json(
+			{ error: "POLAR_ACCESS_TOKEN is not configured" },
+			{ status: 503 },
+		);
+	}
 	if (!portal) {
 		return NextResponse.json(
 			{ error: "billing is not configured" },

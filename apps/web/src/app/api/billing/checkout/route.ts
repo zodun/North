@@ -18,7 +18,19 @@ const checkout = env.POLAR_ACCESS_TOKEN
 	: null;
 
 export async function GET(req: NextRequest) {
-	if (!checkout || !env.POLAR_PRODUCT_ID) {
+	if (!env.POLAR_ACCESS_TOKEN) {
+		return NextResponse.json(
+			{ error: "POLAR_ACCESS_TOKEN is not configured" },
+			{ status: 503 },
+		);
+	}
+	if (!env.POLAR_PRODUCT_ID) {
+		return NextResponse.json(
+			{ error: "POLAR_PRODUCT_ID is not configured" },
+			{ status: 503 },
+		);
+	}
+	if (!checkout) {
 		return NextResponse.json(
 			{ error: "billing is not configured" },
 			{ status: 503 },

@@ -40,7 +40,8 @@ export async function proxy(request: NextRequest) {
 	if (
 		pathname.startsWith("/api/img") ||
 		pathname.startsWith("/api/og-image") ||
-		pathname.startsWith("/api/cover")
+		pathname.startsWith("/api/cover") ||
+		pathname === "/api/billing/webhook"
 	) {
 		return response;
 	}
