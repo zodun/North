@@ -67,10 +67,9 @@ export default async function MissionPage() {
 	const cadence =
 		profileRes.data?.mission_cadence === "weekly" ? "weekly" : "daily";
 
-	// The week the user is actually on follows progress, not the calendar: steps
-	// unlock one at a time, so the active step is the FIRST undone day. A fresh
-	// mission opens on week 1 and only advances as steps get completed. (Once the
-	// whole plan is done, fall back to the last step.)
+	// currentWeekIndex follows the calendar: today's task determines the week.
+	// If there's no task for today (e.g. mid-month goal set), fall back to the
+	// first undone step's week so the user always lands on actionable content.
 	const dailySteps = (
 		(steps ?? []) as {
 			cadence: string;
@@ -79,11 +78,14 @@ export default async function MissionPage() {
 			done: boolean;
 		}[]
 	).filter((s) => s.cadence === "daily");
-	const activeStep =
-		dailySteps.find((s) => !s.done) ??
-		dailySteps[dailySteps.length - 1] ??
-		dailySteps[0];
-	const currentWeekIndex = mission ? (activeStep?.week_index ?? 0) : 0;
+	const todayStep = dailySteps.find((s) => s.due_date === today);
+	const firstUndoneStep = dailySteps.find((s) => !s.done);
+	const currentWeekIndex = mission
+		? (todayStep?.week_index ??
+			firstUndoneStep?.week_index ??
+			dailySteps[dailySteps.length - 1]?.week_index ??
+			0)
+		: 0;
 
 	// Prompt the user to author their own goal when this month's mission is
 	// still the seeded template and they haven't dismissed the prompt this month.

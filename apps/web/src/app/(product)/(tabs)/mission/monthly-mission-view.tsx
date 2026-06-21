@@ -154,8 +154,8 @@ export function MonthlyMissionView({
 	const firstUndoneIdx = weekDays.findIndex((s) => !s.done);
 	const focalStep =
 		cadence === "daily"
-			? (weekDays[firstUndoneIdx] ??
-				weekDays.find((s) => s.due_date === today) ??
+			? (weekDays.find((s) => s.due_date === today) ??
+				weekDays[firstUndoneIdx] ??
 				weekDays[weekDays.length - 1] ??
 				null)
 			: (weekly.find((s) => s.week_index === currentWeekIndex) ?? null);
