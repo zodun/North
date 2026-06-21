@@ -23,6 +23,19 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
+	// Vercel Cron sends Authorization: Bearer <CRON_SECRET>; the admin can also
+	// pass ?secret=<CRON_SECRET> manually. Both are accepted.
+	const cronSecret = process.env.CRON_SECRET;
+	if (cronSecret) {
+		const authHeader = request.headers.get("authorization");
+		const querySecret = new URL(request.url).searchParams.get("secret");
+		const valid =
+			authHeader === `Bearer ${cronSecret}` || querySecret === cronSecret;
+		if (!valid) {
+			return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+		}
+	}
+
 	const { searchParams } = new URL(request.url);
 	const categories = resolveSourceCategories(searchParams.get("focusAreas"));
 	const force = searchParams.get("force") === "1";
