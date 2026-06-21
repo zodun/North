@@ -145,7 +145,7 @@ export function MonthlyMissionView({
 	const tasksDone = weekDays.filter((s) => s.done).length;
 	const tasksTotal = weekDays.length;
 	const tasksPct = tasksTotal ? Math.round((tasksDone / tasksTotal) * 100) : 0;
-	const daysLeft = weekDays.filter((s) => (s.due_date ?? "") >= today).length;
+	const _daysLeft = weekDays.filter((s) => (s.due_date ?? "") >= today).length;
 	const streak = streakState != null ? computeStreak(daily, today) : 0;
 
 	// Daily steps unlock one at a time: the active step is the FIRST undone day
@@ -389,14 +389,12 @@ export function MonthlyMissionView({
 																>
 																	{focalStep.title}
 																</span>
-																{(focalStep.detail ||
-																	focalStep.estimate_label) && (
+																{focalStep.estimate_label && (
 																	<span
-																		className="mt-1 block text-sm leading-relaxed"
-																		style={{ color: ON_VARIANT, opacity: 0.8 }}
+																		className="mt-1.5 block font-bold text-[10px] uppercase tracking-wider"
+																		style={{ color: ON_VARIANT, opacity: 0.45 }}
 																	>
-																		{focalStep.detail ??
-																			focalStep.estimate_label}
+																		{focalStep.estimate_label}
 																	</span>
 																)}
 															</span>
@@ -418,30 +416,13 @@ export function MonthlyMissionView({
 													{encouragement}
 												</p>
 
-												{cadence === "daily" && weekDays.length > 0 && (
-													<div className="mt-4 border-black/5 border-t pt-3">
-														<div className="mb-1.5 flex items-center gap-1.5">
-															{weekDays.map((s) => (
-																<div
-																	key={s.id}
-																	className="h-1.5 flex-1 rounded-full transition-all duration-500"
-																	style={{
-																		background: s.done
-																			? PRIMARY
-																			: s.id === focalStep?.id
-																				? "rgba(0,90,194,0.3)"
-																				: "rgba(0,0,0,0.07)",
-																	}}
-																/>
-															))}
-														</div>
-														<p
-															className="font-bold text-[10px] uppercase tracking-widest"
-															style={{ color: ON_VARIANT, opacity: 0.5 }}
-														>
-															{tasksDone}/{tasksTotal} tasks this week
-														</p>
-													</div>
+												{cadence === "daily" && tasksTotal > 0 && (
+													<p
+														className="mt-3 font-bold text-[10px] uppercase tracking-widest"
+														style={{ color: ON_VARIANT, opacity: 0.45 }}
+													>
+														{tasksDone}/{tasksTotal} this week
+													</p>
 												)}
 											</div>
 										</div>
