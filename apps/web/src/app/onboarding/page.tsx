@@ -352,7 +352,9 @@ export default function OnboardingPage() {
 			if (!profile?.onboarded_at) throw new Error(rpcErr.message);
 		}
 
-		router.replace("/for-you");
+		// Hard navigation so a stale service worker or router state can't
+		// intercept and silently drop the redirect.
+		window.location.replace("/for-you");
 	}
 
 	async function handleNext() {
