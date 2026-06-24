@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { supabase } from "@/lib/auth-client";
 
-type Mode = "password" | "magic" | "signup";
+type Mode = "password" | "signup";
 
 // ── Light "Collective" form on a white panel (paired with the dark photo side) ─
 
@@ -102,14 +102,8 @@ export function ProductSignIn({ initialMode }: { initialMode?: Mode }) {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [showPassword, setShowPassword] = useState(false);
-	const [sent, setSent] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-
-	const redirectTo =
-		typeof window !== "undefined"
-			? `${window.location.origin}/auth/callback`
-			: undefined;
 
 	const handlePassword = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -125,22 +119,6 @@ export function ProductSignIn({ initialMode }: { initialMode?: Mode }) {
 			return;
 		}
 		router.push("/for-you");
-	};
-
-	const handleMagicLink = async (e: React.FormEvent) => {
-		e.preventDefault();
-		setError(null);
-		setLoading(true);
-		const { error } = await supabase.auth.signInWithOtp({
-			email,
-			options: { emailRedirectTo: redirectTo },
-		});
-		setLoading(false);
-		if (error) {
-			setError(error.message);
-			return;
-		}
-		setSent(true);
 	};
 
 	const handleSignUp = async (e: React.FormEvent) => {
@@ -176,90 +154,6 @@ export function ProductSignIn({ initialMode }: { initialMode?: Mode }) {
 			{error}
 		</p>
 	) : null;
-
-	// ── Sent state ───────────────────────────────────────────────────────────
-	if (sent) {
-		return (
-			<div className="text-center">
-				<div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#005ac2]/10">
-					<svg
-						width="24"
-						height="24"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="#005ac2"
-						strokeWidth={2}
-						strokeLinecap="round"
-						strokeLinejoin="round"
-						aria-hidden="true"
-					>
-						<rect x="2" y="4" width="20" height="16" rx="2" />
-						<path d="M2 7l10 7 10-7" />
-					</svg>
-				</div>
-				<p className="font-bold text-[#0E1420] text-[18px]">Check your email</p>
-				<p className="mt-1.5 text-[#0E1420]/65 text-[14px]">
-					Magic link sent to <span className="text-[#0E1420]">{email}</span>
-				</p>
-				<button
-					type="button"
-					onClick={() => {
-						setSent(false);
-						switchMode("password");
-					}}
-					className="mt-6 cursor-pointer font-semibold text-[#0E1420]/60 text-[13px] transition-colors hover:text-[#0E1420]"
-				>
-					Back to sign in
-				</button>
-			</div>
-		);
-	}
-
-	// ── Magic link mode ──────────────────────────────────────────────────────
-	if (mode === "magic") {
-		return (
-			<div>
-				<span className={eyebrowCls}>Passwordless</span>
-				<h2 className={headingCls} style={{ fontFamily: SERIF }}>
-					Magic link
-				</h2>
-				<form onSubmit={handleMagicLink} className="mt-8 space-y-6">
-					<div>
-						<label htmlFor="magic-email" className={labelCls}>
-							Email
-						</label>
-						<input
-							id="magic-email"
-							type="email"
-							required
-							autoComplete="email"
-							placeholder="you@example.com"
-							value={email}
-							onChange={(e) => setEmail(e.target.value)}
-							className={inputCls}
-						/>
-					</div>
-					{errorBox}
-					<button
-						type="submit"
-						disabled={loading}
-						className={primaryBtnCls}
-						style={primaryBtnStyle}
-					>
-						{loading ? "Sending…" : "Send magic link"}
-						<ArrowIcon />
-					</button>
-				</form>
-				<button
-					type="button"
-					onClick={() => switchMode("password")}
-					className="mt-6 w-full cursor-pointer text-center font-semibold text-[#0E1420]/60 text-[13px] transition-colors hover:text-[#0E1420]"
-				>
-					Sign in with a password instead
-				</button>
-			</div>
-		);
-	}
 
 	// ── Sign-up mode (the "Collective" form) ─────────────────────────────────
 	if (mode === "signup") {
@@ -420,13 +314,6 @@ export function ProductSignIn({ initialMode }: { initialMode?: Mode }) {
 						Join the Collective
 					</button>
 				</p>
-				<button
-					type="button"
-					onClick={() => switchMode("magic")}
-					className="mt-2 cursor-pointer font-medium text-[#0E1420]/45 text-[13px] transition-colors hover:text-[#0E1420]/80"
-				>
-					Use a magic link instead
-				</button>
 			</div>
 		</div>
 	);
