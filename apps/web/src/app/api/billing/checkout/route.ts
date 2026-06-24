@@ -1,36 +1,18 @@
 // Premium checkout (BILLING-01).
-// Starts a Polar Checkout for the signed-in user. We inject the identity
-// server-side, `customerExternalId = user.id`, so the webhook can map the
-// resulting subscription back to the right account (never trust a client-set id).
+// Starts a Polar Checkout for the signed-in user. We call the Polar SDK
+// directly rather than using the @polar-sh/nextjs Checkout() adapter, because
+// the adapter's catch block returns NextResponse.error() (status 0) which
+// causes Node.js to crash with "RangeError: Invalid status code: 0".
 
 import { env } from "@north/env/server";
-import { Checkout } from "@polar-sh/nextjs";
-import { NextRequest, NextResponse } from "next/server";
+import { Polar } from "@polar-sh/sdk";
+import { type NextRequest, NextResponse } from "next/server";
 import { getServerSupabase } from "@/lib/supabase-server";
 
-const checkout = env.POLAR_ACCESS_TOKEN
-	? Checkout({
-			accessToken: env.POLAR_ACCESS_TOKEN,
-			successUrl: env.POLAR_SUCCESS_URL,
-			server: env.POLAR_SERVER,
-			theme: "dark",
-		})
-	: null;
+export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
-	if (!env.POLAR_ACCESS_TOKEN) {
-		return NextResponse.json(
-			{ error: "POLAR_ACCESS_TOKEN is not configured" },
-			{ status: 503 },
-		);
-	}
-	if (!env.POLAR_PRODUCT_ID) {
-		return NextResponse.json(
-			{ error: "POLAR_PRODUCT_ID is not configured" },
-			{ status: 503 },
-		);
-	}
-	if (!checkout) {
+	if (!env.POLAR_ACCESS_TOKEN || !env.POLAR_PRODUCT_ID) {
 		return NextResponse.json(
 			{ error: "billing is not configured" },
 			{ status: 503 },
@@ -45,11 +27,36 @@ export async function GET(req: NextRequest) {
 		return NextResponse.redirect(new URL("/sign-in", req.url));
 	}
 
-	// Bind the checkout to the authenticated user + the premium product.
-	const url = new URL(req.url);
-	url.searchParams.set("products", env.POLAR_PRODUCT_ID);
-	url.searchParams.set("customerExternalId", user.id);
-	if (user.email) url.searchParams.set("customerEmail", user.email);
+	const polar = new Polar({
+		accessToken: env.POLAR_ACCESS_TOKEN,
+		server: env.POLAR_SERVER,
+	});
 
-	return checkout(new NextRequest(url, { headers: req.headers }));
+	// Build successUrl with the checkout ID placeholder Polar substitutes.
+	let successUrl: string | undefined;
+	if (env.POLAR_SUCCESS_URL) {
+		const u = new URL(env.POLAR_SUCCESS_URL);
+		u.searchParams.set("checkoutId", "{CHECKOUT_ID}");
+		successUrl = decodeURI(u.toString());
+	}
+
+	try {
+		const checkout = await polar.checkouts.create({
+			products: [env.POLAR_PRODUCT_ID],
+			externalCustomerId: user.id,
+			customerEmail: user.email ?? undefined,
+			successUrl,
+		});
+
+		const redirectUrl = new URL(checkout.url);
+		redirectUrl.searchParams.set("theme", "dark");
+		return NextResponse.redirect(redirectUrl.toString());
+	} catch (err) {
+		const message = err instanceof Error ? err.message : String(err);
+		console.error("polar checkout error:", message);
+		return NextResponse.json(
+			{ error: "checkout unavailable", detail: message },
+			{ status: 502 },
+		);
+	}
 }
