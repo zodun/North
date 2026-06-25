@@ -366,9 +366,13 @@ export default function OnboardingPage() {
 			if (!profile?.onboarded_at) throw new Error(rpcErr.message);
 		}
 
+		// Guided first action: land on Mission, not the passive feed, so the
+		// very first thing after signup is setting a goal. Mission auto-opens the
+		// goal prompt (seeded template) or shows the teaching empty state, so the
+		// core loop clicks by doing rather than by reading a feed.
 		// Hard navigation so a stale service worker or router state can't
 		// intercept and silently drop the redirect.
-		window.location.replace("/for-you");
+		window.location.replace("/mission");
 	}
 
 	async function handleNext() {
