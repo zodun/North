@@ -815,27 +815,58 @@ function Ring({ pct, center }: { pct: number; center: string }) {
 }
 
 function EmptyState({ onSet }: { onSet: () => void }) {
+	// The Mission loop, named as a real sequence so the numbers carry meaning.
+	const steps = [
+		"Set one goal for this month",
+		"North splits it into 4 weekly steps",
+		"Do one small move each day",
+	];
 	return (
-		<div className="glass-card mt-10 rounded-[2rem] p-14 text-center">
+		<div className="glass-card mt-10 rounded-[2rem] p-8 text-center sm:p-12">
 			<span
 				className="material-symbols-outlined text-5xl"
 				style={{ color: PRIMARY, opacity: 0.35 }}
 			>
 				target
 			</span>
-			<p className="mt-3 font-bold text-2xl" style={{ fontFamily: SERIF }}>
-				No goal yet
+			<p
+				className="mt-4 font-bold text-[11px] uppercase tracking-[0.22em]"
+				style={{ color: PRIMARY }}
+			>
+				Mission
+			</p>
+			<p className="mt-2 font-bold text-2xl" style={{ fontFamily: SERIF }}>
+				Turn one goal into daily motion
 			</p>
 			<p
-				className="mx-auto mt-1 max-w-sm text-sm"
-				style={{ color: ON_VARIANT, opacity: 0.7 }}
+				className="mx-auto mt-2 max-w-sm text-sm leading-relaxed"
+				style={{ color: ON_VARIANT }}
 			>
-				Set one goal for the month and North breaks it into weekly steps.
+				Pick a single goal for the month. North breaks it down so there's always
+				one small, doable move in front of you.
 			</p>
+			<ol className="mx-auto mt-7 flex max-w-xs flex-col gap-2.5 text-left">
+				{steps.map((step, i) => (
+					<li
+						key={step}
+						className="flex items-center gap-3 text-sm"
+						style={{ color: ON_SURFACE }}
+					>
+						<span
+							className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-bold text-[12px] text-white"
+							style={{ background: PRIMARY }}
+							aria-hidden="true"
+						>
+							{i + 1}
+						</span>
+						{step}
+					</li>
+				))}
+			</ol>
 			<button
 				type="button"
 				onClick={onSet}
-				className="mt-6 rounded-xl px-7 py-3 font-bold text-sm text-white uppercase tracking-wider"
+				className="mt-8 rounded-xl px-7 py-3 font-bold text-sm text-white uppercase tracking-wider"
 				style={{ background: PRIMARY }}
 			>
 				Set your goal

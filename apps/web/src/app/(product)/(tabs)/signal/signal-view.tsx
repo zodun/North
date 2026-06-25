@@ -261,9 +261,26 @@ export function SignalView({
 					)}
 				</section>
 			) : (
-				<div className="mb-3 rounded-[18px] border border-[#0E1420]/10 bg-white p-4 text-center">
-					<p className="text-[#0E1420]/65 text-[13px]">
-						Your Direction Score appears after your first full week.
+				<div className="mb-3 rounded-[18px] border border-[#0E1420]/10 bg-white p-5 text-center">
+					<p
+						className="font-bold text-[10px] uppercase tracking-[0.18em]"
+						style={{ color: TEAL_INK }}
+					>
+						Direction Score
+					</p>
+					<p className="mt-1.5 font-black text-[#0E1420] text-[17px]">
+						Your honest mirror, 0 to 100
+					</p>
+					<p className="mx-auto mt-1.5 max-w-xs text-[#0E1420]/75 text-[13px] leading-relaxed">
+						It reflects how your real activity lines up with your goals, never a
+						vanity number. Your score appears after your first full week of
+						reflecting.
+					</p>
+					<p className="mt-3 text-[#0E1420]/65 text-[12px]">
+						Start below: write a line about your day and North separates the{" "}
+						<span style={{ color: TEAL_INK, fontWeight: 700 }}>signal</span>{" "}
+						from the{" "}
+						<span style={{ color: RED_INK, fontWeight: 700 }}>noise</span>.
 					</p>
 				</div>
 			)}

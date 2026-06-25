@@ -475,10 +475,17 @@ export function ProfileView({
 							{savedCount === 0 ? (
 								<p
 									className="text-sm leading-relaxed"
-									style={{ color: ON_VARIANT, opacity: 0.7 }}
+									style={{ color: ON_VARIANT }}
 								>
-									Nothing saved yet. Tap the bookmark on an opportunity to keep
-									it here.
+									Bookmark an opportunity and it lands here, so the moves you're
+									weighing stay in one place.{" "}
+									<a
+										href="/opportunities"
+										className="font-bold"
+										style={{ color: PRIMARY }}
+									>
+										Browse opportunities
+									</a>
 								</p>
 							) : (
 								<div className="grid gap-3 sm:grid-cols-2">

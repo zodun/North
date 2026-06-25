@@ -1037,21 +1037,31 @@ function TopBar() {
 
 function EmptyState() {
 	return (
-		<div className="mt-20 flex flex-col items-center text-center">
+		<div className="mt-20 flex flex-col items-center px-6 text-center">
 			<span
 				className="material-symbols-outlined text-6xl"
-				style={{ color: PRIMARY, opacity: 0.25 }}
+				style={{ color: PRIMARY, opacity: 0.3 }}
 			>
 				explore
 			</span>
 			<p
-				className="mt-4 font-bold text-lg"
-				style={{ color: "rgba(19,19,19,0.4)", fontFamily: SERIF }}
+				className="mt-4 font-bold text-[11px] uppercase tracking-[0.22em]"
+				style={{ color: PRIMARY }}
 			>
-				Nothing here yet
+				For You
 			</p>
-			<p className="mt-1 text-sm" style={{ color: "rgba(19,19,19,0.25)" }}>
-				Your personalised feed is building.
+			<p
+				className="mt-2 font-bold text-xl"
+				style={{ color: ON_SURFACE, fontFamily: SERIF }}
+			>
+				Content that points somewhere
+			</p>
+			<p
+				className="mt-2 max-w-xs text-sm leading-relaxed"
+				style={{ color: ON_VARIANT }}
+			>
+				A calm feed matched to your focus, never built to fill time. It sharpens
+				as you save what fits and skip what doesn't.
 			</p>
 		</div>
 	);

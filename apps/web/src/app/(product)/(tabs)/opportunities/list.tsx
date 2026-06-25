@@ -1192,27 +1192,34 @@ function UpgradeNote({ count }: { count: number }) {
 
 function EmptyState({ onSubmit }: { onSubmit: () => void }) {
 	return (
-		<div className="glass-card rounded-[2rem] p-14 text-center">
+		<div className="glass-card rounded-[2rem] p-8 text-center sm:p-12">
 			<span
 				className="material-symbols-outlined text-5xl"
 				style={{ color: PRIMARY, opacity: 0.35 }}
 			>
 				travel_explore
 			</span>
-			<p className="mt-3 font-bold text-2xl" style={{ fontFamily: SERIF }}>
-				Nothing matches yet
+			<p
+				className="mt-4 font-bold text-[11px] uppercase tracking-[0.22em]"
+				style={{ color: PRIMARY }}
+			>
+				Opportunities
+			</p>
+			<p className="mt-2 font-bold text-2xl" style={{ fontFamily: SERIF }}>
+				Turn clarity into concrete moves
 			</p>
 			<p
-				className="mx-auto mt-1 max-w-sm text-sm"
-				style={{ color: ON_VARIANT, opacity: 0.8 }}
+				className="mx-auto mt-2 max-w-sm text-sm leading-relaxed"
+				style={{ color: ON_VARIANT }}
 			>
-				Try a different filter or search, or submit an opportunity you know
-				about.
+				Jobs, scholarships, internships, grants and accelerators, ranked to your
+				focus areas. Nothing fits your current filter, so clear it to see more,
+				or add one you know about.
 			</p>
 			<button
 				type="button"
 				onClick={onSubmit}
-				className="mt-6 rounded-xl px-7 py-3 font-bold text-sm text-white uppercase tracking-wider"
+				className="mt-7 rounded-xl px-7 py-3 font-bold text-sm text-white uppercase tracking-wider"
 				style={{ background: PRIMARY }}
 			>
 				Submit an opportunity
