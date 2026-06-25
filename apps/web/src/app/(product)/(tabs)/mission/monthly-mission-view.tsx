@@ -107,7 +107,11 @@ export function MonthlyMissionView({
 	const [mission, setMission] = useState(initialMission);
 	const [steps, setSteps] = useState(initialSteps);
 	const [cadence, setCadence] = useState(initialCadence);
-	const [showGoal, setShowGoal] = useState(promptGoal);
+	// Goal-setting is never forced open. `promptGoal` (a fresh, still-template
+	// goal not yet dismissed this month) shows a calm, dismissible nudge instead;
+	// the modal only opens on an explicit tap.
+	const [showGoal, setShowGoal] = useState(false);
+	const [nudge, setNudge] = useState(promptGoal);
 
 	const name = firstName && firstName !== "there" ? firstName : null;
 	const tail = name ? `, ${name}` : "";
@@ -117,6 +121,21 @@ export function MonthlyMissionView({
 		setSteps(result.steps);
 		setCadence(result.cadence);
 		setShowGoal(false);
+		setNudge(false);
+	}
+
+	// Quietly remember the nudge was waved off, so it doesn't reappear this month.
+	async function dismissNudge() {
+		setNudge(false);
+		const {
+			data: { user },
+		} = await supabase.auth.getUser();
+		if (user && mission) {
+			await supabase
+				.from("profiles")
+				.update({ goal_prompt_dismissed_month: mission.month_start })
+				.eq("user_id", user.id);
+		}
 	}
 
 	const daily = useMemo(
@@ -234,6 +253,51 @@ export function MonthlyMissionView({
 							<EmptyState onSet={() => setShowGoal(true)} />
 						) : (
 							<>
+								{/* ── Gentle goal nudge (never a forced modal) ───── */}
+								{nudge && (
+									<div className="mt-4 flex flex-col gap-3 rounded-2xl border border-[#005ac2]/15 bg-[#005ac2]/[0.04] p-4 sm:flex-row sm:items-center sm:justify-between">
+										<div className="flex items-start gap-3">
+											<span
+												className="material-symbols-outlined text-xl"
+												style={{ color: PRIMARY }}
+												aria-hidden="true"
+											>
+												flag
+											</span>
+											<p
+												className="text-sm leading-relaxed"
+												style={{ color: ON_SURFACE }}
+											>
+												<span className="font-bold">
+													This is a starter goal.
+												</span>{" "}
+												<span style={{ color: ON_VARIANT }}>
+													Set one that's truly yours whenever you're ready, no
+													rush.
+												</span>
+											</p>
+										</div>
+										<div className="flex shrink-0 items-center gap-1.5">
+											<button
+												type="button"
+												onClick={() => setShowGoal(true)}
+												className="rounded-xl px-4 py-2 font-bold text-sm text-white"
+												style={{ background: PRIMARY }}
+											>
+												Set your goal
+											</button>
+											<button
+												type="button"
+												onClick={() => void dismissNudge()}
+												className="rounded-xl px-3 py-2 font-semibold text-sm"
+												style={{ color: ON_VARIANT }}
+											>
+												Maybe later
+											</button>
+										</div>
+									</div>
+								)}
+
 								{/* ── Greeting ───────────────────────────────────── */}
 								<div className="mt-4 mb-3">
 									<h1
@@ -634,7 +698,10 @@ export function MonthlyMissionView({
 					initialGoal={mission.goal_title}
 					initialIntent={mission.goal_intent ?? ""}
 					autosuggest={isTemplate}
-					onDismiss={() => setShowGoal(false)}
+					onDismiss={() => {
+						setShowGoal(false);
+						setNudge(false);
+					}}
 					onGoalSet={handleGoalSet}
 				/>
 			)}
