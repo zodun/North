@@ -191,11 +191,15 @@ function useArticleImage(item: Item, categoryLabel: string | null) {
 		id: item.id,
 		category: categoryLabel ?? item.eyebrow,
 	});
-	const yt = item.external_url ? youtubeThumbnail(item.external_url) : null;
-	const canFetch = !item.thumbnail_url && !yt && Boolean(item.external_url);
+	// Treat blank/whitespace as absent: the DB stores empty-string thumbnails for
+	// imageless rows, and `??` would let "" through (→ <img src=""> blank card).
+	const thumb = item.thumbnail_url?.trim() || null;
+	const ext = item.external_url?.trim() || null;
+	const yt = ext ? youtubeThumbnail(ext) : null;
+	const canFetch = !thumb && !yt && Boolean(ext);
 	// Always start with fallback so every card shows art immediately; OG fetch
 	// replaces it when it resolves.
-	const initial = item.thumbnail_url ?? yt ?? fallback;
+	const initial = thumb ?? yt ?? fallback;
 	const [src, setSrc] = useState<string | null>(initial);
 	const [phase, setPhase] = useState<"have" | "idle" | "loading" | "done">(
 		canFetch ? "idle" : "have",
@@ -212,12 +216,9 @@ function useArticleImage(item: Item, categoryLabel: string | null) {
 				if (!entries.some((e) => e.isIntersecting)) return;
 				io.disconnect();
 				setPhase("loading");
-				fetch(
-					`/api/og-image?url=${encodeURIComponent(item.external_url ?? "")}`,
-					{
-						signal: ctrl.signal,
-					},
-				)
+				fetch(`/api/og-image?url=${encodeURIComponent(ext ?? "")}`, {
+					signal: ctrl.signal,
+				})
 					.then((r) =>
 						r.ok && r.headers.get("content-type")?.includes("json")
 							? r.json()
@@ -236,7 +237,7 @@ function useArticleImage(item: Item, categoryLabel: string | null) {
 			io.disconnect();
 			ctrl.abort();
 		};
-	}, [canFetch, phase, item.external_url, fallback]);
+	}, [canFetch, phase, ext, fallback]);
 
 	const onError = useCallback(() => {
 		setSrc((cur) => {
