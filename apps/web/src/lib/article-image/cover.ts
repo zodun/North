@@ -13,17 +13,22 @@
 
 // ── Category palette (mirrors the feed's CAT_STYLES) ─────────────────────────
 type Palette = { accent: string; from: string; mid: string; to: string };
+// Each palette runs from a saturated accent tint at the TOP (where the compass
+// lives and the card image actually shows) down to the cool Soft Sky base
+// (#EDF1F8) at the bottom (washed by the card's text gradient). This keeps the
+// art unmistakably *coloured* and intentional — never a muddy near-white box —
+// while still sitting inside North's calm light field.
 const PALETTES: Record<string, Palette> = {
-	career: { accent: "#F5C842", from: "#FFF8E0", mid: "#FFF3C4", to: "#FFFBF0" },
+	career: { accent: "#F5C842", from: "#F3CF63", mid: "#F8E29C", to: "#EDF1F8" },
 	mindset: {
 		accent: "#7B61FF",
-		from: "#F3E8FF",
-		mid: "#EDD5FF",
-		to: "#FAF0FF",
+		from: "#B7A4FF",
+		mid: "#DBCEFF",
+		to: "#EDF1F8",
 	},
-	money: { accent: "#3ECFBF", from: "#E0FBF8", mid: "#C8F7F2", to: "#F0FFFE" },
-	skills: { accent: "#D4522A", from: "#FFF0EE", mid: "#FFE0DA", to: "#FFF5F4" },
-	health: { accent: "#2E9E5B", from: "#EDFFF4", mid: "#D4FFE4", to: "#F0FFF6" },
+	money: { accent: "#3ECFBF", from: "#6FE0D2", mid: "#BCF1EB", to: "#EDF1F8" },
+	skills: { accent: "#D4522A", from: "#F0926E", mid: "#F9C7B4", to: "#EDF1F8" },
+	health: { accent: "#2E9E5B", from: "#74C994", mid: "#BDE9CD", to: "#EDF1F8" },
 };
 const GOLD = "#F5C842";
 
@@ -95,30 +100,32 @@ export function renderCoverSvg(catRaw: string, seedRaw: string): string {
 	const ty = cy - Math.sin(angle) * needleLen * 0.32;
 
 	// Topographic rings, concentric, accent stroke, opacity ramping outward.
+	// Bolder than a hairline: thicker stroke + a higher starting opacity so the
+	// compass reads as deliberate cartography, not a faint watermark.
 	const ringCount = 7 + Math.floor(rnd() * 4);
 	const ringStep = Math.min(W, H) * 0.072 + rnd() * 26;
 	let rings = "";
 	for (let i = 1; i <= ringCount; i++) {
 		const r = i * ringStep;
-		const op = Math.max(0.05, 0.26 - i * 0.022).toFixed(3);
+		const op = Math.max(0.08, 0.5 - i * 0.045).toFixed(3);
 		rings += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${r.toFixed(
 			1,
-		)}" fill="none" stroke="${p.accent}" stroke-width="3" stroke-opacity="${op}"/>`;
+		)}" fill="none" stroke="${p.accent}" stroke-width="4" stroke-opacity="${op}"/>`;
 	}
 
 	return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="North cover art">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0.4" y2="1">
+    <linearGradient id="bg" x1="0.15" y1="0" x2="0.35" y2="1">
       <stop offset="0" stop-color="${p.from}"/>
-      <stop offset="0.55" stop-color="${p.mid}"/>
+      <stop offset="0.42" stop-color="${p.mid}"/>
       <stop offset="1" stop-color="${p.to}"/>
     </linearGradient>
-    <radialGradient id="glow" cx="0.5" cy="0.12" r="0.9">
-      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.65"/>
-      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0"/>
+    <radialGradient id="glow" cx="0.5" cy="0.1" r="0.85">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.5"/>
+      <stop offset="0.55" stop-color="#FFFFFF" stop-opacity="0"/>
     </radialGradient>
-    <radialGradient id="accentGlow" cx="${(cx / W).toFixed(3)}" cy="${(cy / H).toFixed(3)}" r="0.5">
-      <stop offset="0" stop-color="${p.accent}" stop-opacity="0.22"/>
+    <radialGradient id="accentGlow" cx="${(cx / W).toFixed(3)}" cy="${(cy / H).toFixed(3)}" r="0.62">
+      <stop offset="0" stop-color="${p.accent}" stop-opacity="0.42"/>
       <stop offset="1" stop-color="${p.accent}" stop-opacity="0"/>
     </radialGradient>
   </defs>
@@ -127,9 +134,11 @@ export function renderCoverSvg(catRaw: string, seedRaw: string): string {
   <g>${rings}</g>
   <rect width="${W}" height="${H}" fill="url(#glow)"/>
   <g stroke-linecap="round">
-    <line x1="${tx.toFixed(1)}" y1="${ty.toFixed(1)}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="${GOLD}" stroke-width="9" stroke-opacity="0.92"/>
-    <circle cx="${nx.toFixed(1)}" cy="${ny.toFixed(1)}" r="17" fill="${GOLD}"/>
-    <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="11" fill="${p.to}" stroke="${p.accent}" stroke-width="4" stroke-opacity="0.6"/>
+    <line x1="${tx.toFixed(1)}" y1="${ty.toFixed(1)}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="${p.accent}" stroke-width="20" stroke-opacity="0.28"/>
+    <line x1="${tx.toFixed(1)}" y1="${ty.toFixed(1)}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke="${GOLD}" stroke-width="13" stroke-opacity="1"/>
+    <circle cx="${nx.toFixed(1)}" cy="${ny.toFixed(1)}" r="24" fill="${GOLD}"/>
+    <circle cx="${nx.toFixed(1)}" cy="${ny.toFixed(1)}" r="24" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-opacity="0.55"/>
+    <circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="15" fill="#FFFFFF" stroke="${p.accent}" stroke-width="6" stroke-opacity="0.9"/>
   </g>
 </svg>`;
 }
