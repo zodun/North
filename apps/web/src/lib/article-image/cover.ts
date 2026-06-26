@@ -70,12 +70,18 @@ export type CoverInput = {
 	category?: string | null;
 };
 
+// Bump when the cover ART changes. The URL is deterministic (cat+seed), so the
+// service worker's CacheFirst "images" store (see app/sw.ts) would otherwise
+// serve the OLD cover forever after a redesign. Changing the key forces every
+// client to fetch the new art with no manual cache clear. v2 = bolder Soft Sky.
+const COVER_VERSION = "2";
+
 // Same-origin URL the feed can drop straight into an <img src>. Relative on
 // purpose: proxiedImage() passes it through untouched and it stays same-origin.
 export function coverUrl(input: CoverInput): string {
 	const cat = coverCatKey(input.category);
 	const seed = (hash(input.id) % 100000).toString();
-	return `/api/cover?cat=${cat}&seed=${seed}`;
+	return `/api/cover?cat=${cat}&seed=${seed}&v=${COVER_VERSION}`;
 }
 
 // Render a deterministic Soft Sky cover. Portrait, full-bleed (object-cover).
