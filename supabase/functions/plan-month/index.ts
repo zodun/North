@@ -49,19 +49,16 @@ type Step = {
 	done: boolean;
 };
 
-function pad(n: number): string {
-	return String(n).padStart(2, "0");
-}
-
-// Every calendar day of the month that month_start belongs to.
-function monthDays(monthStart: string): string[] {
-	const start = new Date(`${monthStart}T00:00:00Z`);
-	const year = start.getUTCFullYear();
-	const month = start.getUTCMonth();
-	const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+// The 28 days of a rolling 4-week cycle, starting at the mission's anchor date
+// (monthly_missions.month_start). Mirrors ensure_monthly_mission so a custom goal
+// gets the same real 4-week span as a template one, instead of the calendar month.
+function cycleDays(anchor: string): string[] {
+	const start = new Date(`${anchor}T00:00:00Z`);
 	const days: string[] = [];
-	for (let d = 1; d <= lastDay; d++) {
-		days.push(`${year}-${pad(month + 1)}-${pad(d)}`);
+	for (let i = 0; i < 4 * DAYS_PER_WEEK; i++) {
+		const d = new Date(start);
+		d.setUTCDate(start.getUTCDate() + i);
+		days.push(d.toISOString().slice(0, 10));
 	}
 	return days;
 }
@@ -332,22 +329,16 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 				sort_order: w,
 			});
 		}
-		// Lay the 4-week arc onto the days REMAINING in the month, starting today.
-		// Setting a goal mid-month then gives a real first step TODAY (week 1,
-		// action 1) and still reaches the finish by month-end, instead of
-		// stranding the opening steps on past dates and dropping the user into the
-		// middle of the arc. When the goal is set on the 1st, this is the whole
-		// month, unchanged.
-		const todayIso = new Date().toISOString().slice(0, 10);
-		const firstDay = monthStart > todayIso ? monthStart : todayIso;
-		const days = monthDays(monthStart).filter((d) => d >= firstDay);
+		// Lay the 4-week arc across a real 28-day cycle from the mission's anchor
+		// (month_start). week_index = floor(offset / 7) → exactly weeks 0..3, and
+		// each day steps through that week's daily actions. Mirrors
+		// ensure_monthly_mission so template and custom goals share one model: a
+		// full four weeks starting at the anchor, always opening on Week 1.
+		const days = cycleDays(monthStart);
 		days.forEach((due, offset) => {
-			// Progress through the remaining span: 0 today → ~1 at month end.
-			const p = days.length <= 1 ? 0 : offset / days.length;
-			const w = Math.min(3, Math.floor(p * 4));
+			const w = Math.min(3, Math.floor(offset / DAYS_PER_WEEK));
 			const actions = plan.weeks[w].daily_actions;
-			// Sequential step within the week, proportional to position in its slice.
-			const within = Math.floor((p * 4 - w) * DAYS_PER_WEEK);
+			const within = offset % DAYS_PER_WEEK;
 			const idx = Math.min(actions.length - 1, Math.max(0, within));
 			const dayTask =
 				actions.length > 0 ? actions[idx] : plan.weeks[w].milestone;
