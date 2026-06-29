@@ -411,16 +411,24 @@ export function SleekForYou({
 								</div>
 
 								<div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-									{rest.map((item) => (
-										<GrowthCard
-											key={item.id}
-											item={item}
-											categoryLabel={catLabel(item)}
-											isSaved={saved.has(item.id)}
-											onSave={() => void save(item)}
-											onShare={() => void share(item)}
-										/>
-									))}
+									{rest.flatMap((item, i) => {
+										const card = (
+											<GrowthCard
+												key={item.id}
+												item={item}
+												categoryLabel={catLabel(item)}
+												isSaved={saved.has(item.id)}
+												onSave={() => void save(item)}
+												onShare={() => void share(item)}
+											/>
+										);
+										// Weave the reserved ad slot in after the third card (or the
+										// last one, if the feed is shorter) so it reads as part of the
+										// feed, not a banner.
+										return i === Math.min(2, rest.length - 1)
+											? [card, <AdSlot key="ad-slot" />]
+											: [card];
+									})}
 								</div>
 							</section>
 						)}
@@ -726,6 +734,36 @@ function GrowthCard({
 				</div>
 			</div>
 		</article>
+	);
+}
+
+// A quiet, reserved "ad space, coming soon" tile woven into the feed grid. It
+// signals the planned ad revenue stream without a blatant pitch: a dashed
+// placeholder, muted, clearly labelled Sponsored, no hard sell. On-brand with
+// the calm field (direction over attention).
+function AdSlot() {
+	return (
+		<div className="flex min-h-[340px] flex-col items-center justify-center gap-3 rounded-[2rem] border border-black/10 border-dashed bg-white/40 p-8 text-center">
+			<span
+				className="material-symbols-outlined text-3xl"
+				style={{ color: ON_VARIANT, opacity: 0.35 }}
+			>
+				storefront
+			</span>
+			<span
+				className="font-bold text-[10px] uppercase tracking-[0.22em]"
+				style={{ color: ON_VARIANT, opacity: 0.55 }}
+			>
+				Sponsored · Coming soon
+			</span>
+			<p
+				className="max-w-[210px] text-[13px] leading-relaxed"
+				style={{ color: ON_VARIANT, opacity: 0.6 }}
+			>
+				A quiet space for partner offers matched to your direction. No noise,
+				nothing chasing your attention.
+			</p>
+		</div>
 	);
 }
 
