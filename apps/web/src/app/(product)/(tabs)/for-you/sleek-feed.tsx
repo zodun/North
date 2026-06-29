@@ -743,25 +743,36 @@ function GrowthCard({
 // the calm field (direction over attention).
 function AdSlot() {
 	return (
-		<div className="flex min-h-[340px] flex-col items-center justify-center gap-3 rounded-[2rem] border border-black/10 border-dashed bg-white/40 p-8 text-center">
+		<div className="flex min-h-[340px] flex-col items-center justify-center gap-2.5 rounded-[2rem] border border-black/[0.08] border-dashed bg-white/40 p-8 text-center">
 			<span
-				className="material-symbols-outlined text-3xl"
-				style={{ color: ON_VARIANT, opacity: 0.35 }}
+				className="mb-1 flex h-11 w-11 items-center justify-center rounded-2xl"
+				style={{ background: "rgba(62,207,191,0.12)" }}
 			>
-				storefront
+				<span
+					className="material-symbols-outlined text-2xl"
+					style={{ color: "#0A8F7F" }}
+				>
+					near_me
+				</span>
 			</span>
 			<span
 				className="font-bold text-[10px] uppercase tracking-[0.22em]"
-				style={{ color: ON_VARIANT, opacity: 0.55 }}
+				style={{ color: ON_VARIANT, opacity: 0.5 }}
 			>
 				Sponsored · Coming soon
 			</span>
-			<p
-				className="max-w-[210px] text-[13px] leading-relaxed"
-				style={{ color: ON_VARIANT, opacity: 0.6 }}
+			<h4
+				className="font-bold text-lg leading-snug tracking-tight"
+				style={{ fontFamily: SERIF, color: ON_SURFACE }}
 			>
-				A quiet space for partner offers matched to your direction. No noise,
-				nothing chasing your attention.
+				Offers that point somewhere
+			</h4>
+			<p
+				className="max-w-[220px] text-[13px] leading-relaxed"
+				style={{ color: ON_VARIANT, opacity: 0.65 }}
+			>
+				Partner offers ranked to your direction and clearly marked. Never noise,
+				never bait.
 			</p>
 		</div>
 	);
