@@ -67,9 +67,12 @@ export default async function MissionPage() {
 	const cadence =
 		profileRes.data?.mission_cadence === "weekly" ? "weekly" : "daily";
 
-	// currentWeekIndex follows the calendar: today's task determines the week.
-	// If there's no task for today (e.g. mid-month goal set), fall back to the
-	// first undone step's week so the user always lands on actionable content.
+	// currentWeekIndex follows PROGRESS, not the calendar: it's the week of the
+	// first unfinished day. So a fresh or behind mission opens on Week 1 and
+	// advances only as steps are completed — matching the sequential daily unlock
+	// (you can't jump ahead). Anchoring to the calendar instead dropped late-month
+	// or newly-set missions straight onto Week 4 with Weeks 1-3 untouched.
+	// Falls back to Week 1 once everything is done.
 	const dailySteps = (
 		(steps ?? []) as {
 			cadence: string;
@@ -78,14 +81,8 @@ export default async function MissionPage() {
 			done: boolean;
 		}[]
 	).filter((s) => s.cadence === "daily");
-	const todayStep = dailySteps.find((s) => s.due_date === today);
 	const firstUndoneStep = dailySteps.find((s) => !s.done);
-	const currentWeekIndex = mission
-		? (todayStep?.week_index ??
-			firstUndoneStep?.week_index ??
-			dailySteps[dailySteps.length - 1]?.week_index ??
-			0)
-		: 0;
+	const currentWeekIndex = mission ? (firstUndoneStep?.week_index ?? 0) : 0;
 
 	// Prompt the user to author their own goal when this month's mission is
 	// still the seeded template and they haven't dismissed the prompt this month.
