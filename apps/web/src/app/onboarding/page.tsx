@@ -1,8 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { TelegramReminders } from "@/app/(product)/(tabs)/profile/telegram-reminders";
 import { supabase } from "@/lib/auth-client";
 import {
 	CAREER_STAGES,
@@ -99,13 +97,12 @@ const CTA_LABELS = [
 	"This is my pace", // 10 time
 	"That's where I am", // 11 purpose (explorer / builder)
 	"That's who I am", // 12 demographics (gender + race)
-	"I agree", // 13 consent
-	"Take me to North", // 14 telegram (skippable)
+	"Take me to North", // 13 consent (final step → completes onboarding)
 ];
 
-// 15 steps: a welcome (name) + 12 questions + consent + telegram. The counter
-// shows the 12 questions; the welcome, consent and telegram are framing steps.
-const TOTAL_STEPS = 15;
+// 14 steps: a welcome (name) + 12 questions + consent. The counter shows the
+// 12 questions; the welcome and consent are framing steps.
+const TOTAL_STEPS = 14;
 const QUESTION_COUNT = 12;
 
 // How the user likes to consume content → For You can favour matching kinds.
@@ -150,7 +147,6 @@ const EDUCATION_LEVELS = [
 // ── Main component ─────────────────────────────────────────────────────────
 
 export default function OnboardingPage() {
-	const router = useRouter();
 	const [step, setStep] = useState(0);
 	const [name, setName] = useState("");
 	const [careerStage, setCareerStage] = useState<string | null>(null);
@@ -412,7 +408,6 @@ export default function OnboardingPage() {
 		if (step === 11) return purposeMode !== null;
 		if (step === 12) return true; // demographics optional
 		if (step === 13) return focus.length > 0 && consent;
-		if (step === 14) return true; // telegram optional
 		return false;
 	})();
 
@@ -440,7 +435,7 @@ export default function OnboardingPage() {
 			<p className="fixed top-3 right-4 z-50 font-bold text-[#0E1420]/55 text-[10px] uppercase tracking-[0.1em]">
 				{step === 0
 					? "Welcome"
-					: step >= TOTAL_STEPS - 2
+					: step >= TOTAL_STEPS - 1
 						? "Almost done"
 						: `Question ${step} of ${QUESTION_COUNT}`}
 			</p>
@@ -516,7 +511,6 @@ export default function OnboardingPage() {
 				{step === 13 && (
 					<StepConsent consent={consent} onConsent={setConsent} />
 				)}
-				{step === 14 && userId && <StepTelegram userId={userId} />}
 
 				{/* CTA */}
 				<div className="mt-8">
@@ -527,11 +521,7 @@ export default function OnboardingPage() {
 					>
 						{CTA_LABELS[step]}
 					</CtaButton>
-					{(step === 4 ||
-						step === 5 ||
-						step === 9 ||
-						step === 12 ||
-						step === 14) && (
+					{(step === 4 || step === 5 || step === 9 || step === 12) && (
 						<button
 							type="button"
 							onClick={handleNext}
@@ -1405,24 +1395,6 @@ function StepDemographics({
 					))}
 				</div>
 			</div>
-		</div>
-	);
-}
-
-function StepTelegram({ userId }: { userId: string }) {
-	return (
-		<div>
-			<StepHead
-				eyebrow="Stay connected"
-				headline="Get your daily nudge on Telegram."
-				sub="North pings you each morning with your mission step. Connect once and you're set. You can always do this later from your profile."
-			/>
-			<TelegramReminders
-				userId={userId}
-				initialLinked={false}
-				initialEnabled={false}
-				initialFrequency="daily"
-			/>
 		</div>
 	);
 }
