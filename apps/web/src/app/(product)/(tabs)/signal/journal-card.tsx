@@ -60,6 +60,9 @@ export function JournalCard({
 	const [analysis, setAnalysis] = useState<JournalAnalysis | null>(
 		initialEntry?.analysis ?? null,
 	);
+	// The entry the current analysis came from, passed to callout-expand as
+	// context when a signal/noise line is expanded.
+	const [journalBody, setJournalBody] = useState(initialEntry?.body ?? "");
 	const recognitionRef = useRef<Recognition | null>(null);
 
 	// Resolve on the client only, window.SpeechRecognition isn't available
@@ -107,6 +110,7 @@ export function JournalCard({
 			});
 			if (!error && data?.analysis) {
 				setAnalysis(data.analysis as JournalAnalysis);
+				setJournalBody(body);
 			}
 			setText("");
 		} finally {
@@ -123,9 +127,20 @@ export function JournalCard({
 
 			{analysis && (
 				<div className="mb-3 flex flex-col gap-3">
-					<ObsList label="Signal" color={TEAL} items={analysis.signal} up />
+					<ObsList
+						label="Signal"
+						color={TEAL}
+						items={analysis.signal}
+						journalBody={journalBody}
+						up
+					/>
 					{analysis.noise.length > 0 && (
-						<ObsList label="Noise" color={RED} items={analysis.noise} />
+						<ObsList
+							label="Noise"
+							color={RED}
+							items={analysis.noise}
+							journalBody={journalBody}
+						/>
 					)}
 					{analysis.read && (
 						<p className="text-[#0E1420]/70 text-[12px] italic leading-relaxed">
@@ -193,11 +208,13 @@ function ObsList({
 	color,
 	items,
 	up,
+	journalBody,
 }: {
 	label: string;
 	color: string;
 	items: string[];
 	up?: boolean;
+	journalBody: string;
 }) {
 	if (items.length === 0) return null;
 	return (
@@ -211,20 +228,113 @@ function ObsList({
 					{label}
 				</span>
 			</div>
-			<ul className="flex flex-col gap-1">
+			<ul className="flex flex-col gap-2">
 				{items.map((item) => (
-					<li
+					<ObsItem
 						key={item}
-						className="flex items-start gap-2 text-[#0E1420]/80 text-[12px] leading-snug"
-					>
-						<span
-							className="mt-1.5 h-1 w-1 shrink-0 rounded-full"
-							style={{ backgroundColor: color }}
-						/>
-						{item}
-					</li>
+						item={item}
+						label={label}
+						color={color}
+						journalBody={journalBody}
+					/>
 				))}
 			</ul>
 		</div>
+	);
+}
+
+// One journal signal/noise line, expandable. "Read more" asks callout-expand to
+// elaborate on this specific point (with the day's entry as context) and shows
+// it inline. On a null/error response it shows a visible message so the tap is
+// never a silent no-op.
+function ObsItem({
+	item,
+	label,
+	color,
+	journalBody,
+}: {
+	item: string;
+	label: string;
+	color: string;
+	journalBody: string;
+}) {
+	const [expanded, setExpanded] = useState(false);
+	const [loading, setLoading] = useState(false);
+	const [expansion, setExpansion] = useState<string | null>(null);
+
+	async function toggle() {
+		if (expansion !== null) {
+			setExpanded((e) => !e);
+			return;
+		}
+		setExpanded(true);
+		setLoading(true);
+		try {
+			const { data } = await supabase.functions.invoke("callout-expand", {
+				body: {
+					body: item,
+					label: label.toLowerCase(),
+					journalBody: journalBody || undefined,
+				},
+			});
+			const text =
+				data && typeof data.expansion === "string" ? data.expansion : null;
+			setExpansion(text ?? "Couldn't load more just now. Give it another tap.");
+		} catch {
+			setExpansion("Couldn't load more just now. Give it another tap.");
+		} finally {
+			setLoading(false);
+		}
+	}
+
+	return (
+		<li className="flex items-start gap-2 text-[#0E1420]/80 text-[12px] leading-snug">
+			<span
+				className="mt-1.5 h-1 w-1 shrink-0 rounded-full"
+				style={{ backgroundColor: color }}
+			/>
+			<div className="min-w-0 flex-1">
+				<span>{item}</span>
+				{expanded && (
+					<div
+						className="mt-1.5 rounded-[10px] px-3 py-2.5"
+						style={{
+							background: `${color}12`,
+							borderLeft: `2px solid ${color}66`,
+						}}
+					>
+						{loading ? (
+							<div className="flex items-center gap-2">
+								<span
+									className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"
+									style={{ color, opacity: 0.5 }}
+								/>
+								<span
+									className="font-medium text-[11px]"
+									style={{ color, opacity: 0.7 }}
+								>
+									Thinking...
+								</span>
+							</div>
+						) : expansion ? (
+							<p
+								className="font-medium text-[11px] leading-[1.6]"
+								style={{ color }}
+							>
+								{expansion}
+							</p>
+						) : null}
+					</div>
+				)}
+				<button
+					type="button"
+					onClick={() => void toggle()}
+					className="mt-1 block font-semibold text-[11px] transition-opacity hover:opacity-70"
+					style={{ color }}
+				>
+					{expanded && expansion && !loading ? "Show less" : "Read more"}
+				</button>
+			</div>
+		</li>
 	);
 }
