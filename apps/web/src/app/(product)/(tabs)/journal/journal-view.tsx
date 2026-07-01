@@ -678,6 +678,36 @@ function DetailModal({
 			? "Build on this. Find one concrete way to create more of this in your next session."
 			: "Watch for this pattern. Next time it shows up, pause and redirect your attention toward what matters.";
 
+	// Real AI elaboration on this specific observation, with the full entry as
+	// context, replacing the static nudge above. Falls back to the nudge if the
+	// call returns nothing, so there is always something to read.
+	const [loading, setLoading] = useState(true);
+	const [expansion, setExpansion] = useState<string | null>(null);
+	useEffect(() => {
+		let cancelled = false;
+		void (async () => {
+			try {
+				const { data } = await supabase.functions.invoke("callout-expand", {
+					body: {
+						body: obs.text,
+						label: obs.kind,
+						journalBody: obs.body || undefined,
+					},
+				});
+				const text =
+					data && typeof data.expansion === "string" ? data.expansion : null;
+				if (!cancelled) setExpansion(text);
+			} catch {
+				if (!cancelled) setExpansion(null);
+			} finally {
+				if (!cancelled) setLoading(false);
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, [obs.text, obs.kind, obs.body]);
+
 	useEffect(() => {
 		function onKey(e: KeyboardEvent) {
 			if (e.key === "Escape") onClose();
@@ -745,12 +775,27 @@ function DetailModal({
 								: "rgba(123,97,255,0.07)",
 					}}
 				>
-					<p
-						className="font-medium text-sm leading-relaxed"
-						style={{ color: accent }}
-					>
-						{nudge}
-					</p>
+					{loading ? (
+						<div className="flex items-center gap-2">
+							<span
+								className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
+								style={{ color: accent, opacity: 0.6 }}
+							/>
+							<span
+								className="font-medium text-sm"
+								style={{ color: accent, opacity: 0.75 }}
+							>
+								Thinking it through...
+							</span>
+						</div>
+					) : (
+						<p
+							className="whitespace-pre-line font-medium text-sm leading-relaxed"
+							style={{ color: accent }}
+						>
+							{expansion ?? nudge}
+						</p>
+					)}
 				</div>
 
 				{obs.body && (
