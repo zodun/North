@@ -5,6 +5,7 @@ import "../index.css";
 import { DevSwCleanup } from "@/components/dev-sw-cleanup";
 import { InstallPrompt } from "@/components/install-prompt";
 import Providers from "@/components/providers";
+import { SwAutoUpdate } from "@/components/sw-auto-update";
 
 const geistSans = Geist({
 	variable: "--font-geist-sans",
@@ -70,6 +71,7 @@ export default function RootLayout({
 			>
 				<Providers>
 					<DevSwCleanup />
+					<SwAutoUpdate />
 					<div className="h-svh">{children}</div>
 					<InstallPrompt />
 				</Providers>
