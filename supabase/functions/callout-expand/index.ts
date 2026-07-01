@@ -1,7 +1,7 @@
 // Edge Function: callout-expand
-// Receives a signal/noise callout body and returns 2-3 sentences of calm,
-// specific coaching: amplify the pattern if positive, address it if it's
-// noise or drift.
+// Receives a signal/noise callout body and returns two short paragraphs of
+// calm, specific coaching: what the pattern means for the person's direction,
+// then one concrete way to build on it (signal) or reduce it (noise).
 //
 // Auth: user JWT via Authorization header (supabase.functions.invoke sends it
 // automatically).
@@ -92,13 +92,13 @@ if (typeof Deno !== "undefined" && Deno.env.get("DENO_TESTING") !== "1") {
 			: "";
 
 		const directive = isNoise
-			? `This is a noise pattern detected in the user's week. Noise is anything that grabbed their attention without serving their direction. Using the specific details in the observation and the journal entry, write 2 to 3 sentences explaining concretely how they can reduce or avoid this exact distraction going forward. Name what stole attention and suggest one grounded shift.`
-			: `This is a signal pattern detected in the user's week. Signal is any action or habit that moved them toward their goal. Using the specific details in the observation and the journal entry, write 2 to 3 sentences explaining concretely how they can build on and amplify this exact momentum. Name what worked and suggest how to do more of it.`;
+			? `This is a noise pattern from the user's week. Noise is anything that grabbed their attention without serving their direction. Expound on it in two short paragraphs. First, reflect on what this really is and why it pulls at them, connecting it to their direction and what it quietly costs. Then give one concrete, specific shift they can make to reduce or avoid this exact distraction, grounded in what they actually wrote.`
+			: `This is a signal pattern from the user's week. Signal is any action or habit that moved them toward their goal. Expound on it in two short paragraphs. First, reflect on what this reveals about their direction and why it matters, connecting it to real momentum toward their goal. Then give one concrete, specific way to build on and repeat this exact thing, grounded in what they actually wrote.`;
 
-		const userPrompt = `Weekly observation: "${body}"${journalContext}
+		const userPrompt = `Observation: "${body}"${journalContext}
 ${directive}
 
-Plain prose only. No bullet points, no headers. No dashes. Be specific to what the person actually wrote, not general advice.`;
+Plain prose only, two short paragraphs, roughly 120 to 180 words total. No bullet points, no headers, no dashes. Be specific to what the person actually wrote, not general advice. Speak to them directly.`;
 
 		try {
 			const res = await fetch(ANTHROPIC_URL, {
@@ -110,7 +110,7 @@ Plain prose only. No bullet points, no headers. No dashes. Be specific to what t
 				},
 				body: JSON.stringify({
 					model: MODEL_NAME,
-					max_tokens: 160,
+					max_tokens: 500,
 					system: SYSTEM_PROMPT,
 					messages: [{ role: "user", content: userPrompt }],
 				}),
