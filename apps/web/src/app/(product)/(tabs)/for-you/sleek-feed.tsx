@@ -430,6 +430,11 @@ export function SleekForYou({
 											: [card];
 									})}
 								</div>
+
+								{/* A full-width sponsored slot that closes the feed, so the
+								    ad presence bookends the page rather than only sitting
+								    mid-grid. Same reserved, coming-soon language. */}
+								<FeedEndAd />
 							</section>
 						)}
 					</main>
@@ -774,6 +779,48 @@ function AdSlot() {
 				Partner offers ranked to your direction and clearly marked. Never noise,
 				never bait.
 			</p>
+		</div>
+	);
+}
+
+// A wider, end-of-feed cousin of AdSlot: the same reserved "Sponsored · Coming
+// soon" language, laid out as a full-width strip that closes the feed rather
+// than sitting inside the grid. Calm, dashed, no hard sell — a quiet bookend.
+function FeedEndAd() {
+	return (
+		<div className="mt-8 flex flex-col items-center gap-4 rounded-[2rem] border border-black/[0.08] border-dashed bg-white/40 px-8 py-9 text-center sm:flex-row sm:justify-center sm:gap-6 sm:text-left">
+			<span
+				className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
+				style={{ background: "rgba(62,207,191,0.12)" }}
+			>
+				<span
+					className="material-symbols-outlined text-[26px]"
+					style={{ color: "#0A8F7F" }}
+				>
+					near_me
+				</span>
+			</span>
+			<div className="max-w-md">
+				<span
+					className="font-bold text-[10px] uppercase tracking-[0.22em]"
+					style={{ color: ON_VARIANT, opacity: 0.5 }}
+				>
+					Sponsored · Coming soon
+				</span>
+				<h4
+					className="mt-1 font-bold text-xl leading-snug tracking-tight"
+					style={{ fontFamily: SERIF, color: ON_SURFACE }}
+				>
+					More offers, always in your direction
+				</h4>
+				<p
+					className="mt-1.5 text-[13px] leading-relaxed"
+					style={{ color: ON_VARIANT, opacity: 0.65 }}
+				>
+					As partners come on board, their offers will land here, ranked to your
+					trajectory and clearly marked. Direction, never noise.
+				</p>
+			</div>
 		</div>
 	);
 }
