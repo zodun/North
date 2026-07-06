@@ -411,29 +411,19 @@ export function SleekForYou({
 								</div>
 
 								<div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-									{rest.flatMap((item, i) => {
-										const card = (
-											<GrowthCard
-												key={item.id}
-												item={item}
-												categoryLabel={catLabel(item)}
-												isSaved={saved.has(item.id)}
-												onSave={() => void save(item)}
-												onShare={() => void share(item)}
-											/>
-										);
-										// Weave the reserved ad slot in after the third card (or the
-										// last one, if the feed is shorter) so it reads as part of the
-										// feed, not a banner.
-										return i === Math.min(2, rest.length - 1)
-											? [card, <AdSlot key="ad-slot" />]
-											: [card];
-									})}
+									{rest.map((item) => (
+										<GrowthCard
+											key={item.id}
+											item={item}
+											categoryLabel={catLabel(item)}
+											isSaved={saved.has(item.id)}
+											onSave={() => void save(item)}
+											onShare={() => void share(item)}
+										/>
+									))}
 								</div>
 
-								{/* A full-width sponsored slot that closes the feed, so the
-								    ad presence bookends the page rather than only sitting
-								    mid-grid. Same reserved, coming-soon language. */}
+								{/* A single sponsored slot at the end of the feed. */}
 								<FeedEndAd />
 							</section>
 						)}
@@ -742,50 +732,9 @@ function GrowthCard({
 	);
 }
 
-// A quiet, reserved "ad space, coming soon" tile woven into the feed grid. It
-// signals the planned ad revenue stream without a blatant pitch: a dashed
-// placeholder, muted, clearly labelled Sponsored, no hard sell. On-brand with
-// the calm field (direction over attention).
-function AdSlot() {
-	return (
-		<div className="flex min-h-[340px] flex-col items-center justify-center gap-2.5 rounded-[2rem] border border-black/[0.08] border-dashed bg-white/40 p-8 text-center">
-			<span
-				className="mb-1 flex h-11 w-11 items-center justify-center rounded-2xl"
-				style={{ background: "rgba(62,207,191,0.12)" }}
-			>
-				<span
-					className="material-symbols-outlined text-2xl"
-					style={{ color: "#0A8F7F" }}
-				>
-					near_me
-				</span>
-			</span>
-			<span
-				className="font-bold text-[10px] uppercase tracking-[0.22em]"
-				style={{ color: ON_VARIANT, opacity: 0.5 }}
-			>
-				Sponsored · Coming soon
-			</span>
-			<h4
-				className="font-bold text-lg leading-snug tracking-tight"
-				style={{ fontFamily: SERIF, color: ON_SURFACE }}
-			>
-				Offers that point somewhere
-			</h4>
-			<p
-				className="max-w-[220px] text-[13px] leading-relaxed"
-				style={{ color: ON_VARIANT, opacity: 0.65 }}
-			>
-				Partner offers ranked to your direction and clearly marked. Never noise,
-				never bait.
-			</p>
-		</div>
-	);
-}
-
-// A wider, end-of-feed cousin of AdSlot: the same reserved "Sponsored · Coming
-// soon" language, laid out as a full-width strip that closes the feed rather
-// than sitting inside the grid. Calm, dashed, no hard sell — a quiet bookend.
+// A single reserved "Sponsored · Coming soon" slot that closes the feed: a
+// full-width strip below the grid, not woven inside it. Calm, dashed, no hard
+// sell, on-brand with the calm field (direction over attention).
 function FeedEndAd() {
 	return (
 		<div className="mt-8 flex flex-col items-center gap-4 rounded-[2rem] border border-black/[0.08] border-dashed bg-white/40 px-8 py-9 text-center sm:flex-row sm:justify-center sm:gap-6 sm:text-left">
