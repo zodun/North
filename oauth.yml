@@ -1,0 +1,25 @@
+# ngrok Traffic Policy — lock the local dev tunnel behind Google sign-in so a
+# public ngrok URL can't be opened by just anyone. Only the emails listed below
+# get through; everyone else is denied (403) after login.
+#
+# Start the tunnel with it attached (forwarding to the Next dev server on :3000):
+#   ngrok http 3000 --traffic-policy-file oauth.yml
+# If you use a reserved domain, also add:  --url <your-name>.ngrok.app
+#
+# NOTE: this gates BROWSER traffic. If you also tunnel a machine-to-machine
+# webhook (Telegram / Polar) through the same endpoint, OAuth will BLOCK it —
+# keep any webhook on a separate, un-gated tunnel.
+on_http_request:
+  - actions:
+      - type: oauth
+        config:
+          provider: google
+  # Allow only these Google accounts; deny everyone else after they log in.
+  # Remove this whole rule to let any Google account in, or delete the oauth
+  # action above to make the tunnel fully open again.
+  - expressions:
+      - "!(actions.ngrok.oauth.identity.email in ['zoeduncan46@gmail.com', 'pricejordayne@gmail.com'])"
+    actions:
+      - type: deny
+        config:
+          status_code: 403
