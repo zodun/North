@@ -26,7 +26,8 @@
 	"peerDependencies": {
 		"react": "*",
 		"react-native": "*",
-		"react-native-svg": "*"
+		"react-native-svg": "*",
+		"react-native-reanimated": "*"
 	},
 	"devDependencies": {
 		"@north/config": "workspace:*",
@@ -34,6 +35,7 @@
 		"react": "19.2.3",
 		"react-native": "0.85.3",
 		"react-native-svg": "^15.15.5",
-		"typescript": "catalog:"
+		"typescript": "catalog:",
+		"react-native-reanimated": "4.3.1"
 	}
 }

@@ -39,3 +39,11 @@ export {
 	type WeeklyPulseProps,
 } from "./components/signal/WeeklyPulse";
 export { useReducedMotion } from "./hooks/useReducedMotion";
+export {
+	MOTION,
+	Rise,
+	type RiseProps,
+	staggerDelay,
+	useAnimatedProgress,
+	usePressFeedback,
+} from "./motion";

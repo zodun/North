@@ -3,6 +3,12 @@
 // where they left off. The Stack itself has no header — each screen's
 // QuestionShell owns its progress affordance.
 
+// Screens crossfade rather than sliding laterally. A horizontal push plus
+// content that rises is two competing directions at once, and the 1/3 rule
+// says only a third of the scene should be in motion. The crossfade lets the
+// content's upward arrival be the thing you notice, and the progress bar —
+// which persists and advances — carries the sense of moving through a
+// sequence that the slide used to provide.
 import { Redirect, Stack } from "expo-router";
 
 import {
@@ -46,7 +52,7 @@ export default function OnboardingLayout() {
 		// We rely on initialRouteName so this only matters on cold start.
 		return (
 			<Stack
-				screenOptions={{ headerShown: false, animation: "slide_from_right" }}
+				screenOptions={{ headerShown: false, animation: "fade" }}
 				initialRouteName={target.replace("/onboarding/", "")}
 			>
 				<Stack.Screen name="1-name" />
@@ -64,9 +70,7 @@ export default function OnboardingLayout() {
 	}
 
 	return (
-		<Stack
-			screenOptions={{ headerShown: false, animation: "slide_from_right" }}
-		>
+		<Stack screenOptions={{ headerShown: false, animation: "fade" }}>
 			<Stack.Screen name="1-name" />
 			<Stack.Screen name="2-season" />
 			<Stack.Screen name="3-focus" />

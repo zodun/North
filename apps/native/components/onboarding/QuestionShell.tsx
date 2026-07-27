@@ -1,10 +1,26 @@
-// Shared layout for every screen of the 7-step onboarding flow.
+// Shared layout for every screen of the 10-step onboarding flow.
 // Renders the progress bar, prompt + sub-copy, the question slot
 // supplied by the caller, and a Back / Next footer. Owns the safe
 // area + keyboard avoidance so each screen file stays focused on its
 // own input.
+//
+// ─── Motion ──────────────────────────────────────────────────────────────
+//
+// Every screen in the flow renders through this shell, so animating it once
+// gives the whole onboarding its motion. The choreography is deliberate:
+//
+//   prompt → sub → question → footer, 60ms apart, each rising 12px
+//
+// Reading order and arrival order are the same, so the eye is led down the
+// screen rather than asked to hunt. Total stagger is 180ms — under the 500ms
+// ceiling where a cascade stops feeling like arrival and starts feeling like
+// a performance.
+//
+// The progress bar deliberately does NOT re-enter on each screen. It is the
+// one element that represents continuity across the flow, so it stays put and
+// simply advances — which is also why ProgressBar animates its own fill.
 
-import { Button, ProgressBar } from "@north/native-ui";
+import { Button, ProgressBar, Rise, staggerDelay } from "@north/native-ui";
 import { getTokens } from "@north/tokens";
 import { useRouter } from "expo-router";
 import type { ReactNode } from "react";
@@ -76,7 +92,7 @@ export function QuestionShell({
 					]}
 					keyboardShouldPersistTaps="handled"
 				>
-					<View style={{ gap: d.gap }}>
+					<Rise delay={staggerDelay(0)} style={{ gap: d.gap }}>
 						<Text
 							style={[
 								styles.prompt,
@@ -90,15 +106,21 @@ export function QuestionShell({
 						>
 							{prompt}
 						</Text>
+					</Rise>
+
+					<Rise delay={staggerDelay(1)}>
 						<Text style={[styles.sub, { color: p.inkMid, fontFamily: t.ui }]}>
 							{sub}
 						</Text>
-					</View>
+					</Rise>
 
-					<View style={styles.slot}>{children}</View>
+					<Rise delay={staggerDelay(2)} style={styles.slot}>
+						{children}
+					</Rise>
 				</ScrollView>
 
-				<View
+				<Rise
+					delay={staggerDelay(3)}
 					style={[
 						styles.footer,
 						{
@@ -140,7 +162,7 @@ export function QuestionShell({
 							</View>
 						</View>
 					)}
-				</View>
+				</Rise>
 			</KeyboardAvoidingView>
 		</SafeAreaView>
 	);

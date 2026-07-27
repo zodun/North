@@ -7,12 +7,16 @@ import type { Palette, TypePairing } from "@north/tokens";
 import type { ReactNode } from "react";
 import {
 	ActivityIndicator,
+	type GestureResponderEvent,
 	Pressable,
 	type PressableProps,
 	StyleSheet,
 	Text,
 	View,
 } from "react-native";
+import Animated from "react-native-reanimated";
+
+import { usePressFeedback } from "../motion";
 
 export const MIN_TOUCH_TARGET = 44;
 
@@ -44,6 +48,8 @@ export function Button({
 	...rest
 }: ButtonProps) {
 	const isInteractive = !loading && !disabled;
+	const { animatedStyle, onPressIn, onPressOut } =
+		usePressFeedback(isInteractive);
 	const minHeight = size === "sm" ? 36 : MIN_TOUCH_TARGET;
 	const horizontalPad = size === "sm" ? 14 : 18;
 	const fontSize = size === "sm" ? 13 : 15;
@@ -63,44 +69,56 @@ export function Button({
 				? p.ink
 				: p.inkMid;
 
+	// The scale lives on a wrapper so the Pressable keeps owning layout and the
+	// 44pt touch target is unaffected by the transform.
 	return (
-		<Pressable
-			{...rest}
-			disabled={!isInteractive}
-			accessibilityRole="button"
-			accessibilityState={{ disabled: !isInteractive, busy: loading }}
-			style={({ pressed }) => [
-				styles.base,
-				{
-					minHeight,
-					paddingHorizontal: horizontalPad,
-					backgroundColor: bg,
-					borderColor,
-					borderWidth,
-					opacity: !isInteractive ? 0.5 : pressed ? 0.85 : 1,
-				},
-			]}
-		>
-			{loading ? (
-				<ActivityIndicator size="small" color={fg} />
-			) : (
-				<View style={styles.row}>
-					{leftIcon ? <View style={styles.icon}>{leftIcon}</View> : null}
-					<Text
-						style={{
-							color: fg,
-							fontFamily: t.ui,
-							fontSize,
-							fontWeight: "600",
-							letterSpacing: -0.1,
-						}}
-					>
-						{children}
-					</Text>
-					{rightIcon ? <View style={styles.icon}>{rightIcon}</View> : null}
-				</View>
-			)}
-		</Pressable>
+		<Animated.View style={animatedStyle}>
+			<Pressable
+				{...rest}
+				onPressIn={(event: GestureResponderEvent) => {
+					onPressIn();
+					rest.onPressIn?.(event);
+				}}
+				onPressOut={(event: GestureResponderEvent) => {
+					onPressOut();
+					rest.onPressOut?.(event);
+				}}
+				disabled={!isInteractive}
+				accessibilityRole="button"
+				accessibilityState={{ disabled: !isInteractive, busy: loading }}
+				style={[
+					styles.base,
+					{
+						minHeight,
+						paddingHorizontal: horizontalPad,
+						backgroundColor: bg,
+						borderColor,
+						borderWidth,
+						opacity: isInteractive ? 1 : 0.5,
+					},
+				]}
+			>
+				{loading ? (
+					<ActivityIndicator size="small" color={fg} />
+				) : (
+					<View style={styles.row}>
+						{leftIcon ? <View style={styles.icon}>{leftIcon}</View> : null}
+						<Text
+							style={{
+								color: fg,
+								fontFamily: t.ui,
+								fontSize,
+								fontWeight: "600",
+								letterSpacing: -0.1,
+							}}
+						>
+							{children}
+						</Text>
+						{rightIcon ? <View style={styles.icon}>{rightIcon}</View> : null}
+					</View>
+				)}
+			</Pressable>
+		</Animated.View>
 	);
 }
 
