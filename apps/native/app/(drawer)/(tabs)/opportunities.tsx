@@ -118,7 +118,8 @@ function OpportunityCard({
 	isSaved,
 	isApplied,
 	onSave,
-	onApply,
+	onOpen,
+	onToggleApplied,
 	p,
 	t,
 	d,
@@ -127,7 +128,8 @@ function OpportunityCard({
 	isSaved: boolean;
 	isApplied: boolean;
 	onSave: () => void;
-	onApply: () => void;
+	onOpen: () => void;
+	onToggleApplied: () => void;
 	p: ReturnType<typeof getTokens>["p"];
 	t: ReturnType<typeof getTokens>["t"];
 	d: ReturnType<typeof getTokens>["d"];
@@ -201,27 +203,41 @@ function OpportunityCard({
 					</Text>
 				</TouchableOpacity>
 
+				{item.external_url ? (
+					<TouchableOpacity
+						onPress={onOpen}
+						style={[
+							card.actionBtn,
+							{ borderColor: p.accent, backgroundColor: p.accent },
+						]}
+						accessibilityLabel="Open"
+					>
+						<Text
+							style={[
+								card.actionLabel,
+								{ color: p.accentInk, fontFamily: t.ui },
+							]}
+						>
+							Open ↗
+						</Text>
+					</TouchableOpacity>
+				) : null}
+
 				<TouchableOpacity
-					onPress={onApply}
+					onPress={onToggleApplied}
 					style={[
 						card.actionBtn,
 						{
-							borderColor: isApplied ? p.accent : p.accent,
-							backgroundColor: isApplied ? `${p.accent}18` : p.accent,
+							borderColor: p.accent,
+							backgroundColor: isApplied ? `${p.accent}18` : "transparent",
 						},
 					]}
-					accessibilityLabel={isApplied ? "Applied" : "Apply"}
+					accessibilityLabel={isApplied ? "Mark not applied" : "Mark applied"}
 				>
 					<Text
-						style={[
-							card.actionLabel,
-							{
-								color: isApplied ? p.accent : p.accentInk,
-								fontFamily: t.ui,
-							},
-						]}
+						style={[card.actionLabel, { color: p.accent, fontFamily: t.ui }]}
 					>
-						{isApplied ? "Applied ✓" : "Apply ↗"}
+						{isApplied ? "Applied ✓" : "Mark applied"}
 					</Text>
 				</TouchableOpacity>
 			</View>
@@ -567,10 +583,9 @@ export default function Opportunities() {
 	const [showSubmit, setShowSubmit] = useState(false);
 
 	const { items, loading, error } = useOpportunities(activeCategory, search);
-	const { saved, toggleSave, markApplied } = useOpportunityInteractions();
+	const { saved, toggleSave, toggleApplied } = useOpportunityInteractions();
 
-	function handleApply(item: Opportunity) {
-		void markApplied(item.id);
+	function handleOpen(item: Opportunity) {
 		if (item.external_url) {
 			void Linking.openURL(item.external_url);
 		}
@@ -683,7 +698,8 @@ export default function Opportunities() {
 							isSaved={saved[item.id]?.saved ?? false}
 							isApplied={saved[item.id]?.applied ?? false}
 							onSave={() => void toggleSave(item.id)}
-							onApply={() => handleApply(item)}
+							onOpen={() => handleOpen(item)}
+							onToggleApplied={() => void toggleApplied(item.id)}
 							p={p}
 							t={t}
 							d={d}
