@@ -66,27 +66,45 @@ export function useOpportunityInteractions() {
 		[session, saved],
 	);
 
-	const markApplied = useCallback(
+	// Applying and opening the listing are separate actions (mirrors web's
+	// openLink/toggleApplied split): opening never touches this state, and
+	// "applied" is a reversible toggle, not a one-way mark.
+	const toggleApplied = useCallback(
 		async (opportunityId: string) => {
 			if (!session) return;
-			// Optimistic.
-			setSaved((prev) => ({
-				...prev,
-				[opportunityId]: { saved: true, applied: true },
-			}));
+			const isApplied = saved[opportunityId]?.applied ?? false;
 
-			await supabase.from("user_saved_opportunities").upsert(
-				{
-					user_id: session.user.id,
-					opportunity_id: opportunityId,
-					applied: true,
-					applied_at: new Date().toISOString(),
-				},
-				{ onConflict: "user_id,opportunity_id" },
-			);
+			if (isApplied) {
+				setSaved((prev) => ({
+					...prev,
+					[opportunityId]: { saved: true, applied: false },
+				}));
+				await supabase.from("user_saved_opportunities").upsert(
+					{
+						user_id: session.user.id,
+						opportunity_id: opportunityId,
+						applied: false,
+					},
+					{ onConflict: "user_id,opportunity_id" },
+				);
+			} else {
+				setSaved((prev) => ({
+					...prev,
+					[opportunityId]: { saved: true, applied: true },
+				}));
+				await supabase.from("user_saved_opportunities").upsert(
+					{
+						user_id: session.user.id,
+						opportunity_id: opportunityId,
+						applied: true,
+						applied_at: new Date().toISOString(),
+					},
+					{ onConflict: "user_id,opportunity_id" },
+				);
+			}
 		},
-		[session],
+		[session, saved],
 	);
 
-	return { saved, toggleSave, markApplied };
+	return { saved, toggleSave, toggleApplied };
 }

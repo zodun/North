@@ -7,22 +7,51 @@
 //         streak counter or loss-framing.
 // PRO-03: Signal band + saved opportunities wired to real M3 data.
 
-import { Card, ConsistencyGrid, RhythmStreakCard } from "@north/native-ui";
+import {
+	Button,
+	Card,
+	ConsistencyGrid,
+	RhythmStreakCard,
+} from "@north/native-ui";
 import { getTokens } from "@north/tokens";
+import { useState } from "react";
 import {
 	ActivityIndicator,
+	Alert,
+	Linking,
 	SafeAreaView,
 	ScrollView,
 	StyleSheet,
 	Text,
+	TextInput,
+	TouchableOpacity,
 	View,
 } from "react-native";
 
+import { supabase } from "@/lib/auth-client";
 import { useProfileData } from "@/lib/profile/use-profile-data";
 
 export default function Profile() {
 	const { p, t, d } = getTokens("warm", "humanist", "calm");
 	const { data, loading, error } = useProfileData();
+
+	function confirmSignOut() {
+		Alert.alert(
+			"Sign out?",
+			"You can sign back in any time.",
+			[
+				{ text: "Cancel", style: "cancel" },
+				{
+					text: "Sign out",
+					style: "destructive",
+					onPress: () => {
+						void supabase.auth.signOut();
+					},
+				},
+			],
+			{ cancelable: true },
+		);
+	}
 
 	if (loading) {
 		return (
@@ -278,10 +307,177 @@ export default function Profile() {
 						</Text>
 					)}
 				</Card>
+
+				{/* ── Sign out ─────────────────────────────────────────── */}
+				<View style={{ marginTop: d.gapLg }}>
+					<Button p={p} t={t} variant="outline" onPress={confirmSignOut}>
+						Sign out
+					</Button>
+				</View>
+
+				{/* ── Delete account ──────────────────────────────────── */}
+				<View style={{ marginTop: d.gap }}>
+					<DeleteAccountCard p={p} t={t} />
+				</View>
+
+				{/* ── Privacy policy ───────────────────────────────────── */}
+				<TouchableOpacity
+					onPress={() => void Linking.openURL(PRIVACY_POLICY_URL)}
+					style={{ marginTop: d.gap, alignItems: "center" }}
+				>
+					<Text style={{ color: p.inkDim, fontFamily: t.ui, fontSize: 12 }}>
+						Privacy Policy
+					</Text>
+				</TouchableOpacity>
 			</ScrollView>
 		</SafeAreaView>
 	);
 }
+
+// TODO: point at the production custom domain once one is confirmed for the
+// web app (see docs/supabase-projects.md / deploy topology notes).
+const PRIVACY_POLICY_URL = "https://north-system.vercel.app/privacy-policy";
+
+// App Store Guideline 5.1.1(v): apps that support account creation must
+// offer in-app deletion. Calls the delete-account Edge Function, which
+// verifies the caller's own JWT and deletes the auth.users row; every
+// user-data table cascades from that FK, so this removes everything.
+function DeleteAccountCard({
+	p,
+	t,
+}: {
+	p: ReturnType<typeof getTokens>["p"];
+	t: ReturnType<typeof getTokens>["t"];
+}) {
+	const [confirming, setConfirming] = useState(false);
+	const [confirmText, setConfirmText] = useState("");
+	const [deleting, setDeleting] = useState(false);
+	const [deleteError, setDeleteError] = useState<string | null>(null);
+
+	async function handleDelete() {
+		if (confirmText.trim().toUpperCase() !== "DELETE" || deleting) return;
+		setDeleting(true);
+		setDeleteError(null);
+		const { error } = await supabase.functions.invoke("delete-account", {
+			method: "POST",
+		});
+		if (error) {
+			setDeleteError("Something went wrong. Please try again.");
+			setDeleting(false);
+			return;
+		}
+		await supabase.auth.signOut();
+	}
+
+	if (!confirming) {
+		return (
+			<TouchableOpacity onPress={() => setConfirming(true)}>
+				<Text
+					style={[deleteStyles.trigger, { color: p.warn, fontFamily: t.ui }]}
+				>
+					Delete account
+				</Text>
+			</TouchableOpacity>
+		);
+	}
+
+	return (
+		<Card p={p}>
+			<Text style={[deleteStyles.warning, { color: p.warn, fontFamily: t.ui }]}>
+				This permanently deletes your account.
+			</Text>
+			<Text style={[deleteStyles.body, { color: p.inkMid, fontFamily: t.ui }]}>
+				Your profile, missions, journal, signal history, and saved opportunities
+				are all erased. This can't be undone.
+			</Text>
+			<Text style={[deleteStyles.label, { color: p.inkDim, fontFamily: t.ui }]}>
+				Type DELETE to confirm.
+			</Text>
+			<TextInput
+				value={confirmText}
+				onChangeText={setConfirmText}
+				placeholder="DELETE"
+				placeholderTextColor={p.inkDim}
+				autoCapitalize="characters"
+				autoCorrect={false}
+				style={[
+					deleteStyles.input,
+					{ color: p.ink, fontFamily: t.ui, borderColor: `${p.warn}44` },
+				]}
+			/>
+			{deleteError ? (
+				<Text style={[deleteStyles.body, { color: p.warn, fontFamily: t.ui }]}>
+					{deleteError}
+				</Text>
+			) : null}
+			<View style={deleteStyles.row}>
+				<TouchableOpacity
+					onPress={() => void handleDelete()}
+					disabled={confirmText.trim().toUpperCase() !== "DELETE" || deleting}
+					style={[
+						deleteStyles.deleteBtn,
+						{
+							backgroundColor:
+								confirmText.trim().toUpperCase() === "DELETE" && !deleting
+									? p.warn
+									: `${p.warn}44`,
+						},
+					]}
+				>
+					{deleting ? (
+						<ActivityIndicator color={p.bg} size="small" />
+					) : (
+						<Text
+							style={[
+								deleteStyles.deleteLabel,
+								{ color: p.bg, fontFamily: t.ui },
+							]}
+						>
+							Permanently delete
+						</Text>
+					)}
+				</TouchableOpacity>
+				<TouchableOpacity
+					onPress={() => {
+						setConfirming(false);
+						setConfirmText("");
+						setDeleteError(null);
+					}}
+					style={deleteStyles.cancelBtn}
+				>
+					<Text
+						style={[deleteStyles.body, { color: p.inkMid, fontFamily: t.ui }]}
+					>
+						Cancel
+					</Text>
+				</TouchableOpacity>
+			</View>
+		</Card>
+	);
+}
+
+const deleteStyles = StyleSheet.create({
+	trigger: { fontSize: 12, fontWeight: "500", textAlign: "center" },
+	warning: { fontSize: 13, fontWeight: "600", marginBottom: 6 },
+	body: { fontSize: 12, lineHeight: 17, marginBottom: 8 },
+	label: { fontSize: 12, marginBottom: 6 },
+	input: {
+		borderWidth: 1,
+		borderRadius: 8,
+		padding: 10,
+		fontSize: 14,
+		marginBottom: 10,
+	},
+	row: { flexDirection: "row", gap: 12, alignItems: "center" },
+	deleteBtn: {
+		paddingVertical: 10,
+		paddingHorizontal: 14,
+		borderRadius: 8,
+		alignItems: "center",
+	},
+	deleteLabel: { fontSize: 13, fontWeight: "500" },
+	cancelBtn: { paddingVertical: 10, paddingHorizontal: 8 },
+});
 
 const styles = StyleSheet.create({
 	safe: { flex: 1 },

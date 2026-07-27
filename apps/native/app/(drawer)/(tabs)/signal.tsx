@@ -16,6 +16,7 @@ import {
 
 import { PeopleSection } from "@/components/signal/PeopleSection";
 import { supabase } from "@/lib/auth-client";
+import { todayInAST } from "@/lib/mission/use-today-mission";
 import { usePeople } from "@/lib/signal/use-people";
 import { type SignalBand, useSignalData } from "@/lib/signal/use-signal-data";
 
@@ -472,16 +473,14 @@ const thumbs = StyleSheet.create({
 // ── Reflection entry ──────────────────────────────────────────────────
 
 function ReflectionCard({
-	weekEnding,
 	lastReflection,
 	p,
 	t,
 	onSubmitted,
 }: {
-	weekEnding: string;
 	lastReflection: {
 		body: string;
-		analysis: { themes: string[]; nudge: string } | null;
+		analysis: { signal: string[]; noise: string[]; read: string } | null;
 	} | null;
 	p: ReturnType<typeof getTokens>["p"];
 	t: ReturnType<typeof getTokens>["t"];
@@ -490,19 +489,25 @@ function ReflectionCard({
 	const [text, setText] = useState("");
 	const [submitting, setSubmitting] = useState(false);
 	const [localAnalysis, setLocalAnalysis] = useState<{
-		themes: string[];
-		nudge: string;
+		signal: string[];
+		noise: string[];
+		read: string;
 	} | null>(lastReflection?.analysis ?? null);
 
 	async function submit() {
 		if (!text.trim() || submitting) return;
 		setSubmitting(true);
 		try {
+			// The journal is a daily entry, keyed by entry_date server-side (not
+			// the weekly signal score); week_ending isn't a field the reflect
+			// function reads.
 			const { data, error } = await supabase.functions.invoke("reflect", {
-				body: { body: text.trim(), week_ending: weekEnding },
+				body: { body: text.trim(), entry_date: todayInAST() },
 			});
 			if (!error && data?.analysis) {
-				setLocalAnalysis(data.analysis as { themes: string[]; nudge: string });
+				setLocalAnalysis(
+					data.analysis as { signal: string[]; noise: string[]; read: string },
+				);
 			}
 			setText("");
 			onSubmitted();
@@ -514,14 +519,14 @@ function ReflectionCard({
 	return (
 		<Card p={p}>
 			<Text style={[styles.eyebrow, { color: p.inkDim, fontFamily: t.ui }]}>
-				CARRY FORWARD
+				TODAY'S JOURNAL
 			</Text>
 			{localAnalysis ? (
 				<View style={{ marginBottom: 14 }}>
 					<View style={reflect.themeRow}>
-						{localAnalysis.themes.map((theme) => (
+						{localAnalysis.signal.map((item) => (
 							<View
-								key={theme}
+								key={item}
 								style={[
 									reflect.pill,
 									{
@@ -536,20 +541,41 @@ function ReflectionCard({
 										{ color: p.accent, fontFamily: t.ui },
 									]}
 								>
-									{theme}
+									{item}
+								</Text>
+							</View>
+						))}
+						{localAnalysis.noise.map((item) => (
+							<View
+								key={item}
+								style={[
+									reflect.pill,
+									{
+										backgroundColor: `${p.inkDim}1a`,
+										borderColor: `${p.inkDim}33`,
+									},
+								]}
+							>
+								<Text
+									style={[
+										reflect.pillText,
+										{ color: p.inkDim, fontFamily: t.ui },
+									]}
+								>
+									{item}
 								</Text>
 							</View>
 						))}
 					</View>
 					<Text style={[reflect.nudge, { color: p.inkMid, fontFamily: t.ui }]}>
-						{localAnalysis.nudge}
+						{localAnalysis.read}
 					</Text>
 				</View>
 			) : null}
 			<TextInput
 				value={text}
 				onChangeText={setText}
-				placeholder="What do you want to carry forward this week?"
+				placeholder="What moved you today, what pulled you away?"
 				placeholderTextColor={p.inkDim}
 				multiline
 				maxLength={1000}
@@ -580,7 +606,7 @@ function ReflectionCard({
 					<Text
 						style={[reflect.submitLabel, { color: p.bg, fontFamily: t.ui }]}
 					>
-						Reflect
+						Find the signal
 					</Text>
 				)}
 			</TouchableOpacity>
@@ -896,7 +922,6 @@ export default function Signal() {
 
 				{/* ── Reflection ────────────────────────────────────────── */}
 				<ReflectionCard
-					weekEnding={data.weekEnding}
 					lastReflection={data.lastReflection}
 					p={p}
 					t={t}

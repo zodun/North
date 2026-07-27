@@ -1,5 +1,6 @@
 "use client";
 
+import { DeleteAccountSection } from "./delete-account-section";
 import { PreferencesSection } from "./preferences-section";
 import { PurposeBadge } from "./purpose-badge";
 import { TelegramReminders } from "./telegram-reminders";
@@ -550,6 +551,22 @@ export function ProfileView({
 								Sign out
 							</button>
 						</form>
+
+						{/* ── Delete account ──────────────────────────────────── */}
+						<div className="mt-4 text-center">
+							<DeleteAccountSection hasActiveSubscription={isPremium} />
+						</div>
+
+						{/* ── Privacy policy ──────────────────────────────────── */}
+						<div className="mt-4 text-center">
+							<a
+								href="/privacy-policy"
+								className="font-semibold text-xs transition-colors hover:underline"
+								style={{ color: ON_VARIANT, opacity: 0.6 }}
+							>
+								Privacy Policy
+							</a>
+						</div>
 					</div>
 				</div>
 			</div>

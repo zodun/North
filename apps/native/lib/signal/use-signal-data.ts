@@ -6,9 +6,9 @@ import { todayInAST } from "../mission/use-today-mission";
 export type SignalBand = "Drifting" | "Finding" | "Aligned";
 
 export type ReflectionAnalysis = {
-	themes: string[];
-	alignment: "aligned" | "drifting" | "unclear";
-	nudge: string;
+	signal: string[];
+	noise: string[];
+	read: string;
 };
 
 export type Callout = { label: string; body: string };
@@ -67,6 +67,7 @@ type RatingRow = {
 type ReflectionRow = {
 	id: string;
 	body: string;
+	entry_date: string;
 	analysis:
 		| (ReflectionAnalysis & { model?: string; prompt_version?: string })
 		| null;
@@ -137,11 +138,14 @@ export function useSignalData() {
 				.eq("user_id", userId)
 				.eq("week_ending", current.week_ending),
 
+			// The journal is a daily thing, decoupled from the weekly signal
+			// score; fetch the latest entry regardless of date (matches web's
+			// loadSignalData behavior).
 			supabase
 				.from("user_reflections")
-				.select("id, body, analysis")
+				.select("id, body, entry_date, analysis")
 				.eq("user_id", userId)
-				.eq("week_ending", current.week_ending)
+				.order("entry_date", { ascending: false })
 				.order("created_at", { ascending: false })
 				.limit(1)
 				.maybeSingle(),
@@ -177,9 +181,9 @@ export function useSignalData() {
 						body: reflectionRow.body,
 						analysis: reflectionRow.analysis
 							? {
-									themes: reflectionRow.analysis.themes,
-									alignment: reflectionRow.analysis.alignment,
-									nudge: reflectionRow.analysis.nudge,
+									signal: reflectionRow.analysis.signal,
+									noise: reflectionRow.analysis.noise,
+									read: reflectionRow.analysis.read,
 								}
 							: null,
 					}
