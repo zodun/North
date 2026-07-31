@@ -206,7 +206,7 @@ export default function Community() {
 						</View>
 
 						{discussion.loading ? (
-							<ActivityIndicator color={p.green} style={{ marginTop: 20 }} />
+							<ActivityIndicator color={p.accent} style={{ marginTop: 20 }} />
 						) : discussion.posts.length === 0 ? (
 							<Text
 								style={[d.feedEmpty, { color: p.inkDim, fontFamily: t.ui }]}

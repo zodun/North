@@ -1,70 +1,27 @@
-// Bottom tab bar — the sheet's five-tab loop on a floating white pill,
-// hairline-bordered, flat by doctrine (no shadow). Each tab carries its
-// section accent when active — gold for the For You needle, teal for
-// Mission, violet for Opportunities, blue for Journal, green for
-// Community — with labels on the darker ink variants so they stay
-// ≥4.5:1 on white. Inactive tabs are quiet ink-dim outlines.
+// Bottom tab bar — the five-tab loop on a floating white pill,
+// hairline-bordered, flat by doctrine (no shadow). Two-tone: the active
+// tab is ink with a small gold needle-dot underneath — gold marks where
+// you are, which is the one "next action" the bar answers.
 
 import { Icon, type IconName, MIN_TOUCH_TARGET } from "@north/native-ui";
-import { getNorthTokens, type NorthPalette } from "@north/tokens";
+import { getNorthTokens } from "@north/tokens";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 // biome-ignore lint/suspicious/noExplicitAny: BottomTabBarProps isn't a resolvable specifier
 type TabsBarProps = any;
 
-type AccentKey = keyof Pick<
-	NorthPalette,
-	"gold" | "teal" | "violet" | "blue" | "green"
->;
-type AccentInkKey = keyof Pick<
-	NorthPalette,
-	"goldInk" | "tealInk" | "violetInk" | "blueInk" | "greenInk"
->;
-
 type TabSpec = {
 	route: string;
 	label: string;
 	icon: IconName;
-	accent: AccentKey;
-	accentInk: AccentInkKey;
 };
 
 const TABS: TabSpec[] = [
-	{
-		route: "for-you",
-		label: "For You",
-		icon: "forYou",
-		accent: "gold",
-		accentInk: "goldInk",
-	},
-	{
-		route: "mission",
-		label: "Mission",
-		icon: "mission",
-		accent: "teal",
-		accentInk: "tealInk",
-	},
-	{
-		route: "opportunities",
-		label: "Open",
-		icon: "opportunities",
-		accent: "violet",
-		accentInk: "violetInk",
-	},
-	{
-		route: "journal",
-		label: "Journal",
-		icon: "journal",
-		accent: "blue",
-		accentInk: "blueInk",
-	},
-	{
-		route: "community",
-		label: "People",
-		icon: "community",
-		accent: "green",
-		accentInk: "greenInk",
-	},
+	{ route: "for-you", label: "For You", icon: "forYou" },
+	{ route: "mission", label: "Mission", icon: "mission" },
+	{ route: "opportunities", label: "Open", icon: "opportunities" },
+	{ route: "journal", label: "Journal", icon: "journal" },
+	{ route: "community", label: "People", icon: "community" },
 ];
 
 export function CustomTabBar({ state, navigation }: TabsBarProps) {
@@ -113,12 +70,12 @@ export function CustomTabBar({ state, navigation }: TabsBarProps) {
 							<Icon
 								name={tab.icon}
 								size={20}
-								color={focused ? p[tab.accent] : p.inkDim}
+								color={focused ? p.ink : p.inkDim}
 								strokeWidth={focused ? 2 : 1.6}
 							/>
 							<Text
 								style={{
-									color: focused ? p[tab.accentInk] : p.inkDim,
+									color: focused ? p.ink : p.inkDim,
 									fontSize: 10,
 									fontWeight: focused ? "700" : "500",
 								}}
@@ -128,9 +85,7 @@ export function CustomTabBar({ state, navigation }: TabsBarProps) {
 							<View
 								style={[
 									styles.needleDot,
-									{
-										backgroundColor: focused ? p[tab.accent] : "transparent",
-									},
+									{ backgroundColor: focused ? p.gold : "transparent" },
 								]}
 							/>
 						</Pressable>

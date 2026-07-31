@@ -368,12 +368,12 @@ function PersonRow({
 			<View
 				style={[
 					r.avatar,
-					{ backgroundColor: `${p.green}14` },
+					{ backgroundColor: p.surfaceHi },
 					checkedIn && { borderWidth: 2, borderColor: p.green },
 				]}
 			>
 				<Text
-					style={[r.avatarLetter, { color: p.greenInk, fontFamily: t.display }]}
+					style={[r.avatarLetter, { color: p.inkMid, fontFamily: t.display }]}
 				>
 					{person.name[0]?.toUpperCase() ?? "?"}
 				</Text>
@@ -471,8 +471,8 @@ export function PeopleSection({
 						{ backgroundColor: p.surface, borderColor: p.line },
 					]}
 				>
-					<View style={[s.emptyIcon, { backgroundColor: `${p.green}1a` }]}>
-						<Icon name="community" size={26} color={p.greenInk} />
+					<View style={[s.emptyIcon, { backgroundColor: p.surfaceHi }]}>
+						<Icon name="community" size={26} color={p.inkMid} />
 					</View>
 					<Text
 						style={[s.emptyHeading, { color: p.ink, fontFamily: t.display }]}

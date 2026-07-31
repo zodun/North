@@ -176,7 +176,7 @@ export default function Journal() {
 										<Text
 											style={[
 												styles.pillText,
-												{ color: p.tealInk, fontFamily: t.ui },
+												{ color: p.inkMid, fontFamily: t.ui },
 											]}
 										>
 											{theme}

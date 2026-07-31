@@ -194,7 +194,7 @@ function OpportunityCard({
 					<Text
 						style={[
 							card.actionLabel,
-							{ color: isSaved ? p.tealInk : p.inkMid, fontFamily: t.ui },
+							{ color: isSaved ? p.ink : p.inkMid, fontFamily: t.ui },
 						]}
 					>
 						{isSaved ? "Saved" : "Save"}
@@ -217,7 +217,7 @@ function OpportunityCard({
 						style={[
 							card.actionLabel,
 							{
-								color: isApplied ? p.tealInk : p.accentInk,
+								color: isApplied ? p.greenInk : p.accentInk,
 								fontFamily: t.ui,
 							},
 						]}
@@ -337,7 +337,7 @@ function SubmitForm({
 				</Text>
 				<TouchableOpacity onPress={onDone} style={form.doneBtn}>
 					<Text
-						style={[form.doneBtnLabel, { color: p.tealInk, fontFamily: t.ui }]}
+						style={[form.doneBtnLabel, { color: p.greenInk, fontFamily: t.ui }]}
 					>
 						Close
 					</Text>
