@@ -236,7 +236,7 @@ export function useProfileData() {
 			savedOpportunities,
 		});
 		setLoading(false);
-	}, [session]);
+	}, [session, bypass]);
 
 	useEffect(() => {
 		setLoading(true);

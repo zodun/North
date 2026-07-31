@@ -4,7 +4,7 @@
 // a peek of this week's note. Green is the section accent (growth in
 // company); gold appears only on the one next action.
 
-import { Icon, ProgressRing, Rise, staggerDelay } from "@north/native-ui";
+import { Icon, Rise } from "@north/native-ui";
 import type { getNorthTokens } from "@north/tokens";
 import { useState } from "react";
 import {
@@ -326,79 +326,17 @@ function PersonModal({
 	);
 }
 
-// ── This-week ritual card ─────────────────────────────────────────────────────
-
-function WeekPulseCard({
-	people,
-	checkIns,
-	p,
-	t,
-}: {
-	people: Person[];
-	checkIns: PersonCheckIn[];
-	p: Tokens["p"];
-	t: Tokens["t"];
-}) {
-	const checkedIn = people.filter((person) =>
-		checkIns.some((c) => c.person_id === person.id && (c.signal || c.noise)),
-	).length;
-	const allDone = checkedIn === people.length;
-
-	return (
-		<View style={[w.card, { backgroundColor: p.surface, borderColor: p.line }]}>
-			<View style={{ flex: 1 }}>
-				<Text style={[w.eyebrow, { color: p.inkDim, fontFamily: t.ui }]}>
-					THIS WEEK
-				</Text>
-				<Text style={[w.count, { color: p.ink, fontFamily: t.display }]}>
-					{checkedIn} of {people.length}
-				</Text>
-				<Text style={[w.sub, { color: p.inkMid, fontFamily: t.ui }]}>
-					{allDone
-						? "Circle complete. See you Sunday."
-						: "checked in — one honest note each is enough."}
-				</Text>
-			</View>
-			<ProgressRing
-				p={p}
-				value={people.length > 0 ? checkedIn / people.length : 0}
-				size={64}
-				strokeWidth={7}
-				color={p.green}
-				trackColor="rgba(13,19,33,0.07)"
-				accessibilityLabel={`${checkedIn} of ${people.length} people checked in this week`}
-			>
-				<Icon name="community" size={22} color={p.greenInk} />
-			</ProgressRing>
-		</View>
-	);
-}
-
-const w = StyleSheet.create({
-	card: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 16,
-		borderRadius: 18,
-		borderWidth: 1,
-		padding: 16,
-	},
-	eyebrow: {
-		fontSize: 10,
-		fontWeight: "600",
-		letterSpacing: 2,
-		marginBottom: 6,
-	},
-	count: { fontSize: 24, lineHeight: 28 },
-	sub: { fontSize: 12, lineHeight: 17, marginTop: 4 },
-});
-
 // ── Person row ────────────────────────────────────────────────────────────────
+//
+// One quiet line per person: a green ring on the avatar means this
+// week's check-in is done. No chips, no previews — the row is the
+// invitation, the modal is the detail.
 
 function PersonRow({
 	person,
 	goal,
 	checkIn,
+	first,
 	p,
 	t,
 	onPress,
@@ -406,32 +344,40 @@ function PersonRow({
 	person: Person;
 	goal: PersonGoal | undefined;
 	checkIn: PersonCheckIn | undefined;
+	first: boolean;
 	p: Tokens["p"];
 	t: Tokens["t"];
 	onPress: () => void;
 }) {
 	const checkedIn = !!(checkIn?.signal || checkIn?.noise);
-	const note = checkIn?.signal || checkIn?.noise || null;
 
 	return (
 		<Pressable
 			onPress={onPress}
 			accessibilityRole="button"
-			accessibilityLabel={`${person.name}${checkedIn ? ", checked in" : ", not checked in yet"}`}
+			accessibilityLabel={`${person.name}${checkedIn ? ", checked in this week" : ", not checked in yet"}`}
 			style={({ pressed }) => [
 				r.row,
-				{ backgroundColor: p.surface, borderColor: p.line },
-				pressed && { opacity: 0.75 },
+				!first && {
+					borderTopWidth: StyleSheet.hairlineWidth,
+					borderTopColor: p.line,
+				},
+				pressed && { opacity: 0.7 },
 			]}
 		>
-			<View style={[r.avatar, { backgroundColor: `${p.green}1a` }]}>
+			<View
+				style={[
+					r.avatar,
+					{ backgroundColor: `${p.green}14` },
+					checkedIn && { borderWidth: 2, borderColor: p.green },
+				]}
+			>
 				<Text
 					style={[r.avatarLetter, { color: p.greenInk, fontFamily: t.display }]}
 				>
 					{person.name[0]?.toUpperCase() ?? "?"}
 				</Text>
 			</View>
-
 			<View style={r.middle}>
 				<Text
 					style={[r.name, { color: p.ink, fontFamily: t.ui }]}
@@ -446,47 +392,9 @@ function PersonRow({
 					>
 						{goal.goal}
 					</Text>
-				) : (
-					<Text
-						style={[
-							r.goal,
-							{ color: p.inkDim, fontFamily: t.ui, fontStyle: "italic" },
-						]}
-					>
-						No goal this month
-					</Text>
-				)}
-				{note ? (
-					<View style={r.noteRow}>
-						<View
-							style={[
-								r.noteDot,
-								{ backgroundColor: checkIn?.signal ? p.green : p.warn },
-							]}
-						/>
-						<Text
-							style={[r.note, { color: p.inkDim, fontFamily: t.ui }]}
-							numberOfLines={1}
-						>
-							{note}
-						</Text>
-					</View>
 				) : null}
 			</View>
-
-			{checkedIn ? (
-				<View style={[r.chip, { backgroundColor: `${p.green}1f` }]}>
-					<Text style={[r.chipLabel, { color: p.greenInk, fontFamily: t.ui }]}>
-						Checked in
-					</Text>
-				</View>
-			) : (
-				<View style={[r.chip, { borderWidth: 1, borderColor: p.lineHi }]}>
-					<Text style={[r.chipLabel, { color: p.inkMid, fontFamily: t.ui }]}>
-						Check in
-					</Text>
-				</View>
-			)}
+			{checkedIn ? <Icon name="check" size={16} color={p.greenInk} /> : null}
 		</Pressable>
 	);
 }
@@ -496,31 +404,20 @@ const r = StyleSheet.create({
 		flexDirection: "row",
 		alignItems: "center",
 		gap: 12,
-		borderRadius: 14,
-		borderWidth: 1,
 		paddingHorizontal: 14,
-		paddingVertical: 13,
+		paddingVertical: 12,
 	},
 	avatar: {
-		width: 44,
-		height: 44,
-		borderRadius: 22,
+		width: 40,
+		height: 40,
+		borderRadius: 20,
 		alignItems: "center",
 		justifyContent: "center",
 	},
-	avatarLetter: { fontSize: 18 },
-	middle: { flex: 1, gap: 2 },
-	name: { fontSize: 15, fontWeight: "600" },
-	goal: { fontSize: 12, lineHeight: 17 },
-	noteRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 2 },
-	noteDot: { width: 5, height: 5, borderRadius: 2.5 },
-	note: { fontSize: 11, lineHeight: 15, flex: 1 },
-	chip: {
-		borderRadius: 999,
-		paddingHorizontal: 10,
-		paddingVertical: 5,
-	},
-	chipLabel: { fontSize: 11, fontWeight: "600" },
+	avatarLetter: { fontSize: 16 },
+	middle: { flex: 1, gap: 1 },
+	name: { fontSize: 14.5, fontWeight: "600" },
+	goal: { fontSize: 12, lineHeight: 16 },
 });
 
 // ── Main exported section ─────────────────────────────────────────────────────
@@ -559,6 +456,11 @@ export function PeopleSection({
 	const selectedCheckIn = checkIns.find(
 		(c) => c.person_id === selectedPerson?.id,
 	);
+
+	const checkedIn = people.filter((person) =>
+		checkIns.some((c) => c.person_id === person.id && (c.signal || c.noise)),
+	).length;
+	const allDone = people.length > 0 && checkedIn === people.length;
 
 	if (people.length === 0) {
 		return (
@@ -608,40 +510,58 @@ export function PeopleSection({
 	}
 
 	return (
-		<View style={s.stack}>
-			<Rise>
-				<WeekPulseCard people={people} checkIns={checkIns} p={p} t={t} />
-			</Rise>
+		<Rise>
+			<View style={s.headerRow}>
+				<Text style={[s.headerEyebrow, { color: p.inkDim, fontFamily: t.ui }]}>
+					YOUR CIRCLE
+				</Text>
+				<Text
+					style={[
+						s.headerCount,
+						{ color: allDone ? p.greenInk : p.inkDim, fontFamily: t.ui },
+					]}
+				>
+					{allDone
+						? "Circle complete"
+						: `${checkedIn} of ${people.length} checked in`}
+				</Text>
+			</View>
 
-			{people.map((person, i) => (
-				<Rise key={person.id} delay={staggerDelay(i + 1)}>
+			<View
+				style={[s.group, { backgroundColor: p.surface, borderColor: p.line }]}
+			>
+				{people.map((person, i) => (
 					<PersonRow
+						key={person.id}
 						person={person}
 						goal={goals.find((g) => g.person_id === person.id)}
 						checkIn={checkIns.find((c) => c.person_id === person.id)}
+						first={i === 0}
 						p={p}
 						t={t}
 						onPress={() => setSelectedPerson(person)}
 					/>
-				</Rise>
-			))}
-
-			<Rise delay={staggerDelay(people.length + 1)}>
+				))}
 				<Pressable
 					onPress={() => setAddVisible(true)}
 					accessibilityRole="button"
 					accessibilityLabel="Add a person"
 					style={({ pressed }) => [
 						s.addRow,
-						{ borderColor: p.lineHi },
+						{ borderTopColor: p.line },
 						pressed && { opacity: 0.6 },
 					]}
 				>
-					<Text style={[s.addRowLabel, { color: p.inkMid, fontFamily: t.ui }]}>
-						+ Add someone you're moving with
+					<View style={[s.addCircle, { borderColor: p.lineHi }]}>
+						<Text style={[s.addPlus, { color: p.inkMid, fontFamily: t.ui }]}>
+							+
+						</Text>
+					</View>
+					<Text style={[s.addLabel, { color: p.inkMid, fontFamily: t.ui }]}>
+						Add person
 					</Text>
 				</Pressable>
-			</Rise>
+			</View>
 
 			<AddPersonModal
 				visible={addVisible}
@@ -667,12 +587,44 @@ export function PeopleSection({
 					onClose={() => setSelectedPerson(null)}
 				/>
 			) : null}
-		</View>
+		</Rise>
 	);
 }
 
 const s = StyleSheet.create({
-	stack: { gap: 10 },
+	headerRow: {
+		flexDirection: "row",
+		alignItems: "baseline",
+		justifyContent: "space-between",
+		marginBottom: 8,
+		paddingHorizontal: 2,
+	},
+	headerEyebrow: { fontSize: 10, fontWeight: "600", letterSpacing: 2 },
+	headerCount: { fontSize: 11, fontWeight: "500" },
+	group: {
+		borderRadius: 16,
+		borderWidth: 1,
+		overflow: "hidden",
+	},
+	addRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		paddingHorizontal: 14,
+		paddingVertical: 11,
+		borderTopWidth: StyleSheet.hairlineWidth,
+	},
+	addCircle: {
+		width: 40,
+		height: 40,
+		borderRadius: 20,
+		borderWidth: 1,
+		borderStyle: "dashed",
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	addPlus: { fontSize: 18, lineHeight: 20 },
+	addLabel: { fontSize: 13, fontWeight: "500" },
 	emptyCard: {
 		borderRadius: 18,
 		borderWidth: 1,
@@ -705,14 +657,6 @@ const s = StyleSheet.create({
 		paddingVertical: 12,
 	},
 	emptyBtnLabel: { fontSize: 14, fontWeight: "600" },
-	addRow: {
-		borderRadius: 14,
-		borderWidth: 1,
-		borderStyle: "dashed",
-		paddingVertical: 14,
-		alignItems: "center",
-	},
-	addRowLabel: { fontSize: 13, fontWeight: "500" },
 	modalRoot: { flex: 1 },
 	modalHandle: {
 		width: 36,

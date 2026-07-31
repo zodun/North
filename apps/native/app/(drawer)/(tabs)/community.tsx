@@ -1,21 +1,21 @@
-// Community tab — the people you're moving with, and the discussion of
-// what everyone is working toward. Green is the section accent (growth
-// in company); a goal on a post wears the gold chip, because a goal is
-// a needle.
+// Community tab — your circle's weekly check-ins, then the discussion
+// of what everyone is working toward. Two quiet groups, hairlines
+// inside; green is the section accent, and a goal on a post is a small
+// gold line, because a goal is a needle.
 
-import { Rise, staggerDelay } from "@north/native-ui";
+import { Icon, Rise, staggerDelay } from "@north/native-ui";
 import { getNorthTokens } from "@north/tokens";
 import { useState } from "react";
 import {
 	ActivityIndicator,
 	KeyboardAvoidingView,
 	Platform,
+	Pressable,
 	SafeAreaView,
 	ScrollView,
 	StyleSheet,
 	Text,
 	TextInput,
-	TouchableOpacity,
 	View,
 } from "react-native";
 
@@ -40,47 +40,32 @@ function timeAgo(iso: string): string {
 
 function PostRow({
 	post,
+	first,
 	p,
 	t,
 }: {
 	post: DiscussionPost;
+	first: boolean;
 	p: Tokens["p"];
 	t: Tokens["t"];
 }) {
 	return (
-		<View style={[d.post, { backgroundColor: p.surface, borderColor: p.line }]}>
+		<View
+			style={[
+				d.post,
+				!first && {
+					borderTopWidth: StyleSheet.hairlineWidth,
+					borderTopColor: p.line,
+				},
+			]}
+		>
 			<View style={d.postHead}>
-				<View style={[d.postAvatar, { backgroundColor: `${p.green}1a` }]}>
-					<Text
-						style={[
-							d.postAvatarLetter,
-							{ color: p.greenInk, fontFamily: t.display },
-						]}
-					>
-						{post.author[0]?.toUpperCase() ?? "?"}
-					</Text>
-				</View>
-				<View style={{ flex: 1 }}>
-					<Text
-						style={[d.postAuthor, { color: p.ink, fontFamily: t.ui }]}
-						numberOfLines={1}
-					>
-						{post.isMine ? `${post.author} (you)` : post.author}
-					</Text>
-					{post.authorGoal ? (
-						<View style={[d.goalChip, { backgroundColor: `${p.gold}1f` }]}>
-							<Text
-								style={[
-									d.goalChipLabel,
-									{ color: p.goldInk, fontFamily: t.ui },
-								]}
-								numberOfLines={1}
-							>
-								{post.authorGoal}
-							</Text>
-						</View>
-					) : null}
-				</View>
+				<Text
+					style={[d.postAuthor, { color: p.ink, fontFamily: t.ui }]}
+					numberOfLines={1}
+				>
+					{post.isMine ? `${post.author} (you)` : post.author}
+				</Text>
 				<Text style={[d.postTime, { color: p.inkDim, fontFamily: t.ui }]}>
 					{timeAgo(post.createdAt)}
 				</Text>
@@ -88,6 +73,14 @@ function PostRow({
 			<Text style={[d.postBody, { color: p.inkMid, fontFamily: t.ui }]}>
 				{post.caption}
 			</Text>
+			{post.authorGoal ? (
+				<Text
+					style={[d.postGoal, { color: p.goldInk, fontFamily: t.ui }]}
+					numberOfLines={1}
+				>
+					→ {post.authorGoal}
+				</Text>
+			) : null}
 		</View>
 	);
 }
@@ -104,6 +97,8 @@ export default function Community() {
 		const ok = await discussion.submit(draft);
 		if (ok) setDraft("");
 	}
+
+	const canPost = !!draft.trim() && !discussion.submitting;
 
 	return (
 		<SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]}>
@@ -141,7 +136,6 @@ export default function Community() {
 						</View>
 					</Rise>
 
-					{/* The section staggers its own rows — no outer Rise. */}
 					<PeopleSection
 						people={people.people}
 						goals={people.goals}
@@ -158,28 +152,18 @@ export default function Community() {
 					/>
 
 					{/* ── Discussion ──────────────────────────────────────── */}
-					<Rise delay={staggerDelay(2)}>
-						<View style={styles.discussionHeader}>
+					<Rise delay={staggerDelay(1)}>
+						<View style={styles.sectionHeaderRow}>
 							<Text
 								style={[
-									styles.discussionTitle,
-									{ color: p.ink, fontFamily: t.editorial },
+									styles.sectionEyebrow,
+									{ color: p.inkDim, fontFamily: t.ui },
 								]}
 							>
-								Discussion
-							</Text>
-							<Text
-								style={[
-									styles.discussionSub,
-									{ color: p.inkMid, fontFamily: t.ui },
-								]}
-							>
-								What everyone is working toward this month.
+								DISCUSSION
 							</Text>
 						</View>
-					</Rise>
 
-					<Rise delay={staggerDelay(3)}>
 						<View
 							style={[
 								d.composer,
@@ -195,40 +179,34 @@ export default function Community() {
 								maxLength={500}
 								style={[d.composerInput, { color: p.ink, fontFamily: t.ui }]}
 							/>
-							<TouchableOpacity
+							<Pressable
 								onPress={() => void post()}
-								disabled={!draft.trim() || discussion.submitting}
+								disabled={!canPost}
 								accessibilityRole="button"
 								accessibilityLabel="Post update"
-								style={[
+								style={({ pressed }) => [
 									d.composerBtn,
 									{
-										backgroundColor:
-											draft.trim() && !discussion.submitting
-												? p.gold
-												: `${p.gold}55`,
+										backgroundColor: canPost ? p.gold : `${p.gold}44`,
+										opacity: pressed ? 0.8 : 1,
 									},
 								]}
 							>
 								{discussion.submitting ? (
 									<ActivityIndicator color={p.accentInk} size="small" />
 								) : (
-									<Text
-										style={[
-											d.composerBtnLabel,
-											{ color: p.accentInk, fontFamily: t.ui },
-										]}
-									>
-										Post
-									</Text>
+									<Icon
+										name="arrowUp"
+										size={16}
+										color={p.accentInk}
+										strokeWidth={2}
+									/>
 								)}
-							</TouchableOpacity>
+							</Pressable>
 						</View>
-					</Rise>
 
-					<View style={d.feed}>
 						{discussion.loading ? (
-							<ActivityIndicator color={p.green} style={{ marginTop: 16 }} />
+							<ActivityIndicator color={p.green} style={{ marginTop: 20 }} />
 						) : discussion.posts.length === 0 ? (
 							<Text
 								style={[d.feedEmpty, { color: p.inkDim, fontFamily: t.ui }]}
@@ -237,11 +215,24 @@ export default function Community() {
 								probably working toward it too.
 							</Text>
 						) : (
-							discussion.posts.map((item) => (
-								<PostRow key={item.id} post={item} p={p} t={t} />
-							))
+							<View
+								style={[
+									d.feedGroup,
+									{ backgroundColor: p.surface, borderColor: p.line },
+								]}
+							>
+								{discussion.posts.map((item, i) => (
+									<PostRow
+										key={item.id}
+										post={item}
+										first={i === 0}
+										p={p}
+										t={t}
+									/>
+								))}
+							</View>
 						)}
-					</View>
+					</Rise>
 				</ScrollView>
 			</KeyboardAvoidingView>
 		</SafeAreaView>
@@ -252,61 +243,59 @@ const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	heading: { fontSize: 26, lineHeight: 32, letterSpacing: -0.5 },
 	subHeading: { fontSize: 13, lineHeight: 19, marginTop: 4 },
-	discussionHeader: { marginTop: 28, marginBottom: 12 },
-	discussionTitle: { fontSize: 18, lineHeight: 24 },
-	discussionSub: { fontSize: 12, lineHeight: 17, marginTop: 2 },
+	sectionHeaderRow: {
+		marginTop: 28,
+		marginBottom: 8,
+		paddingHorizontal: 2,
+	},
+	sectionEyebrow: { fontSize: 10, fontWeight: "600", letterSpacing: 2 },
 });
 
 const d = StyleSheet.create({
 	composer: {
-		borderRadius: 14,
-		borderWidth: 1,
-		padding: 12,
+		flexDirection: "row",
+		alignItems: "flex-end",
 		gap: 10,
+		borderRadius: 22,
+		borderWidth: 1,
+		paddingLeft: 16,
+		paddingRight: 6,
+		paddingVertical: 6,
 	},
 	composerInput: {
+		flex: 1,
 		fontSize: 14,
-		lineHeight: 20,
-		minHeight: 44,
-		textAlignVertical: "top",
+		lineHeight: 19,
+		maxHeight: 96,
+		paddingVertical: 6,
 	},
 	composerBtn: {
-		alignSelf: "flex-end",
-		borderRadius: 8,
-		paddingHorizontal: 16,
-		paddingVertical: 8,
+		width: 32,
+		height: 32,
+		borderRadius: 16,
+		alignItems: "center",
+		justifyContent: "center",
+		marginBottom: 2,
 	},
-	composerBtnLabel: { fontSize: 13, fontWeight: "600" },
-	feed: { gap: 10, marginTop: 10 },
-	feedEmpty: { fontSize: 13, lineHeight: 20, textAlign: "center", padding: 16 },
-	post: {
-		borderRadius: 14,
+	feedGroup: {
+		borderRadius: 16,
 		borderWidth: 1,
-		padding: 14,
+		overflow: "hidden",
+		marginTop: 10,
+	},
+	feedEmpty: { fontSize: 13, lineHeight: 20, textAlign: "center", padding: 20 },
+	post: {
+		paddingHorizontal: 14,
+		paddingVertical: 13,
 	},
 	postHead: {
 		flexDirection: "row",
-		alignItems: "center",
-		gap: 10,
-		marginBottom: 8,
+		alignItems: "baseline",
+		justifyContent: "space-between",
+		gap: 8,
 	},
-	postAvatar: {
-		width: 36,
-		height: 36,
-		borderRadius: 18,
-		alignItems: "center",
-		justifyContent: "center",
-	},
-	postAvatarLetter: { fontSize: 15 },
-	postAuthor: { fontSize: 14, fontWeight: "600" },
-	goalChip: {
-		alignSelf: "flex-start",
-		borderRadius: 999,
-		paddingHorizontal: 8,
-		paddingVertical: 2,
-		marginTop: 3,
-	},
-	goalChipLabel: { fontSize: 10, fontWeight: "600" },
-	postTime: { fontSize: 11, alignSelf: "flex-start", marginTop: 2 },
-	postBody: { fontSize: 14, lineHeight: 21 },
+	postAuthor: { fontSize: 13.5, fontWeight: "600", flexShrink: 1 },
+	postTime: { fontSize: 11 },
+	postBody: { fontSize: 14, lineHeight: 21, marginTop: 3 },
+	postGoal: { fontSize: 11.5, fontWeight: "500", marginTop: 6 },
 });
