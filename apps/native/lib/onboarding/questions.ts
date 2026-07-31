@@ -60,24 +60,24 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
 	},
 	{
 		id: "focus",
-		prompt: "Pick up to three focus areas.",
-		sub: "These shape your feed, your missions, and the opportunities you see.",
+		prompt: "What matters right now?",
+		sub: "Pick up to three. North points itself at these.",
 		max: FOCUS_AREAS_MAX,
 	},
 	{
 		id: "career",
 		prompt: "Where are you in your career?",
-		sub: "This is the biggest filter for what’s actually open to you.",
+		sub: "This filters what’s actually open to you.",
 	},
 	{
 		id: "location",
 		prompt: "Where are you based?",
-		sub: "So we only show you what you’re eligible for, and rank remote-friendly picks for you.",
+		sub: "So everything you see is open to you.",
 	},
 	{
 		id: "time",
-		prompt: "How much time can you give this on a real day?",
-		sub: "Be honest. We tune your missions to fit.",
+		prompt: "How much time on a real day?",
+		sub: "Be honest. North works with what you have.",
 		options: ["10 minutes", "30 minutes", "1 hour", "Whatever the day allows"],
 	},
 	{
@@ -90,7 +90,7 @@ export const ONBOARDING_QUESTIONS: OnboardingQuestion[] = [
 	{
 		id: "purpose",
 		prompt: "Do you already know your purpose?",
-		sub: "No wrong answer. This names how you’ll move through North.",
+		sub: "No wrong answer.",
 	},
 	{
 		id: "baseline",
@@ -119,14 +119,14 @@ export const PURPOSE_OPTIONS: PurposeOption[] = [
 		title: "Builder",
 		creed: "I know what I'm working toward. I'm here to make it real.",
 		sealed: "You're a Builder. North will move with you toward it.",
-		color: "#F5C842",
+		color: "#F0B429",
 	},
 	{
 		id: "explorer",
 		title: "Explorer",
 		creed: "I'm still finding my direction. I'm here to discover it.",
 		sealed: "You're an Explorer. North will help you find the way.",
-		color: "#3ECFBF",
+		color: "#16A085",
 	},
 ];
 

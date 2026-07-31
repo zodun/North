@@ -1,11 +1,10 @@
-// Icon set for the v0 native surface (DEC-23). Subset of the
-// prototype's `Icon` (apps/web/src/app/north/_components/icon.tsx) —
-// only the names actually used on native: tab icons + sparse UI
-// glyphs (arrows, check, circleDot). Same `name`-prop API.
+// Icon set for the native surface (DEC-23) — the mockup icon system,
+// drawn as 24-grid stroke glyphs in the app's own hand (1.5px default,
+// round caps). Same `name`-prop API as the prototype's Icon.
 //
 // All renders use react-native-svg primitives; no web-only CSS.
 
-import Svg, { Circle, Path } from "react-native-svg";
+import Svg, { Circle, Path, Rect } from "react-native-svg";
 
 export type IconName =
 	// tab icons
@@ -22,6 +21,24 @@ export type IconName =
 	| "flat"
 	| "check"
 	| "circleDot"
+	| "add"
+	| "close"
+	| "search"
+	| "bell"
+	| "calendar"
+	| "clock"
+	| "settings"
+	// surface glyphs (mission / journal / community sets)
+	| "journal"
+	| "community"
+	| "flag"
+	| "trophy"
+	| "streak"
+	| "write"
+	| "voice"
+	// status glyphs
+	| "drift"
+	| "onTrack"
 	// feed interaction glyphs
 	| "heart"
 	| "heartFilled"
@@ -62,11 +79,11 @@ export function Icon({
 				</Svg>
 			);
 		case "mission":
+			// Circle-check, per the mockup's main-nav Mission glyph.
 			return (
 				<Svg {...common}>
 					<Circle cx="12" cy="12" r="9" />
-					<Circle cx="12" cy="12" r="4" />
-					<Circle cx="12" cy="12" r="1" fill={color} stroke="none" />
+					<Path d="M8 12.5l2.5 2.5 5.5-6" />
 				</Svg>
 			);
 		case "signal":
@@ -76,9 +93,12 @@ export function Icon({
 				</Svg>
 			);
 		case "opportunities":
+			// Briefcase, per the mockup's Opportunities glyph.
 			return (
 				<Svg {...common}>
-					<Path d="M5 5h6v6H5zM13 5h6v6h-6zM5 13h6v6H5zM13 13h6v6h-6z" />
+					<Rect x="3" y="8" width="18" height="12" rx="2" />
+					<Path d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
+					<Path d="M3 13h18" />
 				</Svg>
 			);
 		case "profile":
@@ -129,6 +149,119 @@ export function Icon({
 				<Svg {...common}>
 					<Circle cx="12" cy="12" r="9" />
 					<Circle cx="12" cy="12" r="3" fill={color} stroke="none" />
+				</Svg>
+			);
+		case "add":
+			return (
+				<Svg {...common}>
+					<Path d="M12 5v14M5 12h14" />
+				</Svg>
+			);
+		case "close":
+			return (
+				<Svg {...common}>
+					<Path d="M6 6l12 12M18 6L6 18" />
+				</Svg>
+			);
+		case "search":
+			return (
+				<Svg {...common}>
+					<Circle cx="11" cy="11" r="7" />
+					<Path d="M21 21l-4.3-4.3" />
+				</Svg>
+			);
+		case "bell":
+			return (
+				<Svg {...common}>
+					<Path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+					<Path d="M13.7 21a2 2 0 0 1-3.4 0" />
+				</Svg>
+			);
+		case "calendar":
+			return (
+				<Svg {...common}>
+					<Rect x="3" y="4" width="18" height="17" rx="2" />
+					<Path d="M8 2v4M16 2v4M3 9h18" />
+				</Svg>
+			);
+		case "clock":
+			return (
+				<Svg {...common}>
+					<Circle cx="12" cy="12" r="9" />
+					<Path d="M12 7v5l3 2" />
+				</Svg>
+			);
+		case "settings":
+			return (
+				<Svg {...common}>
+					<Circle cx="12" cy="12" r="3.5" />
+					<Path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.2 2.2M16.9 16.9l2.2 2.2M19.1 4.9l-2.2 2.2M7.1 16.9l-2.2 2.2" />
+				</Svg>
+			);
+		case "journal":
+			// Open book, per the mockup's Journal glyph.
+			return (
+				<Svg {...common}>
+					<Path d="M12 6.5C10.4 4.9 8.2 4 5.7 4c-1 0-1.9.1-2.7.4v15.2c.8-.3 1.7-.4 2.7-.4 2.5 0 4.7.9 6.3 2.3 1.6-1.4 3.8-2.3 6.3-2.3 1 0 1.9.1 2.7.4V4.4C20.2 4.1 19.3 4 18.3 4c-2.5 0-4.7.9-6.3 2.5z" />
+					<Path d="M12 6.5v15" />
+				</Svg>
+			);
+		case "community":
+			// Two people, per the mockup's Community glyph.
+			return (
+				<Svg {...common}>
+					<Circle cx="9" cy="7.5" r="3.5" />
+					<Path d="M2.5 20.5v-1.5a4.5 4.5 0 0 1 4.5-4.5h4a4.5 4.5 0 0 1 4.5 4.5v1.5" />
+					<Path d="M16 4.6a3.5 3.5 0 0 1 0 6.8" />
+					<Path d="M21.5 20.5v-1.5a4.5 4.5 0 0 0-3-4.2" />
+				</Svg>
+			);
+		case "flag":
+			return (
+				<Svg {...common}>
+					<Path d="M5 21V4" />
+					<Path d="M5 4.5c4-2 6 2 10 0v9c-4 2-6-2-10 0" />
+				</Svg>
+			);
+		case "trophy":
+			return (
+				<Svg {...common}>
+					<Path d="M8 4h8v6a4 4 0 0 1-8 0z" />
+					<Path d="M8 5.5H5V7a3 3 0 0 0 3 3M16 5.5h3V7a3 3 0 0 1-3 3" />
+					<Path d="M12 14v3M8.5 20h7M10 17h4" />
+				</Svg>
+			);
+		case "streak":
+			return (
+				<Svg {...common}>
+					<Path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+				</Svg>
+			);
+		case "write":
+			return (
+				<Svg {...common}>
+					<Path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5z" />
+				</Svg>
+			);
+		case "voice":
+			return (
+				<Svg {...common}>
+					<Path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z" />
+					<Path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3" />
+				</Svg>
+			);
+		case "drift":
+			return (
+				<Svg {...common}>
+					<Circle cx="12" cy="12" r="9" />
+					<Path d="M8 12h7M12.5 8.5L16 12l-3.5 3.5" />
+				</Svg>
+			);
+		case "onTrack":
+			return (
+				<Svg {...common}>
+					<Circle cx="12" cy="12" r="9" />
+					<Path d="M12 16V8M8.5 11.5L12 8l3.5 3.5" />
 				</Svg>
 			);
 		case "heart":

@@ -1,5 +1,5 @@
 // (auth) flow stack. Hosts welcome, sign-in, sign-up, forgot-password,
-// and verify-email screens. Guards against authenticated users landing
+// reset-password, and verify-email screens. Guards against authenticated users landing
 // here by deep link — bounces them to onboarding or the drawer.
 
 import { Redirect, Stack } from "expo-router";
@@ -20,10 +20,12 @@ export default function AuthLayout() {
 		<Stack
 			screenOptions={{ headerShown: false, animation: "slide_from_right" }}
 		>
+			<Stack.Screen name="intro" options={{ animation: "fade" }} />
 			<Stack.Screen name="sign-up" options={{ animation: "fade" }} />
 			<Stack.Screen name="sign-in" />
 			<Stack.Screen name="welcome" />
 			<Stack.Screen name="forgot-password" />
+			<Stack.Screen name="reset-password" options={{ animation: "fade" }} />
 			<Stack.Screen name="verify-email" />
 		</Stack>
 	);

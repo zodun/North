@@ -1,7 +1,7 @@
 // Q1 — display name.
 
 import { Input } from "@north/native-ui";
-import { getTokens } from "@north/tokens";
+import { getNorthTokens } from "@north/tokens";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 
@@ -14,7 +14,7 @@ const Q = ONBOARDING_QUESTIONS[0];
 
 export default function OnboardingNameScreen() {
 	const router = useRouter();
-	const { p, t } = getTokens("warm", "humanist", "calm");
+	const { p, t } = getNorthTokens();
 	const { answers, loaded, saveName } = useOnboardingState();
 	const { data: session } = useSession();
 	const [value, setValue] = useState("");

@@ -21,7 +21,7 @@
 // simply advances — which is also why ProgressBar animates its own fill.
 
 import { Button, ProgressBar, Rise, staggerDelay } from "@north/native-ui";
-import { getTokens } from "@north/tokens";
+import { getNorthTokens } from "@north/tokens";
 import { useRouter } from "expo-router";
 import type { ReactNode } from "react";
 import {
@@ -61,7 +61,7 @@ export function QuestionShell({
 	canGoBack = true,
 	footer,
 }: QuestionShellProps) {
-	const { p, t, d } = getTokens("warm", "humanist", "calm");
+	const { p, t, d } = getNorthTokens();
 	const router = useRouter();
 	const progress = (index + 1) / TOTAL_QUESTIONS;
 

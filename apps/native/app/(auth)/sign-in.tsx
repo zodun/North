@@ -4,13 +4,14 @@
 // from inline Zod errors.
 
 import { Button, Input } from "@north/native-ui";
-import { getTokens } from "@north/tokens";
+import { getNorthTokens } from "@north/tokens";
 import { useForm } from "@tanstack/react-form";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { AuthShell } from "@/components/auth/AuthShell";
+import { DevSkip } from "@/components/auth/DevSkip";
 import { SocialButtons } from "@/components/auth/SocialButtons";
 import { supabase } from "@/lib/auth-client";
 
@@ -43,7 +44,7 @@ function friendlyAuthError(raw: string): string {
 }
 
 export default function SignInScreen() {
-	const { p, t, d } = getTokens("warm", "humanist", "calm");
+	const { p, t, d } = getNorthTokens();
 	const router = useRouter();
 	const [authError, setAuthError] = useState<string | null>(null);
 
@@ -118,7 +119,10 @@ export default function SignInScreen() {
 
 				<form.Field
 					name="email"
-					validators={{ onBlur: ({ value }) => validateEmail(value) }}
+					validators={{
+						onBlur: ({ value }) => validateEmail(value),
+						onChange: ({ value }) => validateEmail(value),
+					}}
 				>
 					{(field) => (
 						<Input
@@ -138,7 +142,11 @@ export default function SignInScreen() {
 							autoComplete="email"
 							textContentType="emailAddress"
 							returnKeyType="next"
-							error={field.state.meta.errors[0]?.toString()}
+							error={
+								field.state.meta.isBlurred
+									? field.state.meta.errors[0]?.toString()
+									: undefined
+							}
 						/>
 					)}
 				</form.Field>
@@ -161,7 +169,7 @@ export default function SignInScreen() {
 									style={[
 										styles.forgot,
 										{
-											color: p.accent,
+											color: p.goldInk,
 											fontFamily: t.ui,
 											opacity: pressed ? 0.6 : 1,
 										},
@@ -174,7 +182,10 @@ export default function SignInScreen() {
 					</View>
 					<form.Field
 						name="password"
-						validators={{ onBlur: ({ value }) => validatePassword(value) }}
+						validators={{
+							onBlur: ({ value }) => validatePassword(value),
+							onChange: ({ value }) => validatePassword(value),
+						}}
 					>
 						{(field) => (
 							<Input
@@ -195,7 +206,11 @@ export default function SignInScreen() {
 								onSubmitEditing={() => {
 									void form.handleSubmit();
 								}}
-								error={field.state.meta.errors[0]?.toString()}
+								error={
+									field.state.meta.isBlurred
+										? field.state.meta.errors[0]?.toString()
+										: undefined
+								}
 							/>
 						)}
 					</form.Field>
@@ -235,11 +250,14 @@ export default function SignInScreen() {
 							]}
 						>
 							New here?{" "}
-							<Text style={{ color: p.accent }}>Create an account.</Text>
+							<Text style={{ color: p.goldInk, fontWeight: "600" }}>
+								Create an account.
+							</Text>
 						</Text>
 					)}
 				</Pressable>
 			</View>
+			<DevSkip />
 		</AuthShell>
 	);
 }

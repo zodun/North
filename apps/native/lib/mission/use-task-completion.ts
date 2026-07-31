@@ -12,6 +12,7 @@ import { usePostHog } from "posthog-react-native";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { supabase, useSession } from "../auth-client";
+import { useAuthBypass } from "../dev-bypass";
 import type { MissionTask } from "./use-today-mission";
 
 async function withRetry<T>(fn: () => Promise<T>, retries = 3): Promise<T> {
@@ -34,6 +35,7 @@ export function useTaskCompletion(
 	initialTasks: MissionTask[],
 ) {
 	const { data: session } = useSession();
+	const bypass = useAuthBypass();
 	const posthog = usePostHog();
 	const [tasks, setTasks] = useState<MissionTask[]>(initialTasks);
 	// Keep a ref to avoid stale-closure reads inside toggleDone.
@@ -49,6 +51,13 @@ export function useTaskCompletion(
 
 	const toggleDone = useCallback(
 		async (taskId: string) => {
+			// Design-review bypass: toggle in memory only.
+			if (bypass) {
+				setTasks((prev) =>
+					prev.map((t) => (t.id === taskId ? { ...t, done: !t.done } : t)),
+				);
+				return;
+			}
 			if (!session || !missionId) return;
 
 			const current = tasksRef.current.find((t) => t.id === taskId);
@@ -84,7 +93,7 @@ export function useTaskCompletion(
 				);
 			}
 		},
-		[session, missionId, posthog],
+		[session, bypass, missionId, posthog],
 	);
 
 	const completedCount = tasks.filter((t) => t.done).length;

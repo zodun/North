@@ -1,18 +1,22 @@
+// Navigation chrome colors, matched to the Soft Sky system (@north/tokens
+// NORTH). Both schemes map to the light field — North is daylight by
+// doctrine; a true dark theme would need its own designed palette, not an
+// inverted one.
 export const NAV_THEME = {
 	light: {
-		background: "hsl(0 0% 100%)",
-		border: "hsl(220 13% 91%)",
-		card: "hsl(0 0% 100%)",
-		notification: "hsl(0 84.2% 60.2%)",
-		primary: "hsl(221.2 83.2% 53.3%)",
-		text: "hsl(222.2 84% 4.9%)",
+		background: "#F3F5F7",
+		border: "rgba(13,19,33,0.10)",
+		card: "#FFFFFF",
+		notification: "#DC2626",
+		primary: "#0E7A66",
+		text: "#0D1321",
 	},
 	dark: {
-		background: "hsl(222.2 84% 4.9%)",
-		border: "hsl(217.2 32.6% 17.5%)",
-		card: "hsl(222.2 84% 4.9%)",
-		notification: "hsl(0 72% 51%)",
-		primary: "hsl(217.2 91.2% 59.8%)",
-		text: "hsl(210 40% 98%)",
+		background: "#F3F5F7",
+		border: "rgba(13,19,33,0.10)",
+		card: "#FFFFFF",
+		notification: "#DC2626",
+		primary: "#0E7A66",
+		text: "#0D1321",
 	},
 };

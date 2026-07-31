@@ -1,6 +1,8 @@
 import type { StreakState } from "@north/native-ui";
 import { useCallback, useEffect, useState } from "react";
 import { supabase, useSession } from "../auth-client";
+import { useAuthBypass } from "../dev-bypass";
+import { mockProfileData } from "../dev-mock";
 import { todayInAST } from "../mission/use-today-mission";
 import { FOCUS_AREAS } from "../onboarding/questions";
 
@@ -72,11 +74,18 @@ function weekStartAST(dateStr: string): string {
 
 export function useProfileData() {
 	const { data: session } = useSession();
+	const bypass = useAuthBypass();
 	const [data, setData] = useState<ProfileData | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
 	const refresh = useCallback(async () => {
+		// Design-review bypass: serve the mock profile.
+		if (bypass) {
+			setData(mockProfileData());
+			setLoading(false);
+			return;
+		}
 		if (!session) return;
 		setError(null);
 		const userId = session.user.id;

@@ -1,18 +1,16 @@
-// North wordmark + compass arrow. Used on the welcome screen and as
-// a quiet anchor across the auth flow. Kept minimal on purpose — no
-// real logo file, just composition of the existing Icon and the
-// display typeface.
+// North brand mark + wordmark. Used on the welcome screen and as a
+// quiet anchor across the auth flow. The mark is the split-tone
+// arrowhead — half ink, half Signal Gold: one needle, two voices.
 
-import { Icon } from "@north/native-ui";
-import { getTokens } from "@north/tokens";
-import { StyleSheet, Text, View } from "react-native";
+import { getNorthTokens } from "@north/tokens";
+import { Image, StyleSheet, Text, View } from "react-native";
 
 export type BrandMarkProps = {
 	size?: "lg" | "sm";
 };
 
 export function BrandMark({ size = "lg" }: BrandMarkProps) {
-	const { p, t } = getTokens("warm", "humanist", "calm");
+	const { p, t } = getNorthTokens();
 	const isLg = size === "lg";
 
 	return (
@@ -21,36 +19,27 @@ export function BrandMark({ size = "lg" }: BrandMarkProps) {
 			accessibilityRole="header"
 			accessibilityLabel="North"
 		>
-			<View
-				style={[
-					styles.mark,
-					{
-						width: isLg ? 48 : 28,
-						height: isLg ? 48 : 28,
-						borderColor: p.lineHi,
-					},
-				]}
-			>
-				<Icon
-					name="arrowUp"
-					size={isLg ? 28 : 18}
-					color={p.accent}
-					strokeWidth={1.75}
-				/>
-			</View>
+			<Image
+				source={require("../../assets/images/brand/mark.png")}
+				style={{ width: isLg ? 88 : 30, height: isLg ? 88 : 30 }}
+				resizeMode="contain"
+			/>
+			{/* The splash wordmark breathes: tracked-out capitals under the
+			    needle, like the mark on a compass card. */}
 			<Text
 				style={[
 					styles.wordmark,
 					{
 						color: p.ink,
 						fontFamily: t.display,
-						fontWeight: String(t.displayWeight) as "400",
-						letterSpacing: -0.5,
-						fontSize: isLg ? 32 : 20,
+						letterSpacing: isLg ? 10 : -0.5,
+						fontSize: isLg ? 28 : 20,
+						// Tracked text drifts right; nudge back to optical center.
+						marginRight: isLg ? -10 : 0,
 					},
 				]}
 			>
-				North
+				{isLg ? "NORTH" : "North"}
 			</Text>
 		</View>
 	);
@@ -58,11 +47,5 @@ export function BrandMark({ size = "lg" }: BrandMarkProps) {
 
 const styles = StyleSheet.create({
 	wrap: { alignItems: "center", gap: 14 },
-	mark: {
-		borderRadius: 999,
-		borderWidth: 1,
-		alignItems: "center",
-		justifyContent: "center",
-	},
 	wordmark: { textAlign: "center" },
 });

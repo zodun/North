@@ -6,7 +6,7 @@
 // uploaded. Visibility detection (view/dwell events) is handled in for-you.tsx.
 
 import { Icon } from "@north/native-ui";
-import { getTokens } from "@north/tokens";
+import { getNorthTokens } from "@north/tokens";
 import * as Linking from "expo-linking";
 import { memo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -64,7 +64,7 @@ export const ContentCard = memo(function ContentCard({
 	onMatters,
 	onShare,
 }: Props) {
-	const { p, t, d } = getTokens("warm", "humanist", "calm");
+	const { p, t, d } = getNorthTokens();
 
 	const category = item.content_category_id
 		? CATEGORY_LABEL[item.content_category_id]

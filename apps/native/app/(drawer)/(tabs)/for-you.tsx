@@ -1,9 +1,12 @@
+import { Icon } from "@north/native-ui";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	ActivityIndicator,
 	FlatList,
+	Image,
 	type LayoutChangeEvent,
+	Pressable,
 	StyleSheet,
 	Text,
 	View,
@@ -11,6 +14,7 @@ import {
 } from "react-native";
 
 import { VideoSlide } from "@/components/feed/VideoSlide";
+import { VideoUploadSheet } from "@/components/feed/VideoUploadSheet";
 import { registerFeedRefresh } from "@/lib/feed/feed-refresh";
 import type { FeedItem } from "@/lib/feed/types";
 import { useFeed } from "@/lib/feed/use-feed";
@@ -18,6 +22,7 @@ import { useInteractions } from "@/lib/feed/use-interactions";
 
 export default function ForYou() {
 	const { items: allItems, loading, error, refresh } = useFeed(null);
+	const [showUpload, setShowUpload] = useState(false);
 	// Only show direct-hosted videos (not YouTube links) — native player only.
 	const items = useMemo(
 		() =>
@@ -106,7 +111,7 @@ export default function ForYou() {
 	if (loading) {
 		return (
 			<View style={s.center}>
-				<ActivityIndicator color="#E8B84B" />
+				<ActivityIndicator color="#F0B429" />
 			</View>
 		);
 	}
@@ -122,7 +127,34 @@ export default function ForYou() {
 	if (items.length === 0) {
 		return (
 			<View style={s.center}>
-				<Text style={s.dimText}>No videos yet. Tap + to post one!</Text>
+				{/* Pole travels ahead — content is on its way. */}
+				<Image
+					source={require("../../../assets/images/pole/pole-travelling.png")}
+					style={s.pole}
+					resizeMode="contain"
+					accessibilityElementsHidden
+				/>
+				<Text style={s.emptyTitle}>Nothing here yet</Text>
+				<Text style={s.dimText}>Tap + to post the first video.</Text>
+				<Pressable
+					onPress={() => setShowUpload(true)}
+					accessibilityRole="button"
+					accessibilityLabel="Post a video"
+					style={({ pressed }) => [
+						s.postBtn,
+						{ backgroundColor: pressed ? "#DE911D" : "#F0B429" },
+					]}
+				>
+					<Icon name="add" size={22} color="#0D1321" strokeWidth={2} />
+				</Pressable>
+				<VideoUploadSheet
+					visible={showUpload}
+					onClose={() => setShowUpload(false)}
+					onPosted={() => {
+						setShowUpload(false);
+						void refresh();
+					}}
+				/>
 			</View>
 		);
 	}
@@ -151,10 +183,31 @@ export default function ForYou() {
 					initialNumToRender={2}
 				/>
 			) : null}
+			<Pressable
+				onPress={() => setShowUpload(true)}
+				accessibilityRole="button"
+				accessibilityLabel="Post a video"
+				style={({ pressed }) => [
+					s.postBtn,
+					{ backgroundColor: pressed ? "#DE911D" : "#F0B429" },
+				]}
+			>
+				<Icon name="add" size={22} color="#0D1321" strokeWidth={2} />
+			</Pressable>
+			<VideoUploadSheet
+				visible={showUpload}
+				onClose={() => setShowUpload(false)}
+				onPosted={() => {
+					setShowUpload(false);
+					void refresh();
+				}}
+			/>
 		</View>
 	);
 }
 
+// The feed is the one sanctioned dark surface — full-bleed video is
+// cinema, not sky. States around it stay readable on black.
 const s = StyleSheet.create({
 	root: { flex: 1, backgroundColor: "#000" },
 	center: {
@@ -162,6 +215,24 @@ const s = StyleSheet.create({
 		alignItems: "center",
 		justifyContent: "center",
 		backgroundColor: "#000",
+		gap: 6,
+		paddingHorizontal: 32,
 	},
-	dimText: { color: "#3A5070", fontSize: 14 },
+	pole: { width: 64, height: 80, marginBottom: 14 },
+	postBtn: {
+		position: "absolute",
+		right: 16,
+		bottom: 24,
+		width: 48,
+		height: 48,
+		borderRadius: 24,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	emptyTitle: {
+		color: "#F0F0F5",
+		fontSize: 17,
+		fontFamily: "PlusJakartaSans_700Bold",
+	},
+	dimText: { color: "#9AA4B5", fontSize: 14, textAlign: "center" },
 });

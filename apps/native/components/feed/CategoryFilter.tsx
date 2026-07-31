@@ -2,7 +2,7 @@
 // "All" pill + the 10 fixed content_categories. Active pill uses the
 // accent colour; inactive uses the surface tint.
 
-import { getTokens } from "@north/tokens";
+import { getNorthTokens } from "@north/tokens";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 type Category = { id: string | null; label: string };
@@ -27,7 +27,7 @@ type Props = {
 };
 
 export function CategoryFilter({ active, onChange }: Props) {
-	const { p, t } = getTokens("warm", "humanist", "calm");
+	const { p, t } = getNorthTokens();
 
 	return (
 		<View style={[styles.wrapper, { backgroundColor: p.bg }]}>

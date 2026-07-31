@@ -14,7 +14,6 @@ import {
 
 const GOLD = "#F5C842";
 const TEAL = "#3ECFBF";
-const VIOLET = "#7B61FF";
 
 // Drives complete_onboarding (topFocusId + label). Display name/colour/icon
 // live in FOCUS_META; the stored id + label here are untouched.
@@ -27,36 +26,15 @@ const FOCUS_AREAS = [
 	{ id: "learn", label: "Deeper learning", hue: "#b39ad8" },
 ];
 
-const FOCUS_META: Record<
-	string,
-	{ name: string; desc: string; color: string; icon: keyof typeof ICONS }
-> = {
-	craft: { name: "Craft", desc: "Make things", color: GOLD, icon: "pencil" },
-	venture: {
-		name: "Venture",
-		desc: "Build something",
-		color: TEAL,
-		icon: "rocket",
-	},
-	mind: { name: "Mind", desc: "Feel steady", color: VIOLET, icon: "brain" },
-	people: {
-		name: "People",
-		desc: "Connect",
-		color: "rgba(245,150,80,1)",
-		icon: "users",
-	},
-	money: {
-		name: "Money",
-		desc: "Get free",
-		color: "rgba(80,200,120,1)",
-		icon: "chart",
-	},
-	learn: {
-		name: "Learn",
-		desc: "Go deep",
-		color: "rgba(200,100,245,1)",
-		icon: "book",
-	},
+// Cards are ink-on-white; selection earns the one gold accent (gold = the
+// needle / next action). Glyphs are North's own — see FOCUS_GLYPHS.
+const FOCUS_META: Record<string, { name: string; desc: string }> = {
+	craft: { name: "Craft", desc: "Make things" },
+	venture: { name: "Venture", desc: "Build something" },
+	mind: { name: "Mind", desc: "Feel steady" },
+	people: { name: "People", desc: "Connect" },
+	money: { name: "Money", desc: "Get free" },
+	learn: { name: "Learn", desc: "Go deep" },
 };
 
 // Career-stage / field / country option lists are shared with the Profile
@@ -437,7 +415,7 @@ export default function OnboardingPage() {
 					? "Welcome"
 					: step >= TOTAL_STEPS - 1
 						? "Almost done"
-						: `Question ${step} of ${QUESTION_COUNT}`}
+						: `${step} of ${QUESTION_COUNT}`}
 			</p>
 
 			{/* Back button */}
@@ -656,7 +634,7 @@ function StepName({
 			<StepHead
 				eyebrow="Welcome to North"
 				headline="What should we call you?"
-				sub="This is how North will speak to you."
+				sub="Just your first name is fine."
 			/>
 			<label htmlFor="onb-name" className="sr-only">
 				Your first name
@@ -689,7 +667,7 @@ function StepCareerStage({
 			<StepHead
 				eyebrow="A bit about you"
 				headline="Where are you in your career?"
-				sub="This is the biggest filter for what's actually open to you."
+				sub="This filters what's actually open to you."
 			/>
 			<div className="flex flex-col gap-2">
 				{CAREER_STAGES.map((opt) => {
@@ -741,8 +719,8 @@ function StepFields({
 		<div>
 			<StepHead
 				eyebrow="Your work"
-				headline="What field are you in, or moving toward?"
-				sub="Pick up to two. This shapes the opportunities and stories you'll see."
+				headline="What's your field?"
+				sub="Up to two — where you are or where you're headed."
 			/>
 			<div className="flex flex-wrap gap-2">
 				{FIELDS.map((label) => {
@@ -802,8 +780,8 @@ function StepLocation({
 		<div>
 			<StepHead
 				eyebrow="Where you are"
-				headline="Where are you based, and how far will you go?"
-				sub="So we honour what you're eligible for, and rank remote-friendly picks for you."
+				headline="Where are you based?"
+				sub="So everything you see is open to you."
 			/>
 			<label htmlFor="onb-country" className="sr-only">
 				Your country
@@ -907,7 +885,7 @@ function StepLearnFormat({
 			<StepHead
 				eyebrow="How you take it in"
 				headline="How do you like to learn?"
-				sub="Pick any that fit. Your feed leans toward these formats."
+				sub="Pick any that fit."
 			/>
 			<div className="flex flex-wrap gap-2">
 				{CONTENT_FORMATS.map((opt) => {
@@ -960,7 +938,7 @@ function StepEducation({
 			<StepHead
 				eyebrow="Your background"
 				headline="Where are you in your education?"
-				sub="So we only surface scholarships and programmes you can actually apply to."
+				sub="So every scholarship you see is one you can get."
 			/>
 			<div className="flex flex-col gap-2">
 				{EDUCATION_LEVELS.map((opt) => {
@@ -1008,36 +986,40 @@ function StepFocus({
 		<div>
 			<StepHead
 				eyebrow="What matters to you"
-				headline="Pick up to three focus areas."
-				sub="North personalises your feed and opportunities around these."
+				headline="What matters right now?"
+				sub="Pick up to three. North points itself at these."
 			/>
 			<div className="grid grid-cols-2 gap-3">
 				{FOCUS_AREAS.map((area) => {
 					const m = FOCUS_META[area.id];
-					const selected = value.includes(area.id);
+					const order = value.indexOf(area.id);
+					const selected = order >= 0;
 					return (
 						<button
 							key={area.id}
 							type="button"
 							aria-pressed={selected}
 							onClick={() => onToggle(area.id)}
-							className={`relative flex flex-col items-start gap-2 rounded-[18px] border-[1.5px] p-4 transition-all hover:bg-[#F4F7FC] ${selectableRing()} motion-reduce:transition-none`}
+							className={`relative flex cursor-pointer flex-col items-start gap-2.5 rounded-[18px] border-[1.5px] p-4 text-left transition-all hover:bg-[#F4F7FC] ${selectableRing()} motion-reduce:transition-none`}
 							style={{
-								backgroundColor: selected ? `${m.color}14` : "#ffffff",
-								borderColor: selected ? m.color : "rgba(14,20,32,0.12)",
+								backgroundColor: selected ? "rgba(245,200,66,0.08)" : "#ffffff",
+								borderColor: selected ? GOLD : "rgba(14,20,32,0.12)",
 							}}
 						>
 							{selected && (
-								<span className="absolute top-3 right-3">
-									<CheckBadge color={m.color} size={20} />
+								// Pick order, not a checkmark — the first pick leads the
+								// personalisation (it becomes topFocusId downstream).
+								<span
+									className="absolute top-3 right-3 flex h-5 w-5 items-center justify-center rounded-full font-black text-[#05050E] text-[11px]"
+									style={{ backgroundColor: GOLD }}
+								>
+									{order + 1}
 								</span>
 							)}
-							<span
-								className="flex h-9 w-9 items-center justify-center rounded-[10px]"
-								style={{ backgroundColor: `${m.color}1a` }}
-							>
-								<Icon name={m.icon} color={m.color} size={18} />
-							</span>
+							<FocusGlyph
+								id={area.id}
+								color={selected ? "#8A6A00" : "rgba(14,20,32,0.72)"}
+							/>
 							<span className="font-black text-[#0E1420] text-[13px]">
 								{m.name}
 							</span>
@@ -1051,6 +1033,7 @@ function StepFocus({
 					{value.length}
 				</span>{" "}
 				of 3 selected
+				{value.length > 1 && " · your first pick leads"}
 			</p>
 		</div>
 	);
@@ -1071,8 +1054,8 @@ function StepInterests({
 		<div>
 			<StepHead
 				eyebrow="The real you"
-				headline="What do you love outside work or study?"
-				sub="Pick what's yours. This is how North surfaces opportunities beyond the academic, from poetry slams to art residencies to film grants."
+				headline="What do you love outside work?"
+				sub="This unlocks the unexpected — residencies, grants, open calls."
 			/>
 			<div className="flex flex-wrap gap-2">
 				{INTEREST_OPTIONS.map((label) => {
@@ -1129,7 +1112,7 @@ function StepDirection({
 			<StepHead
 				eyebrow="Your direction"
 				headline="Who do you want to become?"
-				sub="A line about the person you're working toward. North uses it to point everything in your direction."
+				sub="A line is plenty."
 			/>
 			<label htmlFor="onb-direction" className="sr-only">
 				Who you want to become
@@ -1157,8 +1140,8 @@ function StepTime({
 		<div>
 			<StepHead
 				eyebrow="Your real life"
-				headline="How much time can you give this on a real day?"
-				sub="Be honest. North works with what you actually have."
+				headline="How much time on a real day?"
+				sub="Be honest. North works with what you have."
 			/>
 			<div className="flex flex-col gap-2">
 				{TIME_OPTIONS.map((opt) => {
@@ -1208,7 +1191,7 @@ function StepPurpose({
 			<StepHead
 				eyebrow="Who you are here"
 				headline="Do you already know your purpose?"
-				sub="No wrong answer. This names how you'll move through North."
+				sub="No wrong answer."
 			/>
 			<div className="flex flex-col gap-3">
 				{PURPOSE_OPTIONS.map((opt) => {
@@ -1286,8 +1269,8 @@ function StepAspiration({
 		<div>
 			<StepHead
 				eyebrow="What you're aiming for"
-				headline="What do you most want to make real this year?"
-				sub="One line is enough. North uses it to choose what to put in front of you."
+				headline="What do you want to make real this year?"
+				sub="One thing. Big or small."
 			/>
 			<label htmlFor="onb-aspiration" className="sr-only">
 				What you most want to make real this year
@@ -1333,7 +1316,7 @@ function StepDemographics({
 			<StepHead
 				eyebrow="Who you are"
 				headline="A little more about you."
-				sub="Optional. North uses this to understand who we're serving. This is never shown publicly."
+				sub="Optional, and never shown publicly."
 			/>
 			<div className="mb-6">
 				<p className="mb-3 font-semibold text-[#0E1420]/70 text-[12px] uppercase tracking-[0.1em]">
@@ -1472,6 +1455,87 @@ function StepConsent({
 }
 
 // ── Icons ────────────────────────────────────────────────────────────────────
+
+// ── Focus glyphs — North's own wayfinding set, drawn on one grammar ─────────
+// 24-grid, single stroke weight, round caps. Each focus area is an artifact
+// from the trail: nib laying a stroke (craft), planted flag (venture), cairn
+// (mind — steady), bridge (people — connect), kite (money — free), plumb
+// line sounding the depth (learn — go deep).
+const FOCUS_GLYPHS: Record<string, React.ReactNode> = {
+	craft: (
+		<>
+			<path d="M7.5 4h9v4c0 1.5-.3 2.8-1.1 4.1L12 17.5l-3.4-5.4C7.8 10.8 7.5 9.5 7.5 8V4Z" />
+			<path d="M12 17.5v-5" />
+			<circle cx="12" cy="10.5" r="0.4" />
+			<path d="M6 20.8c4 .8 8 .6 12-.6" />
+		</>
+	),
+	venture: (
+		<>
+			<path d="M7 21V4" />
+			<path d="M7 4.8c2.8-1.6 5.6 1.6 8.5 0v6c-2.9 1.6-5.7-1.6-8.5 0" />
+			<path d="M4.5 21h5" />
+		</>
+	),
+	mind: (
+		<>
+			<ellipse cx="12" cy="5.4" rx="2.5" ry="2.1" />
+			<ellipse cx="12" cy="11" rx="4" ry="2.5" />
+			<ellipse cx="12" cy="17.5" rx="5.6" ry="3" />
+		</>
+	),
+	people: (
+		<>
+			<path d="M2.5 9h19" />
+			<path d="M5.5 16.5c0-4 2.9-6.5 6.5-6.5s6.5 2.5 6.5 6.5" />
+			<path d="M2.5 16.5h3M18.5 16.5h3" />
+			<path d="M4.5 20.5h15" />
+		</>
+	),
+	money: (
+		<>
+			<path d="M12 3l5.5 6.5L12 16 6.5 9.5 12 3Z" />
+			<path d="M12 3v13M6.5 9.5h11" />
+			<path d="M12 16c-.4 2.6-2.3 3.6-4.8 4.5" />
+		</>
+	),
+	learn: (
+		<>
+			<path d="M4 11.5h16" />
+			<path d="M12 20V6.5" />
+			<path d="M12 6.5c0-2.4 1.9-3.8 4.3-3.8 0 2.4-1.9 3.8-4.3 3.8Z" />
+			<path d="M12 9.5c0-1.8-1.4-2.9-3.2-2.9 0 1.8 1.4 2.9 3.2 2.9Z" />
+			<path d="M12 15.5c-2 .5-3.1 1.7-3.3 3.3" />
+			<path d="M12 15.5c2 .5 3.1 1.7 3.3 3.3" />
+		</>
+	),
+};
+
+function FocusGlyph({
+	id,
+	color,
+	size = 26,
+}: {
+	id: string;
+	color: string;
+	size?: number;
+}) {
+	return (
+		<svg
+			width={size}
+			height={size}
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke={color}
+			strokeWidth={1.75}
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			aria-hidden="true"
+		>
+			{FOCUS_GLYPHS[id]}
+		</svg>
+	);
+}
 
 const ICONS = {
 	back: "M19 12H5M12 19l-7-7 7-7",

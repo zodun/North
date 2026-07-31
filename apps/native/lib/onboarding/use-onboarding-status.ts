@@ -10,6 +10,7 @@
 import { useEffect, useState } from "react";
 
 import { supabase, useSession } from "../auth-client";
+import { useAuthBypass } from "../dev-bypass";
 
 export type OnboardingStatus =
 	| "loading"
@@ -18,6 +19,7 @@ export type OnboardingStatus =
 	| "complete";
 
 export function useOnboardingStatus(): OnboardingStatus {
+	const bypassed = useAuthBypass();
 	const { data: session, isPending: sessionPending } = useSession();
 	const [profileOnboardedAt, setProfileOnboardedAt] = useState<
 		string | null | undefined
@@ -43,6 +45,8 @@ export function useOnboardingStatus(): OnboardingStatus {
 		};
 	}, [session]);
 
+	// Dev-only preview path (no-op in release builds).
+	if (bypassed) return "complete";
 	if (sessionPending) return "loading";
 	if (!session) return "unauthenticated";
 	if (profileOnboardedAt === undefined) return "loading";

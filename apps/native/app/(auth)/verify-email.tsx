@@ -5,7 +5,7 @@
 // recovery paths if that doesn't happen.
 
 import { Button } from "@north/native-ui";
-import { getTokens } from "@north/tokens";
+import { getNorthTokens } from "@north/tokens";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -14,7 +14,7 @@ import { AuthShell } from "@/components/auth/AuthShell";
 import { supabase } from "@/lib/auth-client";
 
 export default function VerifyEmailScreen() {
-	const { p, t, d } = getTokens("warm", "humanist", "calm");
+	const { p, t, d } = getNorthTokens();
 	const router = useRouter();
 	const params = useLocalSearchParams<{ email?: string }>();
 	const email = typeof params.email === "string" ? params.email : "your inbox";
@@ -110,14 +110,14 @@ export default function VerifyEmailScreen() {
 					style={[
 						styles.banner,
 						{
-							backgroundColor: `${p.accent}1A`,
-							borderColor: `${p.accent}55`,
+							backgroundColor: `${p.teal}1A`,
+							borderColor: `${p.teal}55`,
 						},
 					]}
 					accessibilityLiveRegion="polite"
 				>
 					<Text
-						style={[styles.bannerText, { color: p.accent, fontFamily: t.ui }]}
+						style={[styles.bannerText, { color: p.tealInk, fontFamily: t.ui }]}
 					>
 						Sent again. Check your inbox.
 					</Text>

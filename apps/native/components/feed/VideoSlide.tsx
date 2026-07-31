@@ -9,6 +9,7 @@ import {
 	Text,
 	View,
 } from "react-native";
+import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 
 import type { FeedItem } from "@/lib/feed/types";
 
@@ -88,8 +89,20 @@ export const VideoSlide = memo(function VideoSlide({
 				nativeControls={false}
 			/>
 
-			{/* Gradient scrim */}
-			<View style={s.scrim} pointerEvents="none" />
+			{/* Caption scrim — a true gradient fade, not a hard-edged block:
+			    transparent at its top so there is no visible seam over the video. */}
+			<View style={s.scrim} pointerEvents="none">
+				<Svg width="100%" height="100%" preserveAspectRatio="none">
+					<Defs>
+						<LinearGradient id="captionScrim" x1="0" y1="0" x2="0" y2="1">
+							<Stop offset="0" stopColor="#000" stopOpacity="0" />
+							<Stop offset="0.5" stopColor="#000" stopOpacity="0.35" />
+							<Stop offset="1" stopColor="#000" stopOpacity="0.78" />
+						</LinearGradient>
+					</Defs>
+					<Rect width="100%" height="100%" fill="url(#captionScrim)" />
+				</Svg>
+			</View>
 
 			{/* Bottom-left: title + channel */}
 			<View style={s.caption} pointerEvents="none">
@@ -117,7 +130,7 @@ export const VideoSlide = memo(function VideoSlide({
 					<Ionicons
 						name={saved ? "bookmark" : "bookmark-outline"}
 						size={28}
-						color={saved ? "#E8B84B" : "#fff"}
+						color={saved ? "#F0B429" : "#fff"}
 					/>
 					<Text style={[s.actionLabel, saved && s.actionLabelGold]}>
 						{saved ? "Saved" : "Save"}
@@ -135,8 +148,7 @@ const s = StyleSheet.create({
 		left: 0,
 		right: 0,
 		bottom: 0,
-		height: "40%",
-		backgroundColor: "rgba(0,0,0,0.55)",
+		height: "38%",
 	},
 	caption: {
 		position: "absolute",
@@ -148,7 +160,7 @@ const s = StyleSheet.create({
 	eyebrow: {
 		fontSize: 9,
 		fontWeight: "700",
-		color: "#E8B84B",
+		color: "#F0B429",
 		letterSpacing: 1.5,
 	},
 	title: {
@@ -180,5 +192,5 @@ const s = StyleSheet.create({
 		color: "rgba(255,255,255,0.8)",
 		fontWeight: "500",
 	},
-	actionLabelGold: { color: "#E8B84B" },
+	actionLabelGold: { color: "#F0B429" },
 });

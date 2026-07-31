@@ -1,7 +1,7 @@
 // Two large identity cards: Builder or Explorer. The chosen card shows a
 // confirmation line beneath the pair — the user's stance inside North.
 
-import { getTokens } from "@north/tokens";
+import { getNorthTokens } from "@north/tokens";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { PURPOSE_OPTIONS } from "@/lib/onboarding/questions";
@@ -12,14 +12,14 @@ export type PurposeSelectorProps = {
 };
 
 export function PurposeSelector({ value, onChange }: PurposeSelectorProps) {
-	const { p, t } = getTokens("warm", "humanist", "calm");
+	const { p, t } = getNorthTokens();
 	const chosen = PURPOSE_OPTIONS.find((o) => o.id === value) ?? null;
 
 	return (
 		<View style={styles.wrap}>
 			{PURPOSE_OPTIONS.map((opt) => {
 				const selected = value === opt.id;
-				const inkColor = opt.color === "#F5C842" ? "#8A6A00" : "#0A8F7F";
+				const inkColor = opt.color === "#F0B429" ? p.goldInk : p.tealInk;
 				return (
 					<Pressable
 						key={opt.id}
@@ -87,7 +87,7 @@ export function PurposeSelector({ value, onChange }: PurposeSelectorProps) {
 			{chosen && (
 				<Text
 					style={{
-						color: chosen.color === "#F5C842" ? "#8A6A00" : "#0A8F7F",
+						color: chosen.color === "#F0B429" ? p.goldInk : p.tealInk,
 						fontFamily: t.ui,
 						fontSize: 13,
 						fontWeight: "600",

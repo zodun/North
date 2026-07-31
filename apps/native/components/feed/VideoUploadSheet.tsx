@@ -18,7 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase, useSession } from "@/lib/auth-client";
 import { useCreatePost } from "@/lib/community/use-community-posts";
 
-const GOLD = "#e9c349";
+const GOLD = "#F0B429";
 
 type SelectedVideo = { uri: string; mimeType: string; name: string };
 
@@ -263,7 +263,7 @@ export function VideoUploadSheet({ visible, onClose, onPosted }: Props) {
 }
 
 const s = StyleSheet.create({
-	root: { flex: 1, backgroundColor: "#f9f9f9" },
+	root: { flex: 1, backgroundColor: "#F3F5F7" },
 	handle: {
 		width: 36,
 		height: 4,
@@ -330,7 +330,7 @@ const s = StyleSheet.create({
 		width: 48,
 		height: 48,
 		borderRadius: 10,
-		backgroundColor: "rgba(233,195,73,0.12)",
+		backgroundColor: "rgba(240,180,41,0.12)",
 		alignItems: "center",
 		justifyContent: "center",
 	},
@@ -364,7 +364,7 @@ const s = StyleSheet.create({
 		justifyContent: "center",
 		marginTop: 8,
 	},
-	submitBtnDisabled: { backgroundColor: "rgba(233,195,73,0.35)" },
+	submitBtnDisabled: { backgroundColor: "rgba(240,180,41,0.35)" },
 	submitLabel: { fontSize: 15, fontWeight: "700", color: "#1a1400" },
 	submitLabelDisabled: { color: "rgba(26,20,0,0.4)" },
 
@@ -378,7 +378,7 @@ const s = StyleSheet.create({
 		width: 72,
 		height: 72,
 		borderRadius: 36,
-		backgroundColor: "rgba(233,195,73,0.15)",
+		backgroundColor: "rgba(240,180,41,0.15)",
 		alignItems: "center",
 		justifyContent: "center",
 	},

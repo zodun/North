@@ -2,7 +2,7 @@
 // Semantics mirror ChoiceSelector but with two-line layout.
 
 import { MIN_TOUCH_TARGET } from "@north/native-ui";
-import { getTokens } from "@north/tokens";
+import { getNorthTokens } from "@north/tokens";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { CAREER_STAGES } from "@/lib/onboarding/personalization-options";
@@ -13,7 +13,7 @@ export type CareerSelectorProps = {
 };
 
 export function CareerSelector({ value, onChange }: CareerSelectorProps) {
-	const { p, t } = getTokens("warm", "humanist", "calm");
+	const { p, t } = getNorthTokens();
 	return (
 		<View accessibilityRole="radiogroup" style={styles.stack}>
 			{CAREER_STAGES.map((opt) => {

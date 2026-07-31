@@ -11,6 +11,10 @@ export { Icon, type IconName, type IconProps } from "./components/Icon";
 export { Input, type InputProps } from "./components/Input";
 export { ProgressBar, type ProgressBarProps } from "./components/ProgressBar";
 export {
+	ProgressRing,
+	type ProgressRingProps,
+} from "./components/ProgressRing";
+export {
 	ScaleSelector,
 	type ScaleSelectorProps,
 } from "./components/ScaleSelector";
@@ -19,6 +23,11 @@ export {
 	type BandHeroProps,
 	type BandLabel,
 } from "./components/signal/BandHero";
+export {
+	Compass,
+	type CompassBand,
+	type CompassProps,
+} from "./components/signal/Compass";
 export {
 	ConsistencyGrid,
 	type ConsistencyGridProps,

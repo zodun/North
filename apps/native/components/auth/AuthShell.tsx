@@ -5,7 +5,7 @@
 // screen file stays focused on its own content.
 
 import { Button } from "@north/native-ui";
-import { getTokens } from "@north/tokens";
+import { getNorthTokens } from "@north/tokens";
 import { useRouter } from "expo-router";
 import type { ReactNode } from "react";
 import {
@@ -32,7 +32,7 @@ export function AuthShell({
 	centered = false,
 	footer,
 }: AuthShellProps) {
-	const { p, t, d } = getTokens("warm", "humanist", "calm");
+	const { p, t, d } = getNorthTokens();
 	const router = useRouter();
 	const showBack = canGoBack && router.canGoBack();
 

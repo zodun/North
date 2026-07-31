@@ -1,4 +1,11 @@
-import type { getTokens } from "@north/tokens";
+// The Community surface: the people you're moving with, as a weekly
+// ritual. A progress card says how much of the circle you've checked in
+// with; each person is a full-width row carrying their monthly goal and
+// a peek of this week's note. Green is the section accent (growth in
+// company); gold appears only on the one next action.
+
+import { Icon, ProgressRing, Rise, staggerDelay } from "@north/native-ui";
+import type { getNorthTokens } from "@north/tokens";
 import { useState } from "react";
 import {
 	ActivityIndicator,
@@ -21,7 +28,7 @@ import type {
 	PersonGoal,
 } from "@/lib/signal/use-people";
 
-type Tokens = ReturnType<typeof getTokens>;
+type Tokens = ReturnType<typeof getNorthTokens>;
 
 // ── Add-person modal ──────────────────────────────────────────────────────────
 
@@ -63,7 +70,7 @@ function AddPersonModal({
 				style={[s.modalRoot, { backgroundColor: p.bg }]}
 			>
 				<View style={s.modalHandle} />
-				<View style={[s.modalHeader, { borderBottomColor: `${p.accent}22` }]}>
+				<View style={[s.modalHeader, { borderBottomColor: p.line }]}>
 					<Text style={[s.modalTitle, { color: p.ink, fontFamily: t.ui }]}>
 						Add person
 					</Text>
@@ -80,7 +87,7 @@ function AddPersonModal({
 					<TextInput
 						value={name}
 						onChangeText={setName}
-						placeholder="e.g. Alex, Team lead…"
+						placeholder="e.g. Renae, study partner…"
 						placeholderTextColor={p.inkDim}
 						autoFocus
 						style={[
@@ -88,8 +95,8 @@ function AddPersonModal({
 							{
 								color: p.ink,
 								fontFamily: t.ui,
-								borderColor: `${p.accent}33`,
-								backgroundColor: `${p.accent}0a`,
+								borderColor: p.line,
+								backgroundColor: p.surface,
 							},
 						]}
 						returnKeyType="done"
@@ -107,9 +114,14 @@ function AddPersonModal({
 						]}
 					>
 						{saving ? (
-							<ActivityIndicator color={p.bg} size="small" />
+							<ActivityIndicator color={p.accentInk} size="small" />
 						) : (
-							<Text style={[s.saveBtnLabel, { color: p.bg, fontFamily: t.ui }]}>
+							<Text
+								style={[
+									s.saveBtnLabel,
+									{ color: p.accentInk, fontFamily: t.ui },
+								]}
+							>
 								Add
 							</Text>
 						)}
@@ -186,7 +198,7 @@ function PersonModal({
 				style={[s.modalRoot, { backgroundColor: p.bg }]}
 			>
 				<View style={s.modalHandle} />
-				<View style={[s.modalHeader, { borderBottomColor: `${p.accent}22` }]}>
+				<View style={[s.modalHeader, { borderBottomColor: p.line }]}>
 					<Text style={[s.modalTitle, { color: p.ink, fontFamily: t.ui }]}>
 						{person.name}
 					</Text>
@@ -209,7 +221,7 @@ function PersonModal({
 					{/* Monthly goal */}
 					<View style={s.section}>
 						<Text
-							style={[s.sectionEyebrow, { color: p.accent, fontFamily: t.ui }]}
+							style={[s.sectionEyebrow, { color: p.goldInk, fontFamily: t.ui }]}
 						>
 							GOAL · {monthLabel.toUpperCase()}
 						</Text>
@@ -224,8 +236,8 @@ function PersonModal({
 								{
 									color: p.ink,
 									fontFamily: t.ui,
-									borderColor: `${p.accent}33`,
-									backgroundColor: `${p.accent}0a`,
+									borderColor: `${p.gold}33`,
+									backgroundColor: `${p.gold}0a`,
 								},
 							]}
 							textAlignVertical="top"
@@ -235,7 +247,10 @@ function PersonModal({
 					{/* Weekly signal */}
 					<View style={s.section}>
 						<Text
-							style={[s.sectionEyebrow, { color: "#4ECCA3", fontFamily: t.ui }]}
+							style={[
+								s.sectionEyebrow,
+								{ color: p.greenInk, fontFamily: t.ui },
+							]}
 						>
 							SIGNAL · {weekLabel.toUpperCase()}
 						</Text>
@@ -250,8 +265,8 @@ function PersonModal({
 								{
 									color: p.ink,
 									fontFamily: t.ui,
-									borderColor: "#4ECCA333",
-									backgroundColor: "#4ECCA30a",
+									borderColor: `${p.green}33`,
+									backgroundColor: `${p.green}0a`,
 								},
 							]}
 							textAlignVertical="top"
@@ -293,9 +308,14 @@ function PersonModal({
 						]}
 					>
 						{saving ? (
-							<ActivityIndicator color={p.bg} size="small" />
+							<ActivityIndicator color={p.accentInk} size="small" />
 						) : (
-							<Text style={[s.saveBtnLabel, { color: p.bg, fontFamily: t.ui }]}>
+							<Text
+								style={[
+									s.saveBtnLabel,
+									{ color: p.accentInk, fontFamily: t.ui },
+								]}
+							>
 								Save
 							</Text>
 						)}
@@ -306,9 +326,76 @@ function PersonModal({
 	);
 }
 
-// ── Person card ───────────────────────────────────────────────────────────────
+// ── This-week ritual card ─────────────────────────────────────────────────────
 
-function PersonCard({
+function WeekPulseCard({
+	people,
+	checkIns,
+	p,
+	t,
+}: {
+	people: Person[];
+	checkIns: PersonCheckIn[];
+	p: Tokens["p"];
+	t: Tokens["t"];
+}) {
+	const checkedIn = people.filter((person) =>
+		checkIns.some((c) => c.person_id === person.id && (c.signal || c.noise)),
+	).length;
+	const allDone = checkedIn === people.length;
+
+	return (
+		<View style={[w.card, { backgroundColor: p.surface, borderColor: p.line }]}>
+			<View style={{ flex: 1 }}>
+				<Text style={[w.eyebrow, { color: p.inkDim, fontFamily: t.ui }]}>
+					THIS WEEK
+				</Text>
+				<Text style={[w.count, { color: p.ink, fontFamily: t.display }]}>
+					{checkedIn} of {people.length}
+				</Text>
+				<Text style={[w.sub, { color: p.inkMid, fontFamily: t.ui }]}>
+					{allDone
+						? "Circle complete. See you Sunday."
+						: "checked in — one honest note each is enough."}
+				</Text>
+			</View>
+			<ProgressRing
+				p={p}
+				value={people.length > 0 ? checkedIn / people.length : 0}
+				size={64}
+				strokeWidth={7}
+				color={p.green}
+				trackColor="rgba(13,19,33,0.07)"
+				accessibilityLabel={`${checkedIn} of ${people.length} people checked in this week`}
+			>
+				<Icon name="community" size={22} color={p.greenInk} />
+			</ProgressRing>
+		</View>
+	);
+}
+
+const w = StyleSheet.create({
+	card: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 16,
+		borderRadius: 18,
+		borderWidth: 1,
+		padding: 16,
+	},
+	eyebrow: {
+		fontSize: 10,
+		fontWeight: "600",
+		letterSpacing: 2,
+		marginBottom: 6,
+	},
+	count: { fontSize: 24, lineHeight: 28 },
+	sub: { fontSize: 12, lineHeight: 17, marginTop: 4 },
+});
+
+// ── Person row ────────────────────────────────────────────────────────────────
+
+function PersonRow({
 	person,
 	goal,
 	checkIn,
@@ -323,93 +410,117 @@ function PersonCard({
 	t: Tokens["t"];
 	onPress: () => void;
 }) {
-	const hasSignal = !!checkIn?.signal;
-	const hasNoise = !!checkIn?.noise;
-	const hasGoal = !!goal?.goal;
+	const checkedIn = !!(checkIn?.signal || checkIn?.noise);
+	const note = checkIn?.signal || checkIn?.noise || null;
 
 	return (
 		<Pressable
 			onPress={onPress}
+			accessibilityRole="button"
+			accessibilityLabel={`${person.name}${checkedIn ? ", checked in" : ", not checked in yet"}`}
 			style={({ pressed }) => [
-				pc.card,
-				{
-					backgroundColor: p.surface ?? "#1a1f2e",
-					borderColor: `${p.accent}22`,
-				},
-				pressed && { opacity: 0.8 },
+				r.row,
+				{ backgroundColor: p.surface, borderColor: p.line },
+				pressed && { opacity: 0.75 },
 			]}
 		>
-			<View style={pc.avatar}>
+			<View style={[r.avatar, { backgroundColor: `${p.green}1a` }]}>
 				<Text
-					style={[pc.avatarLetter, { color: p.accent, fontFamily: t.display }]}
+					style={[r.avatarLetter, { color: p.greenInk, fontFamily: t.display }]}
 				>
 					{person.name[0]?.toUpperCase() ?? "?"}
 				</Text>
 			</View>
-			<Text
-				style={[pc.name, { color: p.ink, fontFamily: t.ui }]}
-				numberOfLines={1}
-			>
-				{person.name}
-			</Text>
-			{hasGoal ? (
+
+			<View style={r.middle}>
 				<Text
-					style={[pc.goal, { color: p.inkDim, fontFamily: t.ui }]}
-					numberOfLines={2}
+					style={[r.name, { color: p.ink, fontFamily: t.ui }]}
+					numberOfLines={1}
 				>
-					{goal?.goal}
+					{person.name}
 				</Text>
-			) : (
-				<Text
-					style={[
-						pc.goal,
-						{ color: p.inkDim, fontFamily: t.ui, fontStyle: "italic" },
-					]}
-				>
-					No goal set
-				</Text>
-			)}
-			<View style={pc.indicators}>
-				<View
-					style={[
-						pc.dot,
-						{ backgroundColor: hasSignal ? "#4ECCA3" : `${p.inkDim}44` },
-					]}
-				/>
-				<View
-					style={[
-						pc.dot,
-						{ backgroundColor: hasNoise ? p.warn : `${p.inkDim}44` },
-					]}
-				/>
+				{goal?.goal ? (
+					<Text
+						style={[r.goal, { color: p.inkMid, fontFamily: t.ui }]}
+						numberOfLines={1}
+					>
+						{goal.goal}
+					</Text>
+				) : (
+					<Text
+						style={[
+							r.goal,
+							{ color: p.inkDim, fontFamily: t.ui, fontStyle: "italic" },
+						]}
+					>
+						No goal this month
+					</Text>
+				)}
+				{note ? (
+					<View style={r.noteRow}>
+						<View
+							style={[
+								r.noteDot,
+								{ backgroundColor: checkIn?.signal ? p.green : p.warn },
+							]}
+						/>
+						<Text
+							style={[r.note, { color: p.inkDim, fontFamily: t.ui }]}
+							numberOfLines={1}
+						>
+							{note}
+						</Text>
+					</View>
+				) : null}
 			</View>
+
+			{checkedIn ? (
+				<View style={[r.chip, { backgroundColor: `${p.green}1f` }]}>
+					<Text style={[r.chipLabel, { color: p.greenInk, fontFamily: t.ui }]}>
+						Checked in
+					</Text>
+				</View>
+			) : (
+				<View style={[r.chip, { borderWidth: 1, borderColor: p.lineHi }]}>
+					<Text style={[r.chipLabel, { color: p.inkMid, fontFamily: t.ui }]}>
+						Check in
+					</Text>
+				</View>
+			)}
 		</Pressable>
 	);
 }
 
-const pc = StyleSheet.create({
-	card: {
-		width: 140,
-		borderRadius: 12,
+const r = StyleSheet.create({
+	row: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 12,
+		borderRadius: 14,
 		borderWidth: 1,
-		padding: 14,
-		gap: 6,
-		marginRight: 10,
+		paddingHorizontal: 14,
+		paddingVertical: 13,
 	},
 	avatar: {
-		width: 36,
-		height: 36,
-		borderRadius: 18,
-		backgroundColor: "rgba(232,184,75,0.15)",
+		width: 44,
+		height: 44,
+		borderRadius: 22,
 		alignItems: "center",
 		justifyContent: "center",
-		marginBottom: 4,
 	},
-	avatarLetter: { fontSize: 18, fontWeight: "600" },
-	name: { fontSize: 13, fontWeight: "600" },
-	goal: { fontSize: 11, lineHeight: 16 },
-	indicators: { flexDirection: "row", gap: 5, marginTop: 4 },
-	dot: { width: 7, height: 7, borderRadius: 3.5 },
+	avatarLetter: { fontSize: 18 },
+	middle: { flex: 1, gap: 2 },
+	name: { fontSize: 15, fontWeight: "600" },
+	goal: { fontSize: 12, lineHeight: 17 },
+	noteRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 2 },
+	noteDot: { width: 5, height: 5, borderRadius: 2.5 },
+	note: { fontSize: 11, lineHeight: 15, flex: 1 },
+	chip: {
+		borderRadius: 999,
+		paddingHorizontal: 10,
+		paddingVertical: 5,
+	},
+	chipLabel: { fontSize: 11, fontWeight: "600" },
 });
 
 // ── Main exported section ─────────────────────────────────────────────────────
@@ -449,53 +560,88 @@ export function PeopleSection({
 		(c) => c.person_id === selectedPerson?.id,
 	);
 
-	return (
-		<View>
-			<View style={s.sectionHeader}>
-				<Text style={[s.sectionTitle, { color: p.ink, fontFamily: t.ui }]}>
-					People
-				</Text>
-				<TouchableOpacity onPress={() => setAddVisible(true)} hitSlop={8}>
-					<Text style={[s.addBtn, { color: p.accent, fontFamily: t.ui }]}>
-						+ Add
-					</Text>
-				</TouchableOpacity>
-			</View>
-
-			{people.length === 0 ? (
-				<Pressable
-					onPress={() => setAddVisible(true)}
+	if (people.length === 0) {
+		return (
+			<View>
+				<View
 					style={[
 						s.emptyCard,
-						{
-							backgroundColor: p.surface ?? "#1a1f2e",
-							borderColor: `${p.accent}22`,
-						},
+						{ backgroundColor: p.surface, borderColor: p.line },
 					]}
 				>
-					<Text style={[s.emptyText, { color: p.inkDim, fontFamily: t.ui }]}>
-						Add people to track their signal and noise each week.
+					<View style={[s.emptyIcon, { backgroundColor: `${p.green}1a` }]}>
+						<Icon name="community" size={26} color={p.greenInk} />
+					</View>
+					<Text
+						style={[s.emptyHeading, { color: p.ink, fontFamily: t.display }]}
+					>
+						Direction is easier in company.
+					</Text>
+					<Text style={[s.emptyText, { color: p.inkMid, fontFamily: t.ui }]}>
+						Add the people you're moving with — a mentor, a study partner, a
+						friend on the same path — and leave one honest note on their week.
+					</Text>
+					<TouchableOpacity
+						onPress={() => setAddVisible(true)}
+						accessibilityRole="button"
+						style={[s.emptyBtn, { backgroundColor: p.accent }]}
+					>
+						<Text
+							style={[
+								s.emptyBtnLabel,
+								{ color: p.accentInk, fontFamily: t.ui },
+							]}
+						>
+							Add your first person
+						</Text>
+					</TouchableOpacity>
+				</View>
+				<AddPersonModal
+					visible={addVisible}
+					p={p}
+					t={t}
+					onAdd={onAddPerson}
+					onClose={() => setAddVisible(false)}
+				/>
+			</View>
+		);
+	}
+
+	return (
+		<View style={s.stack}>
+			<Rise>
+				<WeekPulseCard people={people} checkIns={checkIns} p={p} t={t} />
+			</Rise>
+
+			{people.map((person, i) => (
+				<Rise key={person.id} delay={staggerDelay(i + 1)}>
+					<PersonRow
+						person={person}
+						goal={goals.find((g) => g.person_id === person.id)}
+						checkIn={checkIns.find((c) => c.person_id === person.id)}
+						p={p}
+						t={t}
+						onPress={() => setSelectedPerson(person)}
+					/>
+				</Rise>
+			))}
+
+			<Rise delay={staggerDelay(people.length + 1)}>
+				<Pressable
+					onPress={() => setAddVisible(true)}
+					accessibilityRole="button"
+					accessibilityLabel="Add a person"
+					style={({ pressed }) => [
+						s.addRow,
+						{ borderColor: p.lineHi },
+						pressed && { opacity: 0.6 },
+					]}
+				>
+					<Text style={[s.addRowLabel, { color: p.inkMid, fontFamily: t.ui }]}>
+						+ Add someone you're moving with
 					</Text>
 				</Pressable>
-			) : (
-				<ScrollView
-					horizontal
-					showsHorizontalScrollIndicator={false}
-					contentContainerStyle={{ paddingRight: 8 }}
-				>
-					{people.map((person) => (
-						<PersonCard
-							key={person.id}
-							person={person}
-							goal={goals.find((g) => g.person_id === person.id)}
-							checkIn={checkIns.find((c) => c.person_id === person.id)}
-							p={p}
-							t={t}
-							onPress={() => setSelectedPerson(person)}
-						/>
-					))}
-				</ScrollView>
-			)}
+			</Rise>
 
 			<AddPersonModal
 				visible={addVisible}
@@ -526,20 +672,47 @@ export function PeopleSection({
 }
 
 const s = StyleSheet.create({
-	sectionHeader: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "space-between",
-		marginBottom: 12,
-	},
-	sectionTitle: { fontSize: 16, fontWeight: "600" },
-	addBtn: { fontSize: 13, fontWeight: "600" },
+	stack: { gap: 10 },
 	emptyCard: {
-		borderRadius: 12,
+		borderRadius: 18,
 		borderWidth: 1,
-		padding: 16,
+		padding: 24,
+		alignItems: "center",
 	},
-	emptyText: { fontSize: 13, lineHeight: 20 },
+	emptyIcon: {
+		width: 56,
+		height: 56,
+		borderRadius: 28,
+		alignItems: "center",
+		justifyContent: "center",
+		marginBottom: 14,
+	},
+	emptyHeading: {
+		fontSize: 20,
+		lineHeight: 26,
+		textAlign: "center",
+		marginBottom: 8,
+	},
+	emptyText: {
+		fontSize: 13,
+		lineHeight: 20,
+		textAlign: "center",
+		marginBottom: 18,
+	},
+	emptyBtn: {
+		borderRadius: 10,
+		paddingHorizontal: 18,
+		paddingVertical: 12,
+	},
+	emptyBtnLabel: { fontSize: 14, fontWeight: "600" },
+	addRow: {
+		borderRadius: 14,
+		borderWidth: 1,
+		borderStyle: "dashed",
+		paddingVertical: 14,
+		alignItems: "center",
+	},
+	addRowLabel: { fontSize: 13, fontWeight: "500" },
 	modalRoot: { flex: 1 },
 	modalHandle: {
 		width: 36,

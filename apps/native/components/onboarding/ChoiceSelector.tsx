@@ -2,7 +2,7 @@
 // Each option is a 44pt tap target. Uses radiogroup semantics.
 
 import { MIN_TOUCH_TARGET } from "@north/native-ui";
-import { getTokens } from "@north/tokens";
+import { getNorthTokens } from "@north/tokens";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 export type ChoiceSelectorProps = {
@@ -16,7 +16,7 @@ export function ChoiceSelector({
 	value,
 	onChange,
 }: ChoiceSelectorProps) {
-	const { p, t } = getTokens("warm", "humanist", "calm");
+	const { p, t } = getNorthTokens();
 	return (
 		<View accessibilityRole="radiogroup" style={styles.stack}>
 			{options.map((option) => {

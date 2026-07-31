@@ -12,11 +12,15 @@ impeccable design skill and for staying on-brand.
   gold needle that always points somewhere. Direction over attention.
 - **Principles:** direction over attention · honest mirror · calm restraint · one
   small step · built for the launch market (mobile-first PWA, mid-range Android).
-- **Palette (rationed to three meanings):** Signal Gold `#F5C842` = next action,
-  Direction Teal `#3ECFBF` = on-course, Drift Violet `#7B61FF` = drift — these are
-  *fills*; as text/icons on light use the ink variants (`#8A6A00` / `#0A8F7F` /
-  `#5B43E0`, ≥4.5:1). Surfaces: cool sky `#EDF1F8` base, white cards, ink `#0E1420`.
+- **Palette (rationed to three meanings):** Signal Gold `#F0B429` = next action,
+  Direction Teal `#16A085` = on-course, Drift Violet `#6C5CE7` = drift — these are
+  *fills*; as text/icons on light use the ink variants (`#8A6400` / `#0E7A66` /
+  `#5546C8`, ≥4.5:1). Sectional icon accents: Journal blue `#2563EB`, Community
+  green `#27AE60`. Surfaces: cool sky `#F3F5F7` base, white cards, ink/Night
+  `#0D1321` (Night is also the splash ground and app-icon tile).
   Type: Plus Jakarta Sans (display, black weight) + Geist (body).
+- **Tabs (2026-07 restructure):** For You · Mission · Opportunities · Journal ·
+  Community. Signal and Profile live in the drawer.
 - **Hard nos:** generic AI-app skin (purple-gradient-on-glass), the muddy AI-cream
   light default (sand/beige/parchment near-whites — North's light is a clean cool
   sky), attention-optimized social-feed patterns, gamified-hustle pressure,

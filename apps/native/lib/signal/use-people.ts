@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase, useSession } from "../auth-client";
+import { useAuthBypass } from "../dev-bypass";
+import { MOCK_PEOPLE, mockPersonCheckIns, mockPersonGoals } from "../dev-mock";
 
 export type Person = {
 	id: string;
@@ -23,6 +25,7 @@ export type PersonCheckIn = {
 
 export function usePeople() {
 	const { data: session } = useSession();
+	const bypass = useAuthBypass();
 	const [people, setPeople] = useState<Person[]>([]);
 	const [goals, setGoals] = useState<PersonGoal[]>([]);
 	const [checkIns, setCheckIns] = useState<PersonCheckIn[]>([]);
@@ -41,6 +44,14 @@ export function usePeople() {
 	})();
 
 	const load = useCallback(async () => {
+		// Design-review bypass: seed local state; mutations stay in memory.
+		if (bypass) {
+			setPeople(MOCK_PEOPLE);
+			setGoals(mockPersonGoals());
+			setCheckIns(mockPersonCheckIns());
+			setLoading(false);
+			return;
+		}
 		if (!session?.user.id) return;
 		setLoading(true);
 		const [pRes, gRes, cRes] = await Promise.all([
@@ -58,13 +69,18 @@ export function usePeople() {
 		setGoals((gRes.data ?? []) as PersonGoal[]);
 		setCheckIns((cRes.data ?? []) as PersonCheckIn[]);
 		setLoading(false);
-	}, [session?.user.id, monthKey, weekEnding]);
+	}, [session?.user.id, bypass, monthKey, weekEnding]);
 
 	useEffect(() => {
 		void load();
 	}, [load]);
 
 	async function addPerson(name: string): Promise<Person | null> {
+		if (bypass) {
+			const person: Person = { id: `mock-person-${Date.now()}`, name };
+			setPeople((prev) => [...prev, person]);
+			return person;
+		}
 		if (!session?.user.id) return null;
 		const { data, error } = await supabase
 			.from("people")
@@ -78,6 +94,16 @@ export function usePeople() {
 	}
 
 	async function upsertGoal(personId: string, goal: string) {
+		if (bypass) {
+			const g: PersonGoal = {
+				id: `mock-goal-${Date.now()}`,
+				person_id: personId,
+				month: monthKey,
+				goal,
+			};
+			setGoals((prev) => [...prev.filter((x) => x.person_id !== personId), g]);
+			return;
+		}
 		if (!session?.user.id) return;
 		const { data } = await supabase
 			.from("person_goals")
@@ -103,6 +129,20 @@ export function usePeople() {
 		signal: string,
 		noise: string,
 	) {
+		if (bypass) {
+			const ci: PersonCheckIn = {
+				id: `mock-checkin-${Date.now()}`,
+				person_id: personId,
+				week_ending: weekEnding,
+				signal: signal || null,
+				noise: noise || null,
+			};
+			setCheckIns((prev) => [
+				...prev.filter((x) => x.person_id !== personId),
+				ci,
+			]);
+			return;
+		}
 		if (!session?.user.id) return;
 		const { data } = await supabase
 			.from("person_check_ins")

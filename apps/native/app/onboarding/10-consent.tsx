@@ -4,7 +4,7 @@
 // flips profile.onboarded_at + consent_given_at.
 
 import { Button, Icon } from "@north/native-ui";
-import { getTokens } from "@north/tokens";
+import { getNorthTokens } from "@north/tokens";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -22,7 +22,7 @@ const Q = ONBOARDING_QUESTIONS[9];
 
 export default function OnboardingConsentScreen() {
 	const router = useRouter();
-	const { p, t, d } = getTokens("warm", "humanist", "calm");
+	const { p, t, d } = getNorthTokens();
 	const { answers } = useOnboardingState();
 	const params = useLocalSearchParams<{ baseline?: string }>();
 	const baseline =

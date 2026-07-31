@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { supabase, useSession } from "../auth-client";
+import { useAuthBypass } from "../dev-bypass";
+import { mockSignalData } from "../dev-mock";
 import { todayInAST } from "../mission/use-today-mission";
 
 export type SignalBand = "Drifting" | "Finding" | "Aligned";
@@ -16,6 +18,8 @@ export type Callout = { label: string; body: string };
 export type SignalData = {
 	weekEnding: string;
 	band: SignalBand;
+	/** Direction Score, 0–100 (signal_scores.raw_score). */
+	score: number;
 	provisional: boolean;
 	trend: "climbing" | "holding" | "easing";
 	inputs: {
@@ -29,6 +33,8 @@ export type SignalData = {
 	callouts: Callout[];
 	ratings: Record<number, "up" | "down">;
 	recentBands: SignalBand[];
+	/** Direction Scores for the same weeks as recentBands, oldest first. */
+	recentScores: number[];
 	lastReflection: {
 		id: string;
 		body: string;
@@ -85,11 +91,18 @@ function deriveTrend(
 
 export function useSignalData() {
 	const { data: session } = useSession();
+	const bypass = useAuthBypass();
 	const [data, setData] = useState<SignalData | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
 	const refresh = useCallback(async () => {
+		// Design-review bypass: serve the mock week instead of Supabase.
+		if (bypass) {
+			setData(mockSignalData());
+			setLoading(false);
+			return;
+		}
 		if (!session) return;
 		setError(null);
 		const userId = session.user.id;
@@ -158,6 +171,7 @@ export function useSignalData() {
 		setData({
 			weekEnding: current.week_ending,
 			band: current.band,
+			score: current.raw_score,
 			provisional: current.provisional,
 			trend: deriveTrend(current.raw_score, prev?.raw_score),
 			inputs: {
@@ -171,6 +185,7 @@ export function useSignalData() {
 			callouts: summaryRow?.callouts ?? [],
 			ratings,
 			recentBands: scoreRows.map((r) => r.band).reverse(),
+			recentScores: scoreRows.map((r) => r.raw_score).reverse(),
 			lastReflection: reflectionRow
 				? {
 						id: reflectionRow.id,
@@ -186,7 +201,7 @@ export function useSignalData() {
 				: null,
 		});
 		setLoading(false);
-	}, [session]);
+	}, [session, bypass]);
 
 	useEffect(() => {
 		setLoading(true);

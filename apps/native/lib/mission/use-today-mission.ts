@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { supabase, useSession } from "../auth-client";
+import { useAuthBypass } from "../dev-bypass";
+import { mockMission } from "../dev-mock";
 
 export type MissionTask = {
 	id: string;
@@ -29,6 +31,7 @@ export function todayInAST(): string {
 // (user joined between cron runs — Edge Function will assign one at 08:00 UTC).
 export function useTodayMission() {
 	const { data: session } = useSession();
+	const bypass = useAuthBypass();
 	const [mission, setMission] = useState<TodayMission | null | undefined>(
 		undefined,
 	);
@@ -36,6 +39,12 @@ export function useTodayMission() {
 	const [error, setError] = useState<string | null>(null);
 
 	const refresh = useCallback(async () => {
+		// Design-review bypass: serve today's mock mission.
+		if (bypass) {
+			setMission(mockMission());
+			setLoading(false);
+			return;
+		}
 		if (!session) return;
 		setError(null);
 		const today = todayInAST();
@@ -63,7 +72,7 @@ export function useTodayMission() {
 			});
 		}
 		setLoading(false);
-	}, [session]);
+	}, [session, bypass]);
 
 	useEffect(() => {
 		setLoading(true);

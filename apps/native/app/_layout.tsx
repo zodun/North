@@ -1,38 +1,33 @@
+import {
+	PlusJakartaSans_700Bold,
+	PlusJakartaSans_800ExtraBold,
+	useFonts,
+} from "@expo-google-fonts/plus-jakarta-sans";
 import { env } from "@north/env/native";
 import { Stack } from "expo-router";
-import {
-	DarkTheme,
-	DefaultTheme,
-	ThemeProvider,
-} from "expo-router/react-navigation";
+import { DefaultTheme, ThemeProvider } from "expo-router/react-navigation";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { PostHogProvider, usePostHog } from "posthog-react-native";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
+import { LaunchScreen } from "@/components/launch/LaunchScreen";
 import { NAV_THEME } from "@/lib/constants";
-import { useOnboardingStatus } from "@/lib/onboarding/use-onboarding-status";
-import { useColorScheme } from "@/lib/use-color-scheme";
 
-// Hold the splash screen until we know whether to land the user on
-// (auth), onboarding, or (drawer). Avoids a flash of the wrong route
-// on cold start. Safety timeout (`SAFETY_MS`) hides the splash even
-// if something hangs upstream.
+// The OS splash (flat ground + mark) stays up only until the in-app
+// LaunchScreen paints its first frame, then the overlay takes over: it
+// renders the full night scene and holds until we know whether to land
+// the user on (auth), onboarding, or (drawer). Avoids a flash of the
+// wrong route on cold start.
 SplashScreen.preventAutoHideAsync().catch(() => {
 	// noop — splash module may not be available in some test contexts
 });
 
-const SAFETY_MS = 3000;
-
 const LIGHT_THEME = {
 	...DefaultTheme,
 	colors: NAV_THEME.light,
-};
-const DARK_THEME = {
-	...DarkTheme,
-	colors: NAV_THEME.dark,
 };
 
 export const unstable_settings = {
@@ -56,24 +51,18 @@ function AppOpenCapture() {
 	return null;
 }
 
-function SplashController() {
-	const status = useOnboardingStatus();
-	useEffect(() => {
-		if (status !== "loading") {
-			void SplashScreen.hideAsync().catch(() => {});
-		}
-	}, [status]);
-	useEffect(() => {
-		const timer = setTimeout(() => {
-			void SplashScreen.hideAsync().catch(() => {});
-		}, SAFETY_MS);
-		return () => clearTimeout(timer);
-	}, []);
-	return null;
-}
-
 export default function RootLayout() {
-	const { isDarkColorScheme } = useColorScheme();
+	const [launched, setLaunched] = useState(false);
+	const handleLaunchFinish = useCallback(() => setLaunched(true), []);
+
+	// Brand display face. The splash stays up while these load (they're
+	// bundled assets, so this is one frame in practice); on a load error
+	// we render anyway — system font is the designed fallback.
+	const [fontsLoaded, fontError] = useFonts({
+		PlusJakartaSans_700Bold,
+		PlusJakartaSans_800ExtraBold,
+	});
+	if (!fontsLoaded && !fontError) return null;
 
 	// PostHogProvider is a no-op if apiKey is empty; we still render the
 	// children so dev without analytics wired works fine.
@@ -87,11 +76,13 @@ export default function RootLayout() {
 			}}
 			autocapture={false}
 		>
-			<ThemeProvider value={isDarkColorScheme ? DARK_THEME : LIGHT_THEME}>
-				<StatusBar style={isDarkColorScheme ? "light" : "dark"} />
+			{/* North is daylight by doctrine — one light theme in both schemes.
+			    The launch scene is the one night moment, so the status bar
+			    stays light until it fades. */}
+			<ThemeProvider value={LIGHT_THEME}>
+				<StatusBar style={launched ? "dark" : "light"} />
 				<GestureHandlerRootView style={styles.container}>
 					<AppOpenCapture />
-					<SplashController />
 					<Stack>
 						<Stack.Screen name="(auth)" options={{ headerShown: false }} />
 						<Stack.Screen name="(drawer)" options={{ headerShown: false }} />
@@ -104,6 +95,7 @@ export default function RootLayout() {
 							options={{ title: "Modal", presentation: "modal" }}
 						/>
 					</Stack>
+					{!launched && <LaunchScreen onFinish={handleLaunchFinish} />}
 				</GestureHandlerRootView>
 			</ThemeProvider>
 		</PostHogProvider>

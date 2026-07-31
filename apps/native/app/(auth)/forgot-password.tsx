@@ -1,10 +1,16 @@
 // Forgot password. Two states share one screen: form (email entry)
-// → success (instructions to check email). Sends users through
-// Supabase's hosted reset page; in-app reset can come later.
+// → success (instructions to check email).
+//
+// The reset email links back into the app via a deep link rather than
+// Supabase's hosted page, so the user sets their new password in North and
+// stays signed in afterwards. The target URL must be allow-listed in
+// supabase/config.toml → auth.additional_redirect_urls, or Supabase quietly
+// falls back to site_url and the link opens a browser instead.
 
 import { Button, Input } from "@north/native-ui";
-import { getTokens } from "@north/tokens";
+import { getNorthTokens } from "@north/tokens";
 import { useForm } from "@tanstack/react-form";
+import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -22,7 +28,7 @@ function validateEmail(value: string): string | undefined {
 }
 
 export default function ForgotPasswordScreen() {
-	const { p, t, d } = getTokens("warm", "humanist", "calm");
+	const { p, t, d } = getNorthTokens();
 	const router = useRouter();
 	const [sentTo, setSentTo] = useState<string | null>(null);
 	const [authError, setAuthError] = useState<string | null>(null);
@@ -32,7 +38,11 @@ export default function ForgotPasswordScreen() {
 		onSubmit: async ({ value }) => {
 			setAuthError(null);
 			const email = value.email.trim();
-			const { error } = await supabase.auth.resetPasswordForEmail(email);
+			// createURL adapts to the runtime: north:// in a standalone build,
+			// exp+north:// under the dev client. Both are allow-listed.
+			const { error } = await supabase.auth.resetPasswordForEmail(email, {
+				redirectTo: Linking.createURL("/reset-password"),
+			});
 			if (error) {
 				setAuthError(error.message || "Couldn't send reset link. Try again.");
 				return;
@@ -132,7 +142,10 @@ export default function ForgotPasswordScreen() {
 
 				<form.Field
 					name="email"
-					validators={{ onBlur: ({ value }) => validateEmail(value) }}
+					validators={{
+						onBlur: ({ value }) => validateEmail(value),
+						onChange: ({ value }) => validateEmail(value),
+					}}
 				>
 					{(field) => (
 						<Input
@@ -155,7 +168,11 @@ export default function ForgotPasswordScreen() {
 							onSubmitEditing={() => {
 								void form.handleSubmit();
 							}}
-							error={field.state.meta.errors[0]?.toString()}
+							error={
+								field.state.meta.isBlurred
+									? field.state.meta.errors[0]?.toString()
+									: undefined
+							}
 						/>
 					)}
 				</form.Field>

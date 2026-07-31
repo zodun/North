@@ -2,23 +2,23 @@
 name: North
 description: Direction over attention — a calm, airy "Soft Sky" daily-direction app for young professionals.
 colors:
-  sky: "#EDF1F8" # app base (cool, airy light)
-  sky-raised: "#F4F7FC" # insets / muted surface
+  sky: "#F3F5F7" # app base (cool, airy light)
+  sky-raised: "#F9FAFB" # insets / muted surface
   surface: "#FFFFFF" # cards
-  signal-gold: "#F5C842" # accent fill (next action)
-  gold-deep: "#E8B84B"
-  gold-ink: "#8A6A00" # gold as text/icon on light (≥4.5:1)
-  direction-teal: "#3ECFBF" # accent fill (on-course)
-  teal-ink: "#0A8F7F" # teal as text/icon on light
-  drift-violet: "#7B61FF" # accent fill (drift)
-  violet-ink: "#5B43E0" # violet as text on light
-  signal-green: "#4ECCA3"
-  green-ink: "#0E9E73"
-  noise-red: "#F87171"
+  signal-gold: "#F0B429" # accent fill (next action)
+  gold-deep: "#DE911D"
+  gold-ink: "#8A6400" # gold as text/icon on light (≥4.5:1)
+  direction-teal: "#16A085" # accent fill (on-course)
+  teal-ink: "#0E7A66" # teal as text/icon on light
+  drift-violet: "#6C5CE7" # accent fill (drift)
+  violet-ink: "#5546C8" # violet as text on light
+  signal-green: "#27AE60"
+  green-ink: "#15803D"
+  noise-red: "#EB5757"
   red-ink: "#DC2626"
-  ink: "#0E1420" # primary text
-  muted: "#0E14209E" # ~62% — secondary text (≥4.5:1)
-  hairline: "#0E14201A" # ~10% — borders
+  ink: "#0D1321" # primary text (Night — also the dark ground + app icon tile)
+  muted: "#0D13219E" # ~62% — secondary text (≥4.5:1)
+  hairline: "#0D13211A" # ~10% — borders
 typography:
   display:
     fontFamily: "Plus Jakarta Sans, Geist, system-ui, sans-serif"
@@ -113,7 +113,7 @@ components:
 North is a calm, airy light field — daylight, not darkness — where a single gold
 needle always points somewhere. Where mainstream consumer apps engineer a
 hyperstimulating surface to capture attention, North engineers a clear, restful one
-to give direction. The screen sits on a cool light sky (`#EDF1F8`) with white cards,
+to give direction. The screen sits on a cool light sky (`#F3F5F7`) with white cards,
 and color is still rationed to three meanings: **gold is the needle** (the goal, the
 active pill, the thing to do next), **teal is on-course** (signal, progress, the
 journal CTA), **violet is drift** (the low end of the Signal band). Because the
@@ -145,19 +145,19 @@ black weight for a score or a goal — while the rest stays composed.
 A rationed three-meaning palette on a near-black ground; every accent means something.
 
 ### Primary
-- **Signal Gold** (`#F5C842`): the needle. The active goal, the selected cadence
+- **Signal Gold** (`#F0B429`): the needle. The active goal, the selected cadence
   pill, the "do this next" accent, the goal-card gradient and 3px left rail. The
-  deeper **Gold Deep** (`#E8B84B`) appears in older Signal surfaces; treat `#F5C842`
+  deeper **Gold Deep** (`#DE911D`) appears in older Signal surfaces; treat `#F0B429`
   as canonical going forward.
 
 ### Secondary
-- **Direction Teal** (`#3ECFBF`): on-course. Progress fills, the current-week marker,
+- **Direction Teal** (`#16A085`): on-course. Progress fills, the current-week marker,
   completed task checks, the journal "Find the signal" CTA, signal-positive accents.
 
 ### Tertiary
-- **Drift Violet** (`#7B61FF`): the low end of the Signal band (Drifting). Used
+- **Drift Violet** (`#6C5CE7`): the low end of the Signal band (Drifting). Used
   structurally in the 7-segment direction bar, not as a decorative accent.
-- **Signal Green** (`#4ECCA3`) and **Noise Red** (`#F87171`): the honest pair — what
+- **Signal Green** (`#27AE60`) and **Noise Red** (`#EB5757`): the honest pair — what
   energized you vs. what pulled you away. Reserved for Signal/Noise semantics only.
 
 ### Neutral
@@ -233,7 +233,7 @@ raised, raise its fill opacity (3% → 7%) and tighten its border, never add a
 - **Corner Style:** large surfaces 18px (`rounded-xl`), small/list cards 14px,
   inner stat tiles 12px.
 - **Background:** white at 3–7% over Night; the goal card adds a gold gradient
-  (`linear-gradient(135deg, rgba(245,200,66,0.10), rgba(245,200,66,0.03))`) + a 3px
+  (`linear-gradient(135deg, rgba(240,180,41,0.10), rgba(240,180,41,0.03))`) + a 3px
   gold left rail (the one allowed left-accent — it's a rail, not a stripe-border).
 - **Shadow Strategy:** none. See Elevation.
 - **Internal Padding:** 16px large, 13–14px small.

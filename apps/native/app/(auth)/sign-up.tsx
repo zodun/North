@@ -7,13 +7,14 @@
 // onboarding once the session arrives.
 
 import { Button, Input } from "@north/native-ui";
-import { getTokens } from "@north/tokens";
+import { getNorthTokens } from "@north/tokens";
 import { useForm } from "@tanstack/react-form";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { AuthShell } from "@/components/auth/AuthShell";
+import { DevSkip } from "@/components/auth/DevSkip";
 import { SocialButtons } from "@/components/auth/SocialButtons";
 import { supabase } from "@/lib/auth-client";
 
@@ -46,7 +47,7 @@ function friendlyAuthError(raw: string): string {
 }
 
 export default function SignUpScreen() {
-	const { p, t, d } = getTokens("warm", "humanist", "calm");
+	const { p, t, d } = getNorthTokens();
 	const router = useRouter();
 	const [authError, setAuthError] = useState<string | null>(null);
 
@@ -139,7 +140,12 @@ export default function SignUpScreen() {
 
 				<form.Field
 					name="email"
-					validators={{ onBlur: ({ value }) => validateEmail(value) }}
+					validators={{
+						// onChange keeps the message honest while typing; the error
+						// only *shows* after first blur (see `error` below).
+						onBlur: ({ value }) => validateEmail(value),
+						onChange: ({ value }) => validateEmail(value),
+					}}
 				>
 					{(field) => (
 						<Input
@@ -159,7 +165,11 @@ export default function SignUpScreen() {
 							autoComplete="email"
 							textContentType="emailAddress"
 							returnKeyType="next"
-							error={field.state.meta.errors[0]?.toString()}
+							error={
+								field.state.meta.isBlurred
+									? field.state.meta.errors[0]?.toString()
+									: undefined
+							}
 						/>
 					)}
 				</form.Field>
@@ -167,7 +177,10 @@ export default function SignUpScreen() {
 				<View style={{ gap: 6 }}>
 					<form.Field
 						name="password"
-						validators={{ onBlur: ({ value }) => validatePassword(value) }}
+						validators={{
+							onBlur: ({ value }) => validatePassword(value),
+							onChange: ({ value }) => validatePassword(value),
+						}}
 					>
 						{(field) => (
 							<Input
@@ -183,13 +196,20 @@ export default function SignUpScreen() {
 								placeholder="At least 8 characters"
 								secureTextEntry
 								autoCapitalize="none"
-								autoComplete="new-password"
-								textContentType="newPassword"
+								// "oneTimeCode" suppresses iOS's Automatic Strong Password
+								// overlay, which covers the field with a yellow banner.
+								// Restore "new-password"/"newPassword" to re-enable it.
+								autoComplete="off"
+								textContentType="oneTimeCode"
 								returnKeyType="go"
 								onSubmitEditing={() => {
 									void form.handleSubmit();
 								}}
-								error={field.state.meta.errors[0]?.toString()}
+								error={
+									field.state.meta.isBlurred
+										? field.state.meta.errors[0]?.toString()
+										: undefined
+								}
 							/>
 						)}
 					</form.Field>
@@ -232,11 +252,14 @@ export default function SignUpScreen() {
 							]}
 						>
 							Already have an account?{" "}
-							<Text style={{ color: p.accent }}>Sign in.</Text>
+							<Text style={{ color: p.goldInk, fontWeight: "600" }}>
+								Sign in.
+							</Text>
 						</Text>
 					)}
 				</Pressable>
 			</View>
+			<DevSkip />
 		</AuthShell>
 	);
 }

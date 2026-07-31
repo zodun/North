@@ -2,7 +2,7 @@
 // types; shows up to 6 results in a scroll view below the input.
 
 import { Input } from "@north/native-ui";
-import { getTokens } from "@north/tokens";
+import { getNorthTokens } from "@north/tokens";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
@@ -14,7 +14,7 @@ export type CountryPickerProps = {
 };
 
 export function CountryPicker({ value, onChange }: CountryPickerProps) {
-	const { p, t } = getTokens("warm", "humanist", "calm");
+	const { p, t } = getNorthTokens();
 	const [query, setQuery] = useState(value ?? "");
 	const [open, setOpen] = useState(!value);
 

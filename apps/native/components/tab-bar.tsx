@@ -1,74 +1,84 @@
+// Bottom tab bar — the sheet's five-tab loop on a floating white pill,
+// hairline-bordered, flat by doctrine (no shadow). Each tab carries its
+// section accent when active — gold for the For You needle, teal for
+// Mission, violet for Opportunities, blue for Journal, green for
+// Community — with labels on the darker ink variants so they stay
+// ≥4.5:1 on white. Inactive tabs are quiet ink-dim outlines.
+
 import { Icon, type IconName, MIN_TOUCH_TARGET } from "@north/native-ui";
-import { getTokens } from "@north/tokens";
+import { getNorthTokens, type NorthPalette } from "@north/tokens";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 // biome-ignore lint/suspicious/noExplicitAny: BottomTabBarProps isn't a resolvable specifier
 type TabsBarProps = any;
 
-type TabSpec =
-	| { route: string; label: string; icon: IconName; centre?: false }
-	| { route: "__add__"; label: string; centre: true };
+type AccentKey = keyof Pick<
+	NorthPalette,
+	"gold" | "teal" | "violet" | "blue" | "green"
+>;
+type AccentInkKey = keyof Pick<
+	NorthPalette,
+	"goldInk" | "tealInk" | "violetInk" | "blueInk" | "greenInk"
+>;
+
+type TabSpec = {
+	route: string;
+	label: string;
+	icon: IconName;
+	accent: AccentKey;
+	accentInk: AccentInkKey;
+};
 
 const TABS: TabSpec[] = [
-	{ route: "for-you", label: "For You", icon: "forYou" },
-	{ route: "opportunities", label: "Open", icon: "opportunities" },
-	{ route: "__add__", label: "Post", centre: true },
-	{ route: "signal", label: "Signal", icon: "signal" },
-	{ route: "profile", label: "You", icon: "profile" },
+	{
+		route: "for-you",
+		label: "For You",
+		icon: "forYou",
+		accent: "gold",
+		accentInk: "goldInk",
+	},
+	{
+		route: "mission",
+		label: "Mission",
+		icon: "mission",
+		accent: "teal",
+		accentInk: "tealInk",
+	},
+	{
+		route: "opportunities",
+		label: "Open",
+		icon: "opportunities",
+		accent: "violet",
+		accentInk: "violetInk",
+	},
+	{
+		route: "journal",
+		label: "Journal",
+		icon: "journal",
+		accent: "blue",
+		accentInk: "blueInk",
+	},
+	{
+		route: "community",
+		label: "People",
+		icon: "community",
+		accent: "green",
+		accentInk: "greenInk",
+	},
 ];
 
-export function CustomTabBar({
-	state,
-	navigation,
-	onAdd,
-}: TabsBarProps & { onAdd?: () => void }) {
-	// Default to the warm/humanist combo per the prototype's final
-	// recommendation (chat transcript). A future tweak panel could
-	// thread these through.
-	const { p, t } = getTokens("warm", "humanist", "calm");
+export function CustomTabBar({ state, navigation }: TabsBarProps) {
+	const { p } = getNorthTokens();
 
 	return (
 		<View style={[styles.outer, { backgroundColor: p.bg }]}>
 			<View
 				style={[
 					styles.bar,
-					{
-						backgroundColor: `${p.surface}cc`,
-						borderColor: p.line,
-					},
+					{ backgroundColor: p.surface, borderColor: p.line },
 				]}
 			>
 				{TABS.map((tab) => {
-					if (tab.centre) {
-						return (
-							<Pressable
-								key={tab.route}
-								onPress={() => onAdd?.()}
-								accessibilityRole="button"
-								accessibilityLabel={tab.label}
-								style={({ pressed }) => [
-									styles.centreButton,
-									{
-										backgroundColor: p.accent,
-										shadowColor: p.accent,
-										opacity: pressed ? 0.85 : 1,
-									},
-								]}
-							>
-								<Text
-									style={{
-										fontSize: 28,
-										color: p.accentInk,
-										lineHeight: 32,
-										marginTop: -2,
-									}}
-								>
-									+
-								</Text>
-							</Pressable>
-						);
-					}
-
 					const routeIndex = state.routes.findIndex(
 						(r: { name: string }) => r.name === tab.route,
 					);
@@ -97,25 +107,32 @@ export function CustomTabBar({
 							accessibilityState={{ selected: focused }}
 							style={({ pressed }) => [
 								styles.tabButton,
-								{ opacity: pressed ? 0.7 : 1 },
+								{ opacity: pressed ? 0.6 : 1 },
 							]}
 						>
 							<Icon
 								name={tab.icon}
 								size={20}
-								color={focused ? p.accent : p.inkMid}
-								strokeWidth={1.6}
+								color={focused ? p[tab.accent] : p.inkDim}
+								strokeWidth={focused ? 2 : 1.6}
 							/>
 							<Text
 								style={{
-									color: focused ? p.accent : p.inkMid,
-									fontFamily: t.ui,
+									color: focused ? p[tab.accentInk] : p.inkDim,
 									fontSize: 10,
-									fontWeight: focused ? "600" : "500",
+									fontWeight: focused ? "700" : "500",
 								}}
 							>
 								{tab.label}
 							</Text>
+							<View
+								style={[
+									styles.needleDot,
+									{
+										backgroundColor: focused ? p[tab.accent] : "transparent",
+									},
+								]}
+							/>
 						</Pressable>
 					);
 				})}
@@ -132,32 +149,26 @@ const styles = StyleSheet.create({
 	bar: {
 		marginHorizontal: 12,
 		paddingHorizontal: 6,
-		paddingVertical: 10,
+		paddingVertical: 8,
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "space-around",
-		borderRadius: 22,
+		borderRadius: 24,
 		borderWidth: 1,
 	},
 	tabButton: {
 		minWidth: MIN_TOUCH_TARGET,
 		minHeight: MIN_TOUCH_TARGET,
 		paddingHorizontal: 10,
-		paddingVertical: 6,
+		paddingTop: 6,
+		paddingBottom: 2,
 		alignItems: "center",
 		justifyContent: "center",
-		gap: 4,
+		gap: 3,
 	},
-	centreButton: {
-		width: 50,
-		height: 50,
-		borderRadius: 25,
-		alignItems: "center",
-		justifyContent: "center",
-		marginTop: -16,
-		shadowOffset: { width: 0, height: 4 },
-		shadowOpacity: 0.35,
-		shadowRadius: 14,
-		elevation: 6,
+	needleDot: {
+		width: 4,
+		height: 4,
+		borderRadius: 2,
 	},
 });

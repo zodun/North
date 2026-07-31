@@ -152,6 +152,95 @@ export const TYPE_PAIRINGS: Record<TypeKey, TypePairing> = {
 
 export type Density = "calm" | "standard";
 
+// ── North / Soft Sky (canonical — DESIGN.md frontmatter) ─────────────────
+//
+// The shipped identity: a cool light sky, white cards, and color rationed
+// to three meanings. Gold is the needle (next action), teal is on-course,
+// violet is drift. The vivid hues are FILLS; as text or icons on light they
+// must use their ink variants (goldInk / tealInk / violetInk) to hold
+// ≥4.5:1. `accent`/`accentInk` keep the legacy Palette shape working:
+// accent is the gold fill, accentInk the near-black ink that sits on it.
+
+export type NorthAccents = {
+	gold: string;
+	goldDeep: string;
+	goldInk: string;
+	teal: string;
+	tealInk: string;
+	violet: string;
+	violetInk: string;
+	blue: string;
+	blueInk: string;
+	green: string;
+	greenInk: string;
+	red: string;
+	redInk: string;
+	night: string;
+};
+
+export type NorthPalette = Palette & NorthAccents;
+
+export const NORTH: NorthPalette = {
+	label: "North",
+	mode: "light",
+	bg: "#F3F5F7",
+	surface: "#FFFFFF",
+	surfaceHi: "#F9FAFB",
+	line: "rgba(13,19,33,0.10)",
+	lineHi: "rgba(13,19,33,0.20)",
+	ink: "#0D1321",
+	inkMid: "rgba(13,19,33,0.62)",
+	inkDim: "rgba(13,19,33,0.48)",
+	accent: "#F0B429",
+	accentInk: "#0D1321",
+	accentSoft: "rgba(240,180,41,0.16)",
+	warn: "#DC2626",
+	bandDrift: "#6C5CE7",
+	bandFind: "#16A085",
+	bandAlign: "#F0B429",
+	gold: "#F0B429",
+	goldDeep: "#DE911D",
+	goldInk: "#8A6400",
+	teal: "#16A085",
+	tealInk: "#0E7A66",
+	violet: "#6C5CE7",
+	violetInk: "#5546C8",
+	blue: "#2563EB",
+	blueInk: "#1D4ED8",
+	green: "#27AE60",
+	greenInk: "#15803D",
+	red: "#EB5757",
+	redInk: "#DC2626",
+	// The dark ground: splash/night surfaces and the app icon tile.
+	night: "#0D1321",
+};
+
+// Native font names as loaded by expo-font (one weight per family name).
+// `ui` stays on the platform system face — fast on mid-range Android, and
+// body hierarchy comes from weight, which system fonts handle natively.
+// Display is Plus Jakarta Sans ExtraBold: the one loud voice in the system.
+export const NORTH_TYPE: TypePairing = {
+	label: "North",
+	ui: "System",
+	display: "PlusJakartaSans_800ExtraBold",
+	editorial: "PlusJakartaSans_700Bold",
+	mono: "Menlo",
+	displayWeight: 800,
+	displayTracking: "-0.02em",
+	editorialItalic: false,
+};
+
+/** Canonical tokens for the shipped North app. Prefer this over getTokens. */
+export function getNorthTokens(density: Density = "standard") {
+	const d =
+		density === "standard"
+			? { gap: 12, gapLg: 20, pad: 16, padLg: 24, scrnPad: 20 }
+			: { gap: 16, gapLg: 28, pad: 22, padLg: 32, scrnPad: 24 };
+	return { p: NORTH, t: NORTH_TYPE, d };
+}
+
+export type NorthTokens = ReturnType<typeof getNorthTokens>;
+
 export function getTokens(
 	paletteKey: PaletteKey,
 	typeKey: TypeKey,

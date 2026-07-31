@@ -5,7 +5,7 @@
 // OPP-05: "Submit an opportunity" inline form → opportunity_submissions.
 
 import { Card } from "@north/native-ui";
-import { getTokens } from "@north/tokens";
+import { getNorthTokens } from "@north/tokens";
 import { useState } from "react";
 import {
 	ActivityIndicator,
@@ -52,8 +52,8 @@ function FilterBar({
 }: {
 	active: string | null;
 	onChange: (id: string | null) => void;
-	p: ReturnType<typeof getTokens>["p"];
-	t: ReturnType<typeof getTokens>["t"];
+	p: ReturnType<typeof getNorthTokens>["p"];
+	t: ReturnType<typeof getNorthTokens>["t"];
 }) {
 	return (
 		<ScrollView
@@ -128,9 +128,9 @@ function OpportunityCard({
 	isApplied: boolean;
 	onSave: () => void;
 	onApply: () => void;
-	p: ReturnType<typeof getTokens>["p"];
-	t: ReturnType<typeof getTokens>["t"];
-	d: ReturnType<typeof getTokens>["d"];
+	p: ReturnType<typeof getNorthTokens>["p"];
+	t: ReturnType<typeof getNorthTokens>["t"];
+	d: ReturnType<typeof getNorthTokens>["d"];
 }) {
 	const catLabel =
 		CATEGORIES.find((c) => c.id === item.category_id)?.label ??
@@ -152,7 +152,6 @@ function OpportunityCard({
 					{
 						color: p.ink,
 						fontFamily: t.display,
-						fontWeight: String(t.displayWeight) as "400",
 						fontStyle: t.editorialItalic ? "italic" : "normal",
 					},
 				]}
@@ -185,8 +184,9 @@ function OpportunityCard({
 					style={[
 						card.actionBtn,
 						{
-							borderColor: isSaved ? p.accent : p.line,
-							backgroundColor: isSaved ? `${p.accent}18` : "transparent",
+							// Teal = on-course: saving marks intent, not the next action.
+							borderColor: isSaved ? `${p.teal}66` : p.line,
+							backgroundColor: isSaved ? `${p.teal}1a` : "transparent",
 						},
 					]}
 					accessibilityLabel={isSaved ? "Unsave" : "Save"}
@@ -194,7 +194,7 @@ function OpportunityCard({
 					<Text
 						style={[
 							card.actionLabel,
-							{ color: isSaved ? p.accent : p.inkMid, fontFamily: t.ui },
+							{ color: isSaved ? p.tealInk : p.inkMid, fontFamily: t.ui },
 						]}
 					>
 						{isSaved ? "Saved" : "Save"}
@@ -206,8 +206,9 @@ function OpportunityCard({
 					style={[
 						card.actionBtn,
 						{
-							borderColor: isApplied ? p.accent : p.accent,
-							backgroundColor: isApplied ? `${p.accent}18` : p.accent,
+							// Gold = the needle: Apply is the next action on this card.
+							borderColor: isApplied ? `${p.teal}66` : p.gold,
+							backgroundColor: isApplied ? `${p.teal}1a` : p.gold,
 						},
 					]}
 					accessibilityLabel={isApplied ? "Applied" : "Apply"}
@@ -216,7 +217,7 @@ function OpportunityCard({
 						style={[
 							card.actionLabel,
 							{
-								color: isApplied ? p.accent : p.accentInk,
+								color: isApplied ? p.tealInk : p.accentInk,
 								fontFamily: t.ui,
 							},
 						]}
@@ -279,8 +280,8 @@ function SubmitForm({
 	t,
 }: {
 	onDone: () => void;
-	p: ReturnType<typeof getTokens>["p"];
-	t: ReturnType<typeof getTokens>["t"];
+	p: ReturnType<typeof getNorthTokens>["p"];
+	t: ReturnType<typeof getNorthTokens>["t"];
 }) {
 	const { data: session } = useSession();
 	const [fields, setFields] = useState<SubmitFields>(BLANK_SUBMIT);
@@ -326,7 +327,6 @@ function SubmitForm({
 						{
 							color: p.ink,
 							fontFamily: t.display,
-							fontWeight: String(t.displayWeight) as "400",
 						},
 					]}
 				>
@@ -337,7 +337,7 @@ function SubmitForm({
 				</Text>
 				<TouchableOpacity onPress={onDone} style={form.doneBtn}>
 					<Text
-						style={[form.doneBtnLabel, { color: p.accent, fontFamily: t.ui }]}
+						style={[form.doneBtnLabel, { color: p.tealInk, fontFamily: t.ui }]}
 					>
 						Close
 					</Text>
@@ -357,7 +357,6 @@ function SubmitForm({
 					{
 						color: p.ink,
 						fontFamily: t.display,
-						fontWeight: String(t.displayWeight) as "400",
 					},
 				]}
 			>
@@ -481,9 +480,14 @@ function SubmitForm({
 					]}
 				>
 					{submitting ? (
-						<ActivityIndicator color={p.bg} size="small" />
+						<ActivityIndicator color={p.accentInk} size="small" />
 					) : (
-						<Text style={[form.submitLabel, { color: p.bg, fontFamily: t.ui }]}>
+						<Text
+							style={[
+								form.submitLabel,
+								{ color: p.accentInk, fontFamily: t.ui },
+							]}
+						>
 							Submit
 						</Text>
 					)}
@@ -507,8 +511,8 @@ function FormField({
 	children,
 }: {
 	label: string;
-	p: ReturnType<typeof getTokens>["p"];
-	t: ReturnType<typeof getTokens>["t"];
+	p: ReturnType<typeof getNorthTokens>["p"];
+	t: ReturnType<typeof getNorthTokens>["t"];
 	children: React.ReactNode;
 }) {
 	return (
@@ -561,7 +565,7 @@ const form = StyleSheet.create({
 // ── Main screen ───────────────────────────────────────────────────────
 
 export default function Opportunities() {
-	const { p, t, d } = getTokens("warm", "humanist", "calm");
+	const { p, t, d } = getNorthTokens();
 	const [activeCategory, setActiveCategory] = useState<string | null>(null);
 	const [search, setSearch] = useState("");
 	const [showSubmit, setShowSubmit] = useState(false);
@@ -578,13 +582,28 @@ export default function Opportunities() {
 
 	const header = (
 		<View>
+			{/* Screen title */}
+			<Text
+				style={[
+					screen.heading,
+					{
+						color: p.ink,
+						fontFamily: t.display,
+						marginHorizontal: d.scrnPad,
+						marginTop: 16,
+					},
+				]}
+			>
+				Opportunities
+			</Text>
+
 			{/* Search bar */}
 			<View
 				style={[
 					screen.searchWrap,
 					{
 						marginHorizontal: d.scrnPad,
-						marginTop: 24,
+						marginTop: 14,
 						marginBottom: 4,
 						borderColor: p.line,
 						backgroundColor: p.surface,
@@ -700,6 +719,7 @@ export default function Opportunities() {
 const screen = StyleSheet.create({
 	safe: { flex: 1 },
 	center: { flex: 1, alignItems: "center", justifyContent: "center" },
+	heading: { fontSize: 28, lineHeight: 34, letterSpacing: -0.5 },
 	searchWrap: {
 		borderWidth: 1,
 		borderRadius: 10,

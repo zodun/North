@@ -149,6 +149,48 @@ export function ProductSignIn({ initialMode }: { initialMode?: Mode }) {
 		setMode(next);
 	};
 
+	// Dev-only login bypass: signs into a throwaway local account (creating it
+	// on first use). NODE_ENV is inlined at build time, so this renders only
+	// under `next dev` and is stripped from production bundles.
+	const handleDevBypass = async () => {
+		setError(null);
+		setLoading(true);
+		const creds = { email: "dev@north.local", password: "dev-bypass-1" };
+		let { error } = await supabase.auth.signInWithPassword(creds);
+		if (error) {
+			const { error: signUpError } = await supabase.auth.signUp({
+				...creds,
+				options: { data: { display_name: "Dev Tester" } },
+			});
+			if (signUpError) {
+				setLoading(false);
+				setError(signUpError.message);
+				return;
+			}
+			({ error } = await supabase.auth.signInWithPassword(creds));
+			if (error) {
+				setLoading(false);
+				setError(error.message);
+				return;
+			}
+		}
+		// Hard navigation so the proxy re-checks auth (routes to onboarding
+		// on first use, then straight to the feed).
+		window.location.href = "/for-you";
+	};
+
+	const devBypassButton =
+		process.env.NODE_ENV === "development" ? (
+			<button
+				type="button"
+				onClick={handleDevBypass}
+				disabled={loading}
+				className="mt-4 w-full cursor-pointer rounded-full border border-[#0E1420]/15 border-dashed py-3 font-semibold text-[#0E1420]/50 text-[13px] transition-colors hover:border-[#005ac2] hover:text-[#005ac2] disabled:cursor-not-allowed disabled:opacity-50"
+			>
+				Skip sign-in (dev only)
+			</button>
+		) : null;
+
 	const errorBox = error ? (
 		<p className="rounded-2xl bg-red-500/10 px-4 py-2.5 font-semibold text-[13px] text-red-600">
 			{error}
@@ -229,6 +271,7 @@ export function ProductSignIn({ initialMode }: { initialMode?: Mode }) {
 						<ArrowIcon />
 					</button>
 				</form>
+				{devBypassButton}
 				<div className="mt-10 border-[#0E1420]/10 border-t pt-8 text-center">
 					<p className="font-medium text-[#0E1420]/60 text-[14px]">
 						Already have access?
@@ -303,6 +346,7 @@ export function ProductSignIn({ initialMode }: { initialMode?: Mode }) {
 					<ArrowIcon />
 				</button>
 			</form>
+			{devBypassButton}
 			<div className="mt-10 border-[#0E1420]/10 border-t pt-8 text-center text-[14px]">
 				<p className="font-medium text-[#0E1420]/60">
 					New here?

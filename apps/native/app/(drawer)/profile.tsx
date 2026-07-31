@@ -7,10 +7,18 @@
 //         streak counter or loss-framing.
 // PRO-03: Signal band + saved opportunities wired to real M3 data.
 
-import { Card, ConsistencyGrid, RhythmStreakCard } from "@north/native-ui";
-import { getTokens } from "@north/tokens";
+import {
+	Button,
+	Card,
+	ConsistencyGrid,
+	RhythmStreakCard,
+	Rise,
+	staggerDelay,
+} from "@north/native-ui";
+import { getNorthTokens } from "@north/tokens";
 import {
 	ActivityIndicator,
+	Alert,
 	SafeAreaView,
 	ScrollView,
 	StyleSheet,
@@ -18,11 +26,34 @@ import {
 	View,
 } from "react-native";
 
+import { supabase } from "@/lib/auth-client";
+import { setAuthBypass } from "@/lib/dev-bypass";
 import { useProfileData } from "@/lib/profile/use-profile-data";
 
 export default function Profile() {
-	const { p, t, d } = getTokens("warm", "humanist", "calm");
+	const { p, t, d } = getNorthTokens();
 	const { data, loading, error } = useProfileData();
+
+	// Same confirm-then-sign-out flow as the drawer home. Also clears the
+	// dev bypass flag so a bypassed session actually leaves the shell.
+	const confirmSignOut = () => {
+		Alert.alert(
+			"Sign out?",
+			"You can sign back in any time.",
+			[
+				{ text: "Cancel", style: "cancel" },
+				{
+					text: "Sign out",
+					style: "destructive",
+					onPress: () => {
+						setAuthBypass(false);
+						void supabase.auth.signOut();
+					},
+				},
+			],
+			{ cancelable: true },
+		);
+	};
 
 	if (loading) {
 		return (
@@ -55,50 +86,106 @@ export default function Profile() {
 				]}
 				showsVerticalScrollIndicator={false}
 			>
-				{/* ── Name + focus areas ─────────────────────────────── */}
-				<View style={[styles.header, { marginBottom: d.gapLg }]}>
-					<Text
-						style={[
-							styles.name,
-							{
-								color: p.ink,
-								fontFamily: t.display,
-								fontWeight: String(t.displayWeight) as "400",
-								fontStyle: t.editorialItalic ? "italic" : "normal",
-							},
-						]}
-					>
-						{data.displayName ?? "You"}
-					</Text>
-					{data.focusAreas.length > 0 ? (
-						<View style={styles.pillRow}>
-							{data.focusAreas.map((fa) => (
-								<View
-									key={fa.id}
+				{/* ── Avatar + name + band + focus areas ─────────────── */}
+				<Rise>
+					<View style={[styles.header, { marginBottom: d.gapLg }]}>
+						<View
+							style={[
+								styles.avatar,
+								{ backgroundColor: p.surfaceHi, borderColor: p.line },
+							]}
+							accessibilityElementsHidden
+						>
+							<Text
+								style={[
+									styles.avatarInitials,
+									{ color: p.ink, fontFamily: t.display },
+								]}
+							>
+								{(data.displayName ?? "You")
+									.split(/\s+/)
+									.slice(0, 2)
+									.map((w) => w[0]?.toUpperCase() ?? "")
+									.join("")}
+							</Text>
+						</View>
+						<Text
+							style={[styles.name, { color: p.ink, fontFamily: t.display }]}
+						>
+							{data.displayName ?? "You"}
+						</Text>
+						{data.signalBand ? (
+							<View
+								style={[
+									styles.bandPill,
+									data.signalBand === "Aligned"
+										? {
+												backgroundColor: `${p.teal}1f`,
+												borderColor: `${p.teal}47`,
+											}
+										: data.signalBand === "Finding"
+											? {
+													backgroundColor: `${p.teal}1f`,
+													borderColor: `${p.teal}47`,
+												}
+											: {
+													backgroundColor: `${p.violet}1a`,
+													borderColor: `${p.violet}40`,
+												},
+								]}
+							>
+								<Text
 									style={[
-										styles.pill,
+										styles.bandPillText,
 										{
-											backgroundColor: `${fa.hue}33`,
-											borderColor: `${fa.hue}66`,
+											color:
+												data.signalBand === "Drifting"
+													? p.violetInk
+													: p.tealInk,
+											fontFamily: t.ui,
 										},
 									]}
 								>
-									<Text
+									{data.signalBand === "Aligned"
+										? "On course"
+										: data.signalBand === "Finding"
+											? "Finding course"
+											: "Drifting"}
+								</Text>
+							</View>
+						) : null}
+						{data.focusAreas.length > 0 ? (
+							<View style={styles.pillRow}>
+								{data.focusAreas.map((fa) => (
+									<View
+										key={fa.id}
 										style={[
-											styles.pillText,
-											{ color: fa.hue, fontFamily: t.ui },
+											styles.pill,
+											{
+												// Hue as a wash, ink as the voice — vivid text on the
+												// light field can't hold contrast.
+												backgroundColor: `${fa.hue}21`,
+												borderColor: `${fa.hue}47`,
+											},
 										]}
 									>
-										{fa.label}
-									</Text>
-								</View>
-							))}
-						</View>
-					) : null}
-				</View>
+										<Text
+											style={[
+												styles.pillText,
+												{ color: p.ink, fontFamily: t.ui },
+											]}
+										>
+											{fa.label}
+										</Text>
+									</View>
+								))}
+							</View>
+						) : null}
+					</View>
+				</Rise>
 
 				{/* ── Rhythm streak (7-day) ───────────────────────────── */}
-				<View style={{ marginBottom: d.gap }}>
+				<Rise delay={staggerDelay(1)} style={{ marginBottom: d.gap }}>
 					<RhythmStreakCard
 						p={p}
 						t={t}
@@ -106,10 +193,10 @@ export default function Profile() {
 						directedDays={data.directedDaysThisWeek}
 						labels={data.dayLabels7}
 					/>
-				</View>
+				</Rise>
 
 				{/* ── Consistency grid (28-day) - PRO-02 ─────────────── */}
-				<View style={{ marginBottom: d.gap }}>
+				<Rise delay={staggerDelay(2)} style={{ marginBottom: d.gap }}>
 					<ConsistencyGrid
 						p={p}
 						t={t}
@@ -117,7 +204,7 @@ export default function Profile() {
 						activeDayCount={data.streaks28.filter((s) => s >= 1).length}
 						weekdayLabels={["M", "T", "W", "T", "F", "S", "S"]}
 					/>
-				</View>
+				</Rise>
 
 				{/* ── Missions this week ──────────────────────────────── */}
 				<View style={{ marginBottom: d.gap }}>
@@ -137,7 +224,6 @@ export default function Profile() {
 									{
 										color: p.ink,
 										fontFamily: t.display,
-										fontWeight: String(t.displayWeight) as "400",
 										fontStyle: t.editorialItalic ? "italic" : "normal",
 									},
 								]}
@@ -179,15 +265,14 @@ export default function Profile() {
 									style={[
 										styles.bandValue,
 										{
+											// Band ink variants: gold=aligned, teal=finding, violet=drift.
 											color:
 												data.signalBand === "Aligned"
-													? p.accent
+													? p.goldInk
 													: data.signalBand === "Finding"
-														? p.inkMid
-														: p.warn,
+														? p.tealInk
+														: p.violetInk,
 											fontFamily: t.display,
-											fontWeight: String(t.displayWeight) as "400",
-											fontStyle: t.editorialItalic ? "italic" : "normal",
 										},
 									]}
 								>
@@ -237,7 +322,6 @@ export default function Profile() {
 										{
 											color: p.ink,
 											fontFamily: t.display,
-											fontWeight: String(t.displayWeight) as "400",
 											fontStyle: t.editorialItalic ? "italic" : "normal",
 										},
 									]}
@@ -278,6 +362,13 @@ export default function Profile() {
 						</Text>
 					)}
 				</Card>
+
+				{/* ── Sign out ────────────────────────────────────────── */}
+				<View style={{ marginTop: d.gapLg }}>
+					<Button p={p} t={t} variant="outline" onPress={confirmSignOut}>
+						Sign out
+					</Button>
+				</View>
 			</ScrollView>
 		</SafeAreaView>
 	);
@@ -287,9 +378,32 @@ const styles = StyleSheet.create({
 	safe: { flex: 1 },
 	center: { flex: 1, alignItems: "center", justifyContent: "center" },
 	body: { flexGrow: 1 },
-	header: {},
-	name: { fontSize: 32, lineHeight: 38, letterSpacing: -0.5, marginBottom: 12 },
-	pillRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+	header: { alignItems: "center" },
+	avatar: {
+		width: 76,
+		height: 76,
+		borderRadius: 38,
+		borderWidth: 1,
+		alignItems: "center",
+		justifyContent: "center",
+		marginBottom: 12,
+	},
+	avatarInitials: { fontSize: 26, lineHeight: 32 },
+	name: { fontSize: 26, lineHeight: 32, letterSpacing: -0.5, marginBottom: 10 },
+	bandPill: {
+		paddingHorizontal: 14,
+		paddingVertical: 6,
+		borderRadius: 20,
+		borderWidth: 1,
+		marginBottom: 12,
+	},
+	bandPillText: { fontSize: 13, fontWeight: "600" },
+	pillRow: {
+		flexDirection: "row",
+		flexWrap: "wrap",
+		gap: 8,
+		justifyContent: "center",
+	},
 	pill: {
 		paddingHorizontal: 10,
 		paddingVertical: 4,

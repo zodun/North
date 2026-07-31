@@ -36,18 +36,13 @@
 		"check:ci": "biome check .",
 		"check:secrets": "scripts/check-client-bundle-secrets.sh",
 		"check:contrast": "bun scripts/check-token-contrast.ts",
-		"postinstall": "lefthook install || true",
-		"android": "expo run:android",
-		"ios": "expo run:ios"
+		"postinstall": "lefthook install || true"
 	},
 	"dependencies": {
 		"@north/env": "workspace:*",
 		"@north/tokens": "workspace:*",
 		"dotenv": "catalog:",
-		"zod": "catalog:",
-		"expo": "~54.0.33",
-		"react": "19.1.0",
-		"react-native": "0.81.5"
+		"zod": "catalog:"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.2.0",

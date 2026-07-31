@@ -1,7 +1,11 @@
 // Q5 — country + remote/relocate prefs. Maps to profiles.country,
 // open_to_remote, open_to_relocate.
 
-import { getTokens, type Palette, type TypePairing } from "@north/tokens";
+import {
+	getNorthTokens,
+	type NorthPalette,
+	type TypePairing,
+} from "@north/tokens";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Switch, Text, View } from "react-native";
@@ -15,7 +19,7 @@ const Q = ONBOARDING_QUESTIONS[4];
 
 export default function OnboardingLocationScreen() {
 	const router = useRouter();
-	const { p, t } = getTokens("warm", "humanist", "calm");
+	const { p, t } = getNorthTokens();
 	const { answers, saveLocation } = useOnboardingState();
 	const [saving, setSaving] = useState(false);
 
@@ -87,7 +91,7 @@ function ToggleRow({
 	label: string;
 	value: boolean;
 	onValueChange: (v: boolean) => void;
-	p: Palette;
+	p: NorthPalette;
 	t: TypePairing;
 }) {
 	return (
@@ -103,7 +107,7 @@ function ToggleRow({
 			<Switch
 				value={value}
 				onValueChange={onValueChange}
-				trackColor={{ false: p.lineHi, true: "#3ECFBF" }}
+				trackColor={{ false: p.lineHi, true: p.teal }}
 				thumbColor="#ffffff"
 			/>
 		</View>

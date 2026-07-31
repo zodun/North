@@ -2,7 +2,7 @@
 // profiles.avoid_note + onboarding_responses.biggest_distraction.
 
 import { Input } from "@north/native-ui";
-import { getTokens } from "@north/tokens";
+import { getNorthTokens } from "@north/tokens";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 
@@ -14,7 +14,7 @@ const Q = ONBOARDING_QUESTIONS[6];
 
 export default function OnboardingAvoidScreen() {
 	const router = useRouter();
-	const { p, t } = getTokens("warm", "humanist", "calm");
+	const { p, t } = getNorthTokens();
 	const { answers, loaded, saveAvoid } = useOnboardingState();
 	const [value, setValue] = useState("");
 	const [saving, setSaving] = useState(false);

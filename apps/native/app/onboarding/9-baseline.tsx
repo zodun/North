@@ -2,7 +2,7 @@
 // flushed atomically by complete_onboarding() at Q10.
 
 import { ScaleSelector } from "@north/native-ui";
-import { getTokens } from "@north/tokens";
+import { getNorthTokens } from "@north/tokens";
 import { useRouter } from "expo-router";
 
 import { QuestionShell } from "@/components/onboarding/QuestionShell";
@@ -16,7 +16,7 @@ const Q = ONBOARDING_QUESTIONS[8];
 
 export default function OnboardingBaselineScreen() {
 	const router = useRouter();
-	const { p, t } = getTokens("warm", "humanist", "calm");
+	const { p, t } = getNorthTokens();
 	const { answers, setBaseline } = useOnboardingState();
 
 	return (

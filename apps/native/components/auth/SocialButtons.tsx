@@ -12,7 +12,7 @@
 
 import { env } from "@north/env/native";
 import { Button } from "@north/native-ui";
-import { getTokens } from "@north/tokens";
+import { getNorthTokens } from "@north/tokens";
 import * as AppleAuthentication from "expo-apple-authentication";
 import * as Google from "expo-auth-session/providers/google";
 import * as Crypto from "expo-crypto";
@@ -29,7 +29,7 @@ export type SocialButtonsProps = {
 };
 
 export function SocialButtons({ onError }: SocialButtonsProps) {
-	const { p, t, d } = getTokens("warm", "humanist", "calm");
+	const { p, t, d } = getNorthTokens();
 
 	const [appleAvailable, setAppleAvailable] = useState(false);
 	const [googlePending, setGooglePending] = useState(false);
@@ -43,7 +43,15 @@ export function SocialButtons({ onError }: SocialButtonsProps) {
 	const [, response, promptGoogle] = Google.useAuthRequest({
 		iosClientId: env.EXPO_PUBLIC_GOOGLE_OAUTH_IOS_CLIENT_ID,
 		androidClientId: env.EXPO_PUBLIC_GOOGLE_OAUTH_ANDROID_CLIENT_ID,
-		webClientId: env.EXPO_PUBLIC_GOOGLE_OAUTH_WEB_CLIENT_ID,
+		// The hook throws on the web platform if webClientId is undefined,
+		// which crashes the whole (auth) screen when previewing in a browser.
+		// The placeholder never reaches Google: googleConfigured hides the
+		// button (and onGoogle guards) whenever the real id is unset.
+		webClientId:
+			env.EXPO_PUBLIC_GOOGLE_OAUTH_WEB_CLIENT_ID ??
+			(Platform.OS === "web"
+				? "unconfigured.apps.googleusercontent.com"
+				: undefined),
 	});
 
 	useEffect(() => {
@@ -116,10 +124,11 @@ export function SocialButtons({ onError }: SocialButtonsProps) {
 	return (
 		<View style={[styles.wrap, { gap: d.gap }]}>
 			{appleAvailable ? (
+				// Outline, not gold — the screen's one needle is its main CTA.
 				<Button
 					p={p}
 					t={t}
-					variant="primary"
+					variant="outline"
 					loading={applePending}
 					onPress={onApple}
 				>
