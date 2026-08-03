@@ -1,118 +1,135 @@
-// Right-side action column for a feed card (FEED-03).
-// Renders save (bookmark), matters (heart), and share buttons.
-// Active state is shown with the filled icon variant + accent colour.
+// Right-side action rail for a For You slide: like, comment, share, save.
+// Lives on the feed's sanctioned dark surface — icons are white, active
+// states take Signal Gold (the one accent = the action you took).
 
 import { Icon } from "@north/native-ui";
-import type { Palette, TypePairing } from "@north/tokens";
-import { Pressable, Share, StyleSheet, Text, View } from "react-native";
+import { getNorthTokens } from "@north/tokens";
+import type { ReactNode } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+
+const { p, t } = getNorthTokens();
 
 type Props = {
-	p: Palette;
-	t: TypePairing;
-	itemId: string;
-	externalUrl: string | null;
-	title: string;
-	isSaved: boolean;
-	isMatters: boolean;
-	onSave: () => void;
-	onMatters: () => void;
+	liked: boolean;
+	likeCount: number;
+	commentCount: number;
+	saved: boolean;
+	onLike: () => void;
+	onComment: () => void;
 	onShare: () => void;
+	onSave: () => void;
 };
 
-export function FeedActions({
-	p,
-	t,
-	externalUrl,
-	title,
-	isSaved,
-	isMatters,
-	onSave,
-	onMatters,
-	onShare,
-}: Props) {
-	const handleShare = async () => {
-		onShare();
-		await Share.share(
-			{
-				title,
-				message: externalUrl ? `${title}\n${externalUrl}` : title,
-				url: externalUrl ?? undefined,
-			},
-			{ dialogTitle: title },
-		);
-	};
+function formatCount(n: number): string | null {
+	if (n <= 0) return null;
+	if (n >= 1000) return `${(n / 1000).toFixed(n >= 10_000 ? 0 : 1)}k`;
+	return String(n);
+}
 
+export function FeedActions({
+	liked,
+	likeCount,
+	commentCount,
+	saved,
+	onLike,
+	onComment,
+	onShare,
+	onSave,
+}: Props) {
 	return (
-		<View style={styles.column}>
-			<ActionButton
-				p={p}
-				t={t}
-				label={isMatters ? "Resonates" : "Resonates"}
-				onPress={onMatters}
+		<View style={s.column}>
+			<RailButton
+				label={liked ? "Liked" : "Like"}
+				count={formatCount(likeCount)}
+				active={liked}
+				onPress={onLike}
 			>
 				<Icon
-					name={isMatters ? "heartFilled" : "heart"}
-					size={26}
-					color={isMatters ? p.accent : p.inkMid}
+					name={liked ? "heartFilled" : "heart"}
+					size={27}
+					color={liked ? p.gold : "#FFFFFF"}
 				/>
-			</ActionButton>
+			</RailButton>
 
-			<ActionButton p={p} t={t} label="Save" onPress={onSave}>
+			<RailButton
+				label="Comment"
+				count={formatCount(commentCount)}
+				active={false}
+				onPress={onComment}
+			>
+				<Icon name="write" size={25} color="#FFFFFF" />
+			</RailButton>
+
+			<RailButton label="Share" count={null} active={false} onPress={onShare}>
+				<Icon name="share" size={24} color="#FFFFFF" />
+			</RailButton>
+
+			<RailButton
+				label={saved ? "Saved" : "Save"}
+				count={null}
+				active={saved}
+				onPress={onSave}
+			>
 				<Icon
-					name={isSaved ? "bookmarkFilled" : "bookmark"}
-					size={26}
-					color={isSaved ? p.accent : p.inkMid}
+					name={saved ? "bookmarkFilled" : "bookmark"}
+					size={25}
+					color={saved ? p.gold : "#FFFFFF"}
 				/>
-			</ActionButton>
-
-			<ActionButton p={p} t={t} label="Share" onPress={handleShare}>
-				<Icon name="share" size={24} color={p.inkMid} />
-			</ActionButton>
+			</RailButton>
 		</View>
 	);
 }
 
-function ActionButton({
-	p,
-	t,
+function RailButton({
 	label,
+	count,
+	active,
 	onPress,
 	children,
 }: {
-	p: Palette;
-	t: TypePairing;
 	label: string;
+	count: string | null;
+	active: boolean;
 	onPress: () => void;
-	children: React.ReactNode;
+	children: ReactNode;
 }) {
 	return (
 		<Pressable
 			onPress={onPress}
 			accessibilityRole="button"
-			accessibilityLabel={label}
-			style={({ pressed }) => [styles.btn, { opacity: pressed ? 0.7 : 1 }]}
+			accessibilityLabel={count ? `${label}, ${count}` : label}
+			style={({ pressed }) => [
+				s.btn,
+				pressed && { opacity: 0.65, transform: [{ scale: 0.92 }] },
+			]}
 		>
 			{children}
-			<Text style={{ color: p.inkDim, fontFamily: t.ui, fontSize: 10 }}>
-				{label}
+			<Text style={[s.label, active && { color: p.gold }]}>
+				{count ?? label}
 			</Text>
 		</Pressable>
 	);
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
 	column: {
 		position: "absolute",
-		right: 16,
-		bottom: 100,
-		gap: 24,
+		right: 12,
+		bottom: 96,
 		alignItems: "center",
+		gap: 18,
 	},
 	btn: {
-		minWidth: 44,
-		minHeight: 44,
+		minWidth: 48,
+		minHeight: 48,
 		alignItems: "center",
 		justifyContent: "center",
-		gap: 4,
+		gap: 3,
+	},
+	label: {
+		fontSize: 11,
+		color: "rgba(255,255,255,0.85)",
+		fontFamily: t.ui,
+		fontWeight: "600",
 	},
 });

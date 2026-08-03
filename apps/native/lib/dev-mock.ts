@@ -5,7 +5,6 @@
 
 import type { StreakState } from "@north/native-ui";
 
-import type { MissionTask, TodayMission } from "./mission/use-today-mission";
 import type { Person, PersonCheckIn, PersonGoal } from "./signal/use-people";
 import type { SignalData } from "./signal/use-signal-data";
 
@@ -83,40 +82,10 @@ export function mockSignalData(): SignalData {
 }
 
 // ── Mission ───────────────────────────────────────────────────────────
+// Zoe's active monthly goal (the full mock cycle lives in
+// lib/mission/fixtures.ts; this is the one-line summary other surfaces show).
 
-export function mockMission(): TodayMission {
-	return {
-		id: "mock-mission-1",
-		title: "Ship the first portfolio case study",
-		intent: "Turn last month's project into proof you can show.",
-		tasks: [
-			{
-				id: "mock-task-1",
-				label: "Outline the case study in 5 bullet points",
-				kind: "deep",
-				estimate_label: "20 min",
-				done: true,
-				abandon_count: 0,
-			},
-			{
-				id: "mock-task-2",
-				label: "Draft the problem section",
-				kind: "deep",
-				estimate_label: "25 min",
-				done: false,
-				abandon_count: 0,
-			},
-			{
-				id: "mock-task-3",
-				label: "Pick 3 screenshots that show the result",
-				kind: "light",
-				estimate_label: "10 min",
-				done: false,
-				abandon_count: 0,
-			},
-		] satisfies MissionTask[],
-	};
-}
+export const MOCK_GOAL_TITLE = "Ship the first portfolio case study";
 
 // ── People / Community ────────────────────────────────────────────────
 

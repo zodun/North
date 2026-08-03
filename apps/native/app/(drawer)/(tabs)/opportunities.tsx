@@ -1,10 +1,13 @@
-// Opportunities tab (OPP-03 / OPP-04 / OPP-05).
+// Opportunities tab (OPP-03 / OPP-04 / OPP-05 + tracker/filters).
 //
-// OPP-03: Searchable, filterable feed of cleared opportunities.
+// OPP-03: Searchable, filterable feed of cleared opportunities —
+//         category chips plus a country/deadline filter sheet.
 // OPP-04: Save (toggle) + Apply (link-out + mark applied) per card.
 // OPP-05: "Submit an opportunity" inline form → opportunity_submissions.
+// Tracker: Browse | Tracker toggle — saved/applied items move through
+//          Saved → Applied → Interview → Offer/Closed, with local
+//          deadline reminders (3 days before) via expo-notifications.
 
-import { Card } from "@north/native-ui";
 import { getNorthTokens } from "@north/tokens";
 import { useState } from "react";
 import {
@@ -21,26 +24,27 @@ import {
 	View,
 } from "react-native";
 
+import { ActiveFilterChips } from "@/components/opportunities/ActiveFilterChips";
+import { FilterSheet } from "@/components/opportunities/FilterSheet";
+import { OpportunityCard } from "@/components/opportunities/OpportunityCard";
+import { TrackerView } from "@/components/opportunities/TrackerView";
 import { supabase, useSession } from "@/lib/auth-client";
+import { useAuthBypass } from "@/lib/dev-bypass";
+import {
+	BROWSE_CATEGORIES,
+	CATEGORY_OPTIONS,
+} from "@/lib/opportunities/categories";
+import {
+	countActiveFilters,
+	NO_FILTERS,
+	type OpportunityFilters,
+} from "@/lib/opportunities/filters";
 import type { Opportunity } from "@/lib/opportunities/types";
+import { useApplicationTracker } from "@/lib/opportunities/use-application-tracker";
 import { useOpportunities } from "@/lib/opportunities/use-opportunities";
 import { useOpportunityInteractions } from "@/lib/opportunities/use-opportunity-interactions";
 
-// ── Category filter data ──────────────────────────────────────────────
-
-type Cat = { id: string | null; label: string };
-
-const CATEGORIES: Cat[] = [
-	{ id: null, label: "All" },
-	{ id: "job", label: "Jobs" },
-	{ id: "internship", label: "Internships" },
-	{ id: "scholarship", label: "Scholarships" },
-	{ id: "accelerator", label: "Accelerators" },
-	{ id: "grant", label: "Grants" },
-	{ id: "community", label: "Communities" },
-	{ id: "event", label: "Events" },
-	{ id: "creator-programme", label: "Creator Programmes" },
-];
+type Tokens = ReturnType<typeof getNorthTokens>;
 
 // ── Category filter bar ───────────────────────────────────────────────
 
@@ -52,8 +56,8 @@ function FilterBar({
 }: {
 	active: string | null;
 	onChange: (id: string | null) => void;
-	p: ReturnType<typeof getNorthTokens>["p"];
-	t: ReturnType<typeof getNorthTokens>["t"];
+	p: Tokens["p"];
+	t: Tokens["t"];
 }) {
 	return (
 		<ScrollView
@@ -62,7 +66,7 @@ function FilterBar({
 			contentContainerStyle={filter.row}
 			style={{ backgroundColor: p.bg }}
 		>
-			{CATEGORIES.map((cat) => {
+			{BROWSE_CATEGORIES.map((cat) => {
 				const selected = active === cat.id;
 				return (
 					<Pressable
@@ -111,145 +115,78 @@ const filter = StyleSheet.create({
 	},
 });
 
-// ── Opportunity card ──────────────────────────────────────────────────
+// ── Browse | Tracker toggle ───────────────────────────────────────────
 
-function OpportunityCard({
-	item,
-	isSaved,
-	isApplied,
-	onSave,
-	onApply,
+type Mode = "browse" | "tracker";
+
+function ModeToggle({
+	mode,
+	onChange,
+	trackedCount,
 	p,
 	t,
-	d,
 }: {
-	item: Opportunity;
-	isSaved: boolean;
-	isApplied: boolean;
-	onSave: () => void;
-	onApply: () => void;
-	p: ReturnType<typeof getNorthTokens>["p"];
-	t: ReturnType<typeof getNorthTokens>["t"];
-	d: ReturnType<typeof getNorthTokens>["d"];
+	mode: Mode;
+	onChange: (mode: Mode) => void;
+	trackedCount: number;
+	p: Tokens["p"];
+	t: Tokens["t"];
 }) {
-	const catLabel =
-		CATEGORIES.find((c) => c.id === item.category_id)?.label ??
-		item.category_id;
-
+	const segments: { id: Mode; label: string }[] = [
+		{ id: "browse", label: "Browse" },
+		{
+			id: "tracker",
+			label: trackedCount > 0 ? `Tracker · ${trackedCount}` : "Tracker",
+		},
+	];
 	return (
-		<Card p={p}>
-			{/* Eyebrow: category + optional type */}
-			<Text style={[card.eyebrow, { color: p.inkDim, fontFamily: t.ui }]}>
-				{[catLabel, item.opportunity_type]
-					.filter(Boolean)
-					.join(" · ")
-					.toUpperCase()}
-			</Text>
-
-			<Text
-				style={[
-					card.title,
-					{
-						color: p.ink,
-						fontFamily: t.display,
-						fontStyle: t.editorialItalic ? "italic" : "normal",
-					},
-				]}
-			>
-				{item.title}
-			</Text>
-
-			<Text style={[card.org, { color: p.inkMid, fontFamily: t.ui }]}>
-				{item.org}
-			</Text>
-
-			{item.location || item.deadline ? (
-				<Text style={[card.meta, { color: p.inkDim, fontFamily: t.ui }]}>
-					{[item.location, item.deadline ? `Deadline: ${item.deadline}` : null]
-						.filter(Boolean)
-						.join(" · ")}
-				</Text>
-			) : null}
-
-			{item.why ? (
-				<Text style={[card.why, { color: p.inkMid, fontFamily: t.ui }]}>
-					{item.why}
-				</Text>
-			) : null}
-
-			{/* Actions */}
-			<View style={[card.actions, { marginTop: d.gap }]}>
-				<TouchableOpacity
-					onPress={onSave}
-					style={[
-						card.actionBtn,
-						{
-							// Teal = on-course: saving marks intent, not the next action.
-							borderColor: isSaved ? `${p.teal}66` : p.line,
-							backgroundColor: isSaved ? `${p.teal}1a` : "transparent",
-						},
-					]}
-					accessibilityLabel={isSaved ? "Unsave" : "Save"}
-				>
-					<Text
+		<View
+			style={[toggle.wrap, { borderColor: p.line, backgroundColor: p.surface }]}
+		>
+			{segments.map((seg) => {
+				const selected = mode === seg.id;
+				return (
+					<Pressable
+						key={seg.id}
+						onPress={() => onChange(seg.id)}
+						accessibilityRole="button"
+						accessibilityState={{ selected }}
 						style={[
-							card.actionLabel,
-							{ color: isSaved ? p.ink : p.inkMid, fontFamily: t.ui },
+							toggle.segment,
+							{ backgroundColor: selected ? p.ink : "transparent" },
 						]}
 					>
-						{isSaved ? "Saved" : "Save"}
-					</Text>
-				</TouchableOpacity>
-
-				<TouchableOpacity
-					onPress={onApply}
-					style={[
-						card.actionBtn,
-						{
-							// Gold = the needle: Apply is the next action on this card.
-							borderColor: isApplied ? `${p.teal}66` : p.gold,
-							backgroundColor: isApplied ? `${p.teal}1a` : p.gold,
-						},
-					]}
-					accessibilityLabel={isApplied ? "Applied" : "Apply"}
-				>
-					<Text
-						style={[
-							card.actionLabel,
-							{
-								color: isApplied ? p.greenInk : p.accentInk,
+						<Text
+							style={{
+								color: selected ? p.surface : p.inkMid,
 								fontFamily: t.ui,
-							},
-						]}
-					>
-						{isApplied ? "Applied ✓" : "Apply ↗"}
-					</Text>
-				</TouchableOpacity>
-			</View>
-		</Card>
+								fontSize: 13,
+								fontWeight: selected ? "600" : "500",
+							}}
+						>
+							{seg.label}
+						</Text>
+					</Pressable>
+				);
+			})}
+		</View>
 	);
 }
 
-const card = StyleSheet.create({
-	eyebrow: {
-		fontSize: 10,
-		fontWeight: "500",
-		letterSpacing: 1.5,
-		marginBottom: 6,
-	},
-	title: { fontSize: 20, lineHeight: 26, marginBottom: 4 },
-	org: { fontSize: 13, marginBottom: 4 },
-	meta: { fontSize: 12, marginBottom: 6 },
-	why: { fontSize: 13, lineHeight: 19, fontStyle: "italic", marginBottom: 4 },
-	actions: { flexDirection: "row", gap: 10 },
-	actionBtn: {
-		flex: 1,
-		paddingVertical: 9,
-		borderRadius: 8,
+const toggle = StyleSheet.create({
+	wrap: {
+		flexDirection: "row",
 		borderWidth: 1,
+		borderRadius: 10,
+		padding: 3,
+		gap: 3,
+	},
+	segment: {
+		flex: 1,
+		paddingVertical: 8,
+		borderRadius: 7,
 		alignItems: "center",
 	},
-	actionLabel: { fontSize: 13, fontWeight: "500" },
 });
 
 // ── Submit form ───────────────────────────────────────────────────────
@@ -257,7 +194,7 @@ const card = StyleSheet.create({
 type SubmitFields = {
 	title: string;
 	org: string;
-	opportunityType: string;
+	categoryId: string | null;
 	location: string;
 	deadline: string;
 	description: string;
@@ -267,7 +204,7 @@ type SubmitFields = {
 const BLANK_SUBMIT: SubmitFields = {
 	title: "",
 	org: "",
-	opportunityType: "",
+	categoryId: null,
 	location: "",
 	deadline: "",
 	description: "",
@@ -280,15 +217,16 @@ function SubmitForm({
 	t,
 }: {
 	onDone: () => void;
-	p: ReturnType<typeof getNorthTokens>["p"];
-	t: ReturnType<typeof getNorthTokens>["t"];
+	p: Tokens["p"];
+	t: Tokens["t"];
 }) {
+	const bypass = useAuthBypass();
 	const { data: session } = useSession();
 	const [fields, setFields] = useState<SubmitFields>(BLANK_SUBMIT);
 	const [submitting, setSubmitting] = useState(false);
 	const [submitted, setSubmitted] = useState(false);
 
-	function set<K extends keyof SubmitFields>(k: K, v: string) {
+	function set<K extends keyof SubmitFields>(k: K, v: SubmitFields[K]) {
 		setFields((prev) => ({ ...prev, [k]: v }));
 	}
 
@@ -299,13 +237,23 @@ function SubmitForm({
 			!fields.externalUrl.trim()
 		)
 			return;
+		if (bypass) {
+			// Dev bypass: no session to attribute the row to — fake success.
+			setSubmitted(true);
+			setFields(BLANK_SUBMIT);
+			return;
+		}
 		setSubmitting(true);
+		const categoryLabelText = fields.categoryId
+			? (CATEGORY_OPTIONS.find((c) => c.id === fields.categoryId)?.label ??
+				null)
+			: null;
 		const { error } = await supabase.from("opportunity_submissions").insert({
 			submitted_by: session?.user.id ?? null,
 			submitter_email: session?.user.email ?? null,
 			title: fields.title.trim(),
 			org: fields.org.trim(),
-			opportunity_type: fields.opportunityType.trim() || null,
+			opportunity_type: categoryLabelText,
 			location: fields.location.trim() || null,
 			deadline: fields.deadline.trim() || null,
 			description: fields.description.trim() || null,
@@ -320,16 +268,10 @@ function SubmitForm({
 
 	if (submitted) {
 		return (
-			<Card p={p}>
-				<Text
-					style={[
-						form.heading,
-						{
-							color: p.ink,
-							fontFamily: t.display,
-						},
-					]}
-				>
+			<View
+				style={[form.card, { backgroundColor: p.surface, borderColor: p.line }]}
+			>
+				<Text style={[form.heading, { color: p.ink, fontFamily: t.display }]}>
 					Thanks for the tip.
 				</Text>
 				<Text style={[form.body, { color: p.inkMid, fontFamily: t.ui }]}>
@@ -342,7 +284,7 @@ function SubmitForm({
 						Close
 					</Text>
 				</TouchableOpacity>
-			</Card>
+			</View>
 		);
 	}
 
@@ -350,16 +292,10 @@ function SubmitForm({
 		fields.title.trim() && fields.org.trim() && fields.externalUrl.trim();
 
 	return (
-		<Card p={p}>
-			<Text
-				style={[
-					form.heading,
-					{
-						color: p.ink,
-						fontFamily: t.display,
-					},
-				]}
-			>
+		<View
+			style={[form.card, { backgroundColor: p.surface, borderColor: p.line }]}
+		>
+			<Text style={[form.heading, { color: p.ink, fontFamily: t.display }]}>
 				Submit an opportunity
 			</Text>
 			<Text style={[form.sub, { color: p.inkDim, fontFamily: t.ui }]}>
@@ -393,17 +329,38 @@ function SubmitForm({
 				/>
 			</FormField>
 
-			<FormField label="Type" p={p} t={t}>
-				<TextInput
-					value={fields.opportunityType}
-					onChangeText={(v) => set("opportunityType", v)}
-					placeholder="e.g. Full-time, scholarship, internship"
-					placeholderTextColor={p.inkDim}
-					style={[
-						form.input,
-						{ color: p.ink, fontFamily: t.ui, borderColor: p.line },
-					]}
-				/>
+			<FormField label="Category" p={p} t={t}>
+				<View style={form.catWrap}>
+					{CATEGORY_OPTIONS.map((cat) => {
+						const selected = fields.categoryId === cat.id;
+						return (
+							<Pressable
+								key={cat.id}
+								onPress={() => set("categoryId", selected ? null : cat.id)}
+								accessibilityRole="button"
+								accessibilityState={{ selected }}
+								style={[
+									form.catChip,
+									{
+										backgroundColor: selected ? p.accent : p.surface,
+										borderColor: selected ? p.accent : p.line,
+									},
+								]}
+							>
+								<Text
+									style={{
+										color: selected ? p.accentInk : p.inkMid,
+										fontFamily: t.ui,
+										fontSize: 11,
+										fontWeight: selected ? "600" : "500",
+									}}
+								>
+									{cat.label}
+								</Text>
+							</Pressable>
+						);
+					})}
+				</View>
 			</FormField>
 
 			<View style={form.row}>
@@ -500,7 +457,7 @@ function SubmitForm({
 					</Text>
 				</TouchableOpacity>
 			</View>
-		</Card>
+		</View>
 	);
 }
 
@@ -511,8 +468,8 @@ function FormField({
 	children,
 }: {
 	label: string;
-	p: ReturnType<typeof getNorthTokens>["p"];
-	t: ReturnType<typeof getNorthTokens>["t"];
+	p: Tokens["p"];
+	t: Tokens["t"];
 	children: React.ReactNode;
 }) {
 	return (
@@ -526,6 +483,7 @@ function FormField({
 }
 
 const form = StyleSheet.create({
+	card: { borderRadius: 18, borderWidth: 1, padding: 18 },
 	heading: { fontSize: 22, lineHeight: 28, marginBottom: 6 },
 	sub: { fontSize: 13, lineHeight: 18, marginBottom: 14 },
 	body: { fontSize: 14, lineHeight: 20, marginBottom: 14 },
@@ -547,6 +505,13 @@ const form = StyleSheet.create({
 		minHeight: 72,
 		textAlignVertical: "top",
 	},
+	catWrap: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+	catChip: {
+		paddingHorizontal: 11,
+		paddingVertical: 6,
+		borderRadius: 14,
+		borderWidth: 1,
+	},
 	row: { flexDirection: "row", gap: 10 },
 	btnRow: { flexDirection: "row", gap: 10, marginTop: 6 },
 	submitBtn: {
@@ -566,21 +531,35 @@ const form = StyleSheet.create({
 
 export default function Opportunities() {
 	const { p, t, d } = getNorthTokens();
+	const [mode, setMode] = useState<Mode>("browse");
 	const [activeCategory, setActiveCategory] = useState<string | null>(null);
+	const [filters, setFilters] = useState<OpportunityFilters>(NO_FILTERS);
 	const [search, setSearch] = useState("");
 	const [showSubmit, setShowSubmit] = useState(false);
+	const [showFilters, setShowFilters] = useState(false);
 
-	const { items, loading, error } = useOpportunities(activeCategory, search);
+	const { items, loading, error } = useOpportunities(
+		activeCategory,
+		search,
+		filters,
+	);
 	const { saved, toggleSave, markApplied } = useOpportunityInteractions();
+	const tracker = useApplicationTracker();
+
+	const filterCount = countActiveFilters(filters) + (activeCategory ? 1 : 0);
 
 	function handleApply(item: Opportunity) {
-		void markApplied(item.id);
+		void markApplied(item.id).then(() => tracker.refresh());
 		if (item.external_url) {
 			void Linking.openURL(item.external_url);
 		}
 	}
 
-	const header = (
+	function handleSave(item: Opportunity) {
+		void toggleSave(item.id).then(() => tracker.refresh());
+	}
+
+	const topBar = (
 		<View>
 			{/* Screen title */}
 			<Text
@@ -597,27 +576,80 @@ export default function Opportunities() {
 				Opportunities
 			</Text>
 
-			{/* Search bar */}
+			{/* Browse | Tracker */}
+			<View style={{ marginHorizontal: d.scrnPad, marginTop: 14 }}>
+				<ModeToggle
+					mode={mode}
+					onChange={setMode}
+					trackedCount={tracker.rows.length}
+					p={p}
+					t={t}
+				/>
+			</View>
+		</View>
+	);
+
+	const browseHeader = (
+		<View>
+			{topBar}
+
+			{/* Search + Filters */}
 			<View
-				style={[
-					screen.searchWrap,
-					{
-						marginHorizontal: d.scrnPad,
-						marginTop: 14,
-						marginBottom: 4,
-						borderColor: p.line,
-						backgroundColor: p.surface,
-					},
-				]}
+				style={{
+					marginHorizontal: d.scrnPad,
+					marginTop: 12,
+					marginBottom: 4,
+				}}
 			>
-				<TextInput
-					value={search}
-					onChangeText={setSearch}
-					placeholder="Search opportunities…"
-					placeholderTextColor={p.inkDim}
-					style={[screen.searchInput, { color: p.ink, fontFamily: t.ui }]}
-					returnKeyType="search"
-					clearButtonMode="while-editing"
+				<View style={screen.searchRow}>
+					<View
+						style={[
+							screen.searchWrap,
+							{ borderColor: p.line, backgroundColor: p.surface },
+						]}
+					>
+						<TextInput
+							value={search}
+							onChangeText={setSearch}
+							placeholder="Search opportunities…"
+							placeholderTextColor={p.inkDim}
+							style={[screen.searchInput, { color: p.ink, fontFamily: t.ui }]}
+							returnKeyType="search"
+							clearButtonMode="while-editing"
+						/>
+					</View>
+					<TouchableOpacity
+						onPress={() => setShowFilters(true)}
+						accessibilityLabel="Open filters"
+						style={[
+							screen.filterBtn,
+							{
+								borderColor: filterCount > 0 ? p.gold : p.line,
+								backgroundColor: filterCount > 0 ? p.accentSoft : p.surface,
+							},
+						]}
+					>
+						<Text
+							style={{
+								color: filterCount > 0 ? p.goldInk : p.inkMid,
+								fontFamily: t.ui,
+								fontSize: 13,
+								fontWeight: "500",
+							}}
+						>
+							{filterCount > 0 ? `Filters · ${filterCount}` : "Filters"}
+						</Text>
+					</TouchableOpacity>
+				</View>
+
+				<ActiveFilterChips
+					category={activeCategory}
+					filters={filters}
+					onClearCategory={() => setActiveCategory(null)}
+					onClearCountry={() => setFilters((f) => ({ ...f, country: null }))}
+					onClearDeadline={() => setFilters((f) => ({ ...f, deadline: null }))}
+					p={p}
+					t={t}
 				/>
 			</View>
 
@@ -631,7 +663,7 @@ export default function Opportunities() {
 		</View>
 	);
 
-	const footer = (
+	const browseFooter = (
 		<View
 			style={{ paddingHorizontal: d.scrnPad, paddingTop: 8, paddingBottom: 48 }}
 		>
@@ -655,6 +687,46 @@ export default function Opportunities() {
 		</View>
 	);
 
+	const filterSheet = (
+		<FilterSheet
+			visible={showFilters}
+			category={activeCategory}
+			filters={filters}
+			onApply={(category, next) => {
+				setActiveCategory(category);
+				setFilters(next);
+				setShowFilters(false);
+			}}
+			onClose={() => setShowFilters(false)}
+			p={p}
+			t={t}
+		/>
+	);
+
+	// ── Tracker mode ──────────────────────────────────────────────────
+	if (mode === "tracker") {
+		return (
+			<SafeAreaView style={[screen.safe, { backgroundColor: p.bg }]}>
+				<ScrollView
+					showsVerticalScrollIndicator={false}
+					contentContainerStyle={{ flexGrow: 1 }}
+				>
+					{topBar}
+					<TrackerView
+						rows={tracker.rows}
+						loading={tracker.loading}
+						onSetStatus={(id, status) => void tracker.setStatus(id, status)}
+						onToggleReminder={tracker.toggleReminder}
+						p={p}
+						t={t}
+						d={d}
+					/>
+				</ScrollView>
+			</SafeAreaView>
+		);
+	}
+
+	// ── Browse mode ───────────────────────────────────────────────────
 	if (loading) {
 		return (
 			<SafeAreaView style={[screen.safe, { backgroundColor: p.bg }]}>
@@ -682,14 +754,14 @@ export default function Opportunities() {
 			<FlatList
 				data={items}
 				keyExtractor={(item) => item.id}
-				ListHeaderComponent={header}
-				ListFooterComponent={footer}
+				ListHeaderComponent={browseHeader}
+				ListFooterComponent={browseFooter}
 				ListEmptyComponent={
 					<View style={[screen.empty, { paddingHorizontal: d.scrnPad }]}>
 						<Text
 							style={[screen.emptyText, { color: p.inkDim, fontFamily: t.ui }]}
 						>
-							{search.trim() || activeCategory
+							{search.trim() || filterCount > 0
 								? "No opportunities match this filter."
 								: "No opportunities yet — check back soon."}
 						</Text>
@@ -701,8 +773,10 @@ export default function Opportunities() {
 							item={item}
 							isSaved={saved[item.id]?.saved ?? false}
 							isApplied={saved[item.id]?.applied ?? false}
-							onSave={() => void toggleSave(item.id)}
+							reminderOn={Boolean(tracker.reminders[item.id])}
+							onSave={() => handleSave(item)}
 							onApply={() => handleApply(item)}
+							onToggleReminder={() => tracker.toggleReminder(item)}
 							p={p}
 							t={t}
 							d={d}
@@ -712,6 +786,7 @@ export default function Opportunities() {
 				showsVerticalScrollIndicator={false}
 				contentContainerStyle={{ flexGrow: 1 }}
 			/>
+			{filterSheet}
 		</SafeAreaView>
 	);
 }
@@ -720,13 +795,21 @@ const screen = StyleSheet.create({
 	safe: { flex: 1 },
 	center: { flex: 1, alignItems: "center", justifyContent: "center" },
 	heading: { fontSize: 28, lineHeight: 34, letterSpacing: -0.5 },
+	searchRow: { flexDirection: "row", gap: 8, alignItems: "center" },
 	searchWrap: {
+		flex: 1,
 		borderWidth: 1,
 		borderRadius: 10,
 		paddingHorizontal: 12,
 		paddingVertical: 8,
 	},
 	searchInput: { fontSize: 14 },
+	filterBtn: {
+		borderWidth: 1,
+		borderRadius: 10,
+		paddingHorizontal: 14,
+		paddingVertical: 11,
+	},
 	empty: { paddingTop: 40 },
 	emptyText: { fontSize: 14, textAlign: "center" },
 	submitTrigger: {

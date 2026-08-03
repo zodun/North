@@ -1,11 +1,12 @@
 import { Icon } from "@north/native-ui";
-import { useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	ActivityIndicator,
 	FlatList,
 	Image,
 	type LayoutChangeEvent,
+	Linking,
 	Pressable,
 	StyleSheet,
 	Text,
@@ -13,29 +14,26 @@ import {
 	type ViewToken,
 } from "react-native";
 
+import { CommentSheet } from "@/components/feed/CommentSheet";
+import { FeedActions } from "@/components/feed/FeedActions";
+import { StaticSlide } from "@/components/feed/StaticSlide";
 import { VideoSlide } from "@/components/feed/VideoSlide";
 import { VideoUploadSheet } from "@/components/feed/VideoUploadSheet";
 import { registerFeedRefresh } from "@/lib/feed/feed-refresh";
-import type { FeedItem } from "@/lib/feed/types";
-import { useFeed } from "@/lib/feed/use-feed";
+import type { FeedSlide } from "@/lib/feed/types";
+import { useForYouFeed } from "@/lib/feed/use-for-you-feed";
 import { useInteractions } from "@/lib/feed/use-interactions";
+import { shareSlide, useFeedSocial } from "@/lib/feed/use-social";
 
 export default function ForYou() {
-	const { items: allItems, loading, error, refresh } = useFeed(null);
-	const [showUpload, setShowUpload] = useState(false);
-	// Only show direct-hosted videos (not YouTube links) — native player only.
-	const items = useMemo(
-		() =>
-			allItems.filter(
-				(i) =>
-					i.kind === "video" &&
-					!!i.external_url &&
-					!i.external_url.includes("youtube"),
-			),
-		[allItems],
-	);
-	const { isSaved, record } = useInteractions(items);
+	// Mixed deck: videos interleaved with signal/opportunity/story/article/
+	// discussion slides, digest last. Mock deck under the dev bypass.
+	const { slides, feedItems, loading, error, refresh } = useForYouFeed();
+	const { isSaved, record } = useInteractions(feedItems);
+	const social = useFeedSocial(slides);
 
+	const [showUpload, setShowUpload] = useState(false);
+	const [commentsFor, setCommentsFor] = useState<string | null>(null);
 	const [containerSize, setContainerSize] = useState<{
 		height: number;
 		width: number;
@@ -56,13 +54,14 @@ export default function ForYou() {
 	// directly, since closing a Modal doesn't change tab focus.
 	useEffect(() => registerFeedRefresh(refresh), [refresh]);
 
-	// Activate the first item as soon as data loads so playback starts without needing a scroll.
+	// Activate the first slide as soon as data loads so playback starts without
+	// needing a scroll.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: intentionally only re-runs when length changes
 	useEffect(() => {
-		if (activeId === null && items.length > 0) {
-			setActiveId(items[0].id);
+		if (activeId === null && slides.length > 0) {
+			setActiveId(slides[0].id);
 		}
-	}, [items.length]);
+	}, [slides.length]);
 
 	const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 });
 
@@ -75,7 +74,7 @@ export default function ForYou() {
 		}) => {
 			const first = viewableItems[0];
 			if (first != null) {
-				const id = (first.item as FeedItem).id;
+				const id = (first.item as FeedSlide).id;
 				setActiveId(id);
 				record(id, "view");
 			} else {
@@ -90,22 +89,98 @@ export default function ForYou() {
 		setContainerSize({ width, height });
 	}, []);
 
+	const handleLike = useCallback(
+		(id: string) => {
+			// Mirror a fresh like into the behavioural log as "matters" (the heart
+			// action the signal score already reads); unlike only touches feed_likes.
+			if (!social.isLiked(id)) record(id, "matters");
+			social.toggleLike(id);
+		},
+		[social, record],
+	);
+
+	const handleShare = useCallback(
+		(slide: FeedSlide) => {
+			record(slide.id, "share");
+			void shareSlide(slide);
+		},
+		[record],
+	);
+
+	const openLink = useCallback((url: string) => {
+		Linking.openURL(url).catch(() => {});
+	}, []);
+
 	const renderItem = useCallback(
-		({ item }: { item: FeedItem }) => {
+		({ item: slide }: { item: FeedSlide }) => {
 			if (!containerSize) return null;
+			const rail =
+				slide.type === "digest" ? null : (
+					<FeedActions
+						liked={social.isLiked(slide.id)}
+						likeCount={social.likeCount(slide.id)}
+						commentCount={social.commentCount(slide.id)}
+						saved={isSaved(slide.id)}
+						onLike={() => handleLike(slide.id)}
+						onComment={() => setCommentsFor(slide.id)}
+						onShare={() => handleShare(slide)}
+						onSave={() => record(slide.id, "save")}
+					/>
+				);
+
+			if (slide.type === "video") {
+				return (
+					<View
+						style={{
+							height: containerSize.height,
+							width: containerSize.width,
+						}}
+					>
+						<VideoSlide
+							item={slide.item}
+							containerHeight={containerSize.height}
+							containerWidth={containerSize.width}
+							isActive={slide.id === activeId}
+							onWatch={() => record(slide.id, "finish")}
+							creator={slide.creator}
+							isFollowing={
+								slide.creator ? social.isFollowing(slide.creator.id) : false
+							}
+							onToggleFollow={() => {
+								if (slide.creator) social.toggleFollow(slide.creator.id);
+							}}
+						/>
+						{rail}
+					</View>
+				);
+			}
+
 			return (
-				<VideoSlide
-					item={item}
-					containerHeight={containerSize.height}
-					containerWidth={containerSize.width}
-					isSaved={isSaved(item.id)}
-					isActive={item.id === activeId}
-					onSave={() => record(item.id, "save")}
-					onWatch={() => record(item.id, "finish")}
-				/>
+				<View
+					style={{ height: containerSize.height, width: containerSize.width }}
+				>
+					<StaticSlide
+						slide={slide}
+						onOpenLink={openLink}
+						onJoinDiscussion={() => router.push("/(drawer)/(tabs)/community")}
+						onSeeOpportunities={() =>
+							router.push("/(drawer)/(tabs)/opportunities")
+						}
+					/>
+					{rail}
+				</View>
 			);
 		},
-		[containerSize, isSaved, record, activeId],
+		[
+			containerSize,
+			isSaved,
+			record,
+			activeId,
+			social,
+			handleLike,
+			handleShare,
+			openLink,
+		],
 	);
 
 	if (loading) {
@@ -124,7 +199,7 @@ export default function ForYou() {
 		);
 	}
 
-	if (items.length === 0) {
+	if (slides.length === 0) {
 		return (
 			<View style={s.center}>
 				{/* Pole travels ahead — content is on its way. */}
@@ -163,8 +238,8 @@ export default function ForYou() {
 		<View style={s.root} onLayout={onLayout}>
 			{containerSize ? (
 				<FlatList
-					data={items}
-					keyExtractor={(item) => item.id}
+					data={slides}
+					keyExtractor={(slide) => slide.id}
 					renderItem={renderItem}
 					pagingEnabled
 					snapToAlignment="start"
@@ -201,6 +276,11 @@ export default function ForYou() {
 					setShowUpload(false);
 					void refresh();
 				}}
+			/>
+			<CommentSheet
+				itemId={commentsFor}
+				onClose={() => setCommentsFor(null)}
+				onPosted={(id) => social.bumpCommentCount(id)}
 			/>
 		</View>
 	);

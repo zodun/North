@@ -1,15 +1,19 @@
-// Push notification registration (DEC-21).
+// Push notification registration + inbound handling (DEC-21).
 //
 // Uses Notifications.getDevicePushTokenAsync() — the *bare FCM/APNs*
 // token, not the Expo Push Service proxy token. Operating doc §8.1
 // commits to FCM specifically; bare tokens give direct delivery.
 //
 // Registration happens once per signed-in session. The hook UPSERTs
-// into public.push_tokens (RLS: own-rows write). Server-side push send
-// is M2/M3 work; this PR only wires the credential collection side.
+// into public.push_tokens (RLS: own-rows write). The send side is the
+// send-notifications Edge Function (morning/evening mission reminders);
+// useNotificationRouting handles the receive side — a tapped reminder
+// lands on the Mission tab (or the route named in the payload's
+// `data.route`, so future sends can deep-link without a client update).
 
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
+import { type Href, router } from "expo-router";
 import { useEffect } from "react";
 import { Platform } from "react-native";
 
@@ -90,4 +94,38 @@ export function useRegisterPushToken() {
 			cancelled = true;
 		};
 	}, [userId]);
+}
+
+/** In-app route for a tapped notification: payload `data.route` or Mission. */
+function routeFor(response: Notifications.NotificationResponse): Href {
+	const data = response.notification.request.content.data as
+		| Record<string, unknown>
+		| undefined;
+	const route = typeof data?.route === "string" ? data.route : null;
+	// Server-sent routes aren't statically known, so widen past typed routes.
+	return route?.startsWith("/") ? (route as Href) : "/(drawer)/(tabs)/mission";
+}
+
+/**
+ * Hook · route notification taps. Covers both the warm path (a tap while
+ * the app is running or backgrounded) and the cold path (the app was
+ * launched by the tap). The reminders are about today's step, so the
+ * default destination is the Mission tab.
+ */
+export function useNotificationRouting() {
+	useEffect(() => {
+		let cancelled = false;
+
+		void Notifications.getLastNotificationResponseAsync().then((response) => {
+			if (!cancelled && response) router.push(routeFor(response));
+		});
+
+		const sub = Notifications.addNotificationResponseReceivedListener(
+			(response) => router.push(routeFor(response)),
+		);
+		return () => {
+			cancelled = true;
+			sub.remove();
+		};
+	}, []);
 }

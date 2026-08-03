@@ -90,10 +90,6 @@ export default function RootLayout() {
 							name="onboarding"
 							options={{ headerShown: false, gestureEnabled: false }}
 						/>
-						<Stack.Screen
-							name="modal"
-							options={{ title: "Modal", presentation: "modal" }}
-						/>
 					</Stack>
 					{!launched && <LaunchScreen onFinish={handleLaunchFinish} />}
 				</GestureHandlerRootView>

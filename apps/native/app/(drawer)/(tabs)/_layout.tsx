@@ -1,7 +1,10 @@
 import { Tabs } from "expo-router";
 
 import { CustomTabBar } from "@/components/tab-bar";
-import { useRegisterPushToken } from "@/lib/notifications";
+import {
+	useNotificationRouting,
+	useRegisterPushToken,
+} from "@/lib/notifications";
 
 // The sheet's five-tab loop: For You · Mission · Opportunities ·
 // Journal · Community. Signal and Profile live in the drawer now, and
@@ -12,6 +15,8 @@ export default function TabLayout() {
 	// surface every authenticated user mounts. No-op without a session,
 	// on simulators, or when the permission prompt is denied.
 	useRegisterPushToken();
+	// Route notification taps (reminders land on the Mission tab).
+	useNotificationRouting();
 
 	return (
 		<Tabs

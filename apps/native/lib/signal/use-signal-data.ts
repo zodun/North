@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase, useSession } from "../auth-client";
 import { useAuthBypass } from "../dev-bypass";
 import { mockSignalData } from "../dev-mock";
-import { todayInAST } from "../mission/use-today-mission";
+import { todayInAST } from "../mission/use-monthly-mission";
 
 export type SignalBand = "Drifting" | "Finding" | "Aligned";
 

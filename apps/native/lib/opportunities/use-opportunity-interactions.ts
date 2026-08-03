@@ -1,17 +1,25 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { supabase, useSession } from "../auth-client";
+import { useAuthBypass } from "../dev-bypass";
+import {
+	mockMarkApplied,
+	mockToggleSave,
+	useMockOpportunityState,
+} from "./mock-store";
 import type { SavedState } from "./types";
 
 type SavedMap = Record<string, SavedState>;
 
 export function useOpportunityInteractions() {
+	const bypass = useAuthBypass();
 	const { data: session } = useSession();
+	const mock = useMockOpportunityState();
 	const [saved, setSaved] = useState<SavedMap>({});
 
 	// Load all saved rows for the current user on mount.
 	useEffect(() => {
-		if (!session) return;
+		if (bypass || !session) return;
 		void (async () => {
 			const { data } = await supabase
 				.from("user_saved_opportunities")
@@ -25,10 +33,14 @@ export function useOpportunityInteractions() {
 				setSaved(map);
 			}
 		})();
-	}, [session]);
+	}, [bypass, session]);
 
 	const toggleSave = useCallback(
 		async (opportunityId: string) => {
+			if (bypass) {
+				mockToggleSave(opportunityId);
+				return;
+			}
 			if (!session) return;
 			const current = saved[opportunityId];
 			const isSaved = current?.saved ?? false;
@@ -63,11 +75,15 @@ export function useOpportunityInteractions() {
 				);
 			}
 		},
-		[session, saved],
+		[bypass, session, saved],
 	);
 
 	const markApplied = useCallback(
 		async (opportunityId: string) => {
+			if (bypass) {
+				mockMarkApplied(opportunityId);
+				return;
+			}
 			if (!session) return;
 			// Optimistic.
 			setSaved((prev) => ({
@@ -85,8 +101,8 @@ export function useOpportunityInteractions() {
 				{ onConflict: "user_id,opportunity_id" },
 			);
 		},
-		[session],
+		[bypass, session],
 	);
 
-	return { saved, toggleSave, markApplied };
+	return { saved: bypass ? mock.saved : saved, toggleSave, markApplied };
 }

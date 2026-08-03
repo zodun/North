@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase, useSession } from "../auth-client";
 import { useAuthBypass } from "../dev-bypass";
 import { mockProfileData } from "../dev-mock";
-import { todayInAST } from "../mission/use-today-mission";
+import { todayInAST } from "../mission/use-monthly-mission";
 import { FOCUS_AREAS } from "../onboarding/questions";
 
 export type FocusAreaSummary = {

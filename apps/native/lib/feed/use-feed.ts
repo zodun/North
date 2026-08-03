@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 
-import { supabase } from "../auth-client";
+import { supabase, useSession } from "../auth-client";
+import { applyOrder, personalize } from "../personalize";
 import type { FeedItem } from "./types";
 
 // Fetches all cleared+published content_items ordered by sort_order (FEED-05).
 // RLS ensures only license_status='cleared' rows are returned.
 // Category filtering is client-side — 60 items is well within that budget for M1.
 export function useFeed(categoryFilter: string | null) {
+	const { data: session } = useSession();
 	const [allItems, setAllItems] = useState<FeedItem[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -25,7 +27,7 @@ export function useFeed(categoryFilter: string | null) {
 				.order("published_at", { ascending: false }),
 			supabase
 				.from("community_posts")
-				.select("id, caption, video_url, thumbnail_url, created_at")
+				.select("id, user_id, caption, video_url, thumbnail_url, created_at")
 				.not("video_url", "is", null)
 				.order("created_at", { ascending: false })
 				.limit(50),
@@ -40,8 +42,33 @@ export function useFeed(categoryFilter: string | null) {
 		}
 
 		const curated = (curatedResult.data ?? []) as FeedItem[];
+		const communityRows = (communityResult.data ?? []) as {
+			id: string;
+			user_id: string;
+			caption: string | null;
+			video_url: string | null;
+			thumbnail_url: string | null;
+			created_at: string;
+		}[];
 
-		const community: FeedItem[] = (communityResult.data ?? []).map((p) => ({
+		// Resolve poster display names so community videos carry a followable
+		// creator. Best-effort: a failed profiles query just leaves names null.
+		let names: Record<string, string> = {};
+		const userIds = [...new Set(communityRows.map((r) => r.user_id))];
+		if (userIds.length > 0) {
+			const { data: profiles } = await supabase
+				.from("profiles")
+				.select("user_id, display_name")
+				.in("user_id", userIds);
+			names = Object.fromEntries(
+				(
+					(profiles ?? []) as { user_id: string; display_name: string | null }[]
+				).map((p) => [p.user_id, p.display_name?.trim() || "Community member"]),
+			);
+		}
+		if (cancelled) return;
+
+		const community: FeedItem[] = communityRows.map((p) => ({
 			id: p.id,
 			kind: "video" as const,
 			title: p.caption ?? "Community video",
@@ -55,10 +82,12 @@ export function useFeed(categoryFilter: string | null) {
 			content_category_id: null,
 			published_at: p.created_at,
 			sort_order: 0,
+			creator_id: p.user_id,
+			creator_name: names[p.user_id] ?? "Community member",
 		}));
 
 		// Interleave: show a community video every 3 curated items.
-		const merged: FeedItem[] = [];
+		let merged: FeedItem[] = [];
 		let ci = 0;
 		for (let i = 0; i < curated.length; i++) {
 			merged.push(curated[i]);
@@ -68,13 +97,28 @@ export function useFeed(categoryFilter: string | null) {
 		}
 		while (ci < community.length) merged.push(community[ci++]);
 
+		// Premium AI re-rank around the user's direction (AI-07). The edge
+		// function gates on premium and caches per day server-side; free users
+		// and any failure keep the default order.
+		if (session && merged.length > 0) {
+			const res = await personalize(
+				"feed",
+				merged.map((i) => ({
+					id: i.id,
+					label: `${i.kind}: ${i.title}${i.eyebrow ? `, ${i.eyebrow}` : ""}`,
+				})),
+			);
+			if (res) merged = applyOrder(merged, res.order);
+			if (cancelled) return;
+		}
+
 		setAllItems(merged);
 		setLoading(false);
 
 		return () => {
 			cancelled = true;
 		};
-	}, []);
+	}, [session]);
 
 	useEffect(() => {
 		void load();

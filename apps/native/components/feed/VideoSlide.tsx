@@ -1,7 +1,7 @@
-import { Ionicons } from "@expo/vector-icons";
+import { getNorthTokens } from "@north/tokens";
 import { useEvent } from "expo";
 import { useVideoPlayer, VideoView } from "expo-video";
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef } from "react";
 import {
 	ImageBackground,
 	Pressable,
@@ -11,29 +11,31 @@ import {
 } from "react-native";
 import Svg, { Defs, LinearGradient, Rect, Stop } from "react-native-svg";
 
-import type { FeedItem } from "@/lib/feed/types";
+import type { Creator, FeedItem } from "@/lib/feed/types";
+
+const { p, t } = getNorthTokens();
 
 type Props = {
 	item: FeedItem;
 	containerHeight: number;
 	containerWidth: number;
-	isSaved: boolean;
 	isActive: boolean;
-	onSave: () => void;
 	onWatch: () => void;
+	creator: Creator | null;
+	isFollowing: boolean;
+	onToggleFollow: () => void;
 };
 
 export const VideoSlide = memo(function VideoSlide({
 	item,
 	containerHeight,
 	containerWidth,
-	isSaved,
 	isActive,
-	onSave,
 	onWatch,
+	creator,
+	isFollowing,
+	onToggleFollow,
 }: Props) {
-	const [saved, setSaved] = useState(isSaved);
-
 	// Keep onWatch stable so the status useEffect doesn't re-fire on every render.
 	const onWatchRef = useRef(onWatch);
 	onWatchRef.current = onWatch;
@@ -65,11 +67,6 @@ export const VideoSlide = memo(function VideoSlide({
 			onWatchRef.current();
 		}
 	}, [status, isActive, player]);
-
-	const handleSave = () => {
-		setSaved((s) => !s);
-		onSave();
-	};
 
 	return (
 		<View style={[s.slide, { height: containerHeight, width: containerWidth }]}>
@@ -104,8 +101,44 @@ export const VideoSlide = memo(function VideoSlide({
 				</Svg>
 			</View>
 
-			{/* Bottom-left: title + channel */}
-			<View style={s.caption} pointerEvents="none">
+			{/* Bottom-left: creator + title + channel */}
+			<View style={s.caption}>
+				{creator ? (
+					<View style={s.creatorRow}>
+						<View style={s.avatar}>
+							<Text style={s.avatarText}>{creator.name[0]?.toUpperCase()}</Text>
+						</View>
+						<View style={s.creatorMeta}>
+							<Text style={s.creatorName} numberOfLines={1}>
+								{creator.name}
+							</Text>
+							{creator.tagline ? (
+								<Text style={s.creatorTagline} numberOfLines={1}>
+									{creator.tagline}
+								</Text>
+							) : null}
+						</View>
+						<Pressable
+							onPress={onToggleFollow}
+							accessibilityRole="button"
+							accessibilityLabel={
+								isFollowing
+									? `Unfollow ${creator.name}`
+									: `Follow ${creator.name}`
+							}
+							style={({ pressed }) => [
+								isFollowing ? s.followingPill : s.followPill,
+								pressed && { opacity: 0.75 },
+							]}
+						>
+							<Text
+								style={isFollowing ? s.followingPillText : s.followPillText}
+							>
+								{isFollowing ? "Following" : "Follow"}
+							</Text>
+						</Pressable>
+					</View>
+				) : null}
 				{item.eyebrow ? (
 					<Text style={s.eyebrow}>{item.eyebrow.toUpperCase()}</Text>
 				) : null}
@@ -117,25 +150,6 @@ export const VideoSlide = memo(function VideoSlide({
 						{item.source}
 					</Text>
 				) : null}
-			</View>
-
-			{/* Right-side save action */}
-			<View style={s.actions}>
-				<Pressable
-					onPress={handleSave}
-					style={({ pressed }) => [s.actionBtn, pressed && s.actionBtnPressed]}
-					accessibilityRole="button"
-					accessibilityLabel={saved ? "Unsave" : "Save"}
-				>
-					<Ionicons
-						name={saved ? "bookmark" : "bookmark-outline"}
-						size={28}
-						color={saved ? "#F0B429" : "#fff"}
-					/>
-					<Text style={[s.actionLabel, saved && s.actionLabelGold]}>
-						{saved ? "Saved" : "Save"}
-					</Text>
-				</Pressable>
 			</View>
 		</View>
 	);
@@ -157,10 +171,68 @@ const s = StyleSheet.create({
 		bottom: 24,
 		gap: 6,
 	},
+	creatorRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+		marginBottom: 4,
+	},
+	avatar: {
+		width: 32,
+		height: 32,
+		borderRadius: 16,
+		backgroundColor: p.gold,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	avatarText: { fontFamily: t.display, fontSize: 14, color: p.accentInk },
+	creatorMeta: { flexShrink: 1 },
+	creatorName: {
+		fontFamily: t.ui,
+		fontSize: 13,
+		fontWeight: "700",
+		color: "#fff",
+	},
+	creatorTagline: {
+		fontFamily: t.ui,
+		fontSize: 11,
+		color: "rgba(255,255,255,0.7)",
+	},
+	// Follow = the next action, so the pill takes the gold. Following recedes
+	// to a quiet outline — no longer asking anything of you.
+	followPill: {
+		paddingHorizontal: 14,
+		height: 30,
+		borderRadius: 15,
+		backgroundColor: p.gold,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	followPillText: {
+		fontFamily: t.ui,
+		fontSize: 12,
+		fontWeight: "700",
+		color: p.accentInk,
+	},
+	followingPill: {
+		paddingHorizontal: 14,
+		height: 30,
+		borderRadius: 15,
+		borderWidth: 1,
+		borderColor: "rgba(255,255,255,0.45)",
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	followingPillText: {
+		fontFamily: t.ui,
+		fontSize: 12,
+		fontWeight: "600",
+		color: "rgba(255,255,255,0.9)",
+	},
 	eyebrow: {
 		fontSize: 9,
 		fontWeight: "700",
-		color: "#F0B429",
+		color: p.gold,
 		letterSpacing: 1.5,
 	},
 	title: {
@@ -178,19 +250,4 @@ const s = StyleSheet.create({
 		color: "rgba(255,255,255,0.75)",
 		fontWeight: "500",
 	},
-	actions: {
-		position: "absolute",
-		right: 16,
-		bottom: 24,
-		alignItems: "center",
-		gap: 20,
-	},
-	actionBtn: { alignItems: "center", gap: 4 },
-	actionBtnPressed: { opacity: 0.7, transform: [{ scale: 0.9 }] },
-	actionLabel: {
-		fontSize: 11,
-		color: "rgba(255,255,255,0.8)",
-		fontWeight: "500",
-	},
-	actionLabelGold: { color: "#F0B429" },
 });

@@ -1,13 +1,18 @@
-// Mission tab (MSN-02).
+// Mission tab — the monthly mission (migrations 0040/0074).
 //
-// Shows today's AI-generated mission + 3-task checklist with:
-// - Overall progress bar (0/3 → 3/3)
-// - Per-task completion toggle (optimistic, offline-retry per MSN-04)
-// - PostHog events on completion (MSN-05)
-// - Calm empty state when no mission has been assigned yet
+// One goal per rolling 28-day cycle: 4 weekly milestones + one small daily
+// step, kept calm through progressive disclosure. Streak chip + calendar /
+// set-goal buttons by the greeting, the goal card with a gold progress
+// ring (milestones banked), today's one small step, the 4-week plan, one
+// check-in card, a compact habits section, and sheets (set goal, month
+// calendar) for everything else.
+// - Today's step completes optimistically (offline-retry, PostHog events)
+// - Completion → celebration card with a one-line Journal reflection
+// - Starter (template) goals get a quiet, dismissible "make it yours" nudge
 
 import { Card, Icon, ProgressRing, Rise, staggerDelay } from "@north/native-ui";
 import { getNorthTokens } from "@north/tokens";
+import { useMemo, useState } from "react";
 import {
 	Image,
 	Pressable,
@@ -18,9 +23,23 @@ import {
 	TouchableOpacity,
 	View,
 } from "react-native";
-import { useTaskCompletion } from "@/lib/mission/use-task-completion";
-import type { MissionTask } from "@/lib/mission/use-today-mission";
-import { useTodayMission } from "@/lib/mission/use-today-mission";
+import { CelebrationCard } from "@/components/mission/CelebrationCard";
+import { CheckInCard } from "@/components/mission/CheckInCard";
+import { HabitsSection } from "@/components/mission/HabitsSection";
+import { MonthCalendarSheet } from "@/components/mission/MonthCalendarSheet";
+import { SetGoalSheet } from "@/components/mission/SetGoalSheet";
+import { StreakChip } from "@/components/mission/StreakChip";
+import { useMissionStreaks } from "@/lib/mission/use-mission-streaks";
+import type {
+	MissionStep,
+	MonthlyMissionData,
+} from "@/lib/mission/use-monthly-mission";
+import {
+	deriveMissionView,
+	todayInAST,
+	useMonthlyMission,
+} from "@/lib/mission/use-monthly-mission";
+import { useStepCompletion } from "@/lib/mission/use-step-completion";
 import { useFirstName } from "@/lib/profile/use-display-name";
 
 function greetingForNow(): string {
@@ -32,7 +51,7 @@ function greetingForNow(): string {
 
 export default function Mission() {
 	const { p, t } = getNorthTokens();
-	const { mission, loading, error } = useTodayMission();
+	const { data, loading, error, refresh, dismissPrompt } = useMonthlyMission();
 
 	if (loading) {
 		return (
@@ -58,7 +77,9 @@ export default function Mission() {
 		);
 	}
 
-	if (!mission) {
+	if (!data) {
+		// ensure_monthly_mission seeds a cycle on load, so an empty state is a
+		// hiccup (offline first load, RPC failure) — offer a calm retry.
 		return (
 			<SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]}>
 				<View style={styles.center}>
@@ -83,8 +104,24 @@ export default function Mission() {
 					<Text
 						style={[styles.emptySub, { color: p.inkMid, fontFamily: t.ui }]}
 					>
-						Your mission for today will appear here once assigned.
+						North sets up a four-week mission around your focus. Check your
+						connection and try again.
 					</Text>
+					<TouchableOpacity
+						onPress={() => void refresh()}
+						accessibilityRole="button"
+						accessibilityLabel="Set up my month"
+						style={[styles.emptyCta, { backgroundColor: p.gold }]}
+					>
+						<Text
+							style={[
+								styles.emptyCtaLabel,
+								{ color: p.accentInk, fontFamily: t.ui },
+							]}
+						>
+							Set up my month
+						</Text>
+					</TouchableOpacity>
 				</View>
 			</SafeAreaView>
 		);
@@ -93,35 +130,46 @@ export default function Mission() {
 	return (
 		<SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]}>
 			<MissionContent
-				missionId={mission.id}
-				title={mission.title}
-				intent={mission.intent}
-				tasks={mission.tasks}
+				data={data}
+				onRefresh={() => void refresh()}
+				onDismissPrompt={() => void dismissPrompt()}
 			/>
 		</SafeAreaView>
 	);
 }
 
 function MissionContent({
-	missionId,
-	title,
-	intent,
-	tasks: initialTasks,
+	data,
+	onRefresh,
+	onDismissPrompt,
 }: {
-	missionId: string;
-	title: string | null;
-	intent: string | null;
-	tasks: MissionTask[];
+	data: MonthlyMissionData;
+	onRefresh: () => void;
+	onDismissPrompt: () => void;
 }) {
 	const { p, t, d } = getNorthTokens();
 	const firstName = useFirstName();
-	const { tasks, toggleDone, completedCount, progress } = useTaskCompletion(
-		missionId,
-		initialTasks,
-	);
+	const { mission, promptDismissed } = data;
+	const { steps, toggleDone } = useStepCompletion(mission.id, data.steps);
+	const { days: streakDays, rhythm } = useMissionStreaks();
 
-	const allDone = tasks.length > 0 && completedCount === tasks.length;
-	const nextStep = tasks.find((task) => !task.done) ?? null;
+	const [showCalendar, setShowCalendar] = useState(false);
+	const [showGoal, setShowGoal] = useState(false);
+	const [nudgeWaved, setNudgeWaved] = useState(false);
+
+	const today = todayInAST();
+	const view = useMemo(() => deriveMissionView(steps, today), [steps, today]);
+	const { weekly, currentWeekIndex, focalStep, weeksDone } = view;
+
+	const weeksTotal = weekly.length || 4;
+	const goalPct = weeksDone / weeksTotal;
+	const isTemplate = mission.generated_by === "template";
+	const showNudge = isTemplate && !promptDismissed && !nudgeWaved;
+
+	function waveOffNudge() {
+		setNudgeWaved(true);
+		onDismissPrompt();
+	}
 
 	return (
 		<ScrollView
@@ -130,22 +178,111 @@ function MissionContent({
 				{ paddingHorizontal: d.scrnPad, paddingTop: 24, paddingBottom: 40 },
 			]}
 		>
-			{/* ── Greeting ──────────────────────────────────────────── */}
+			{/* ── Greeting + rhythm chip + quiet actions ────────────── */}
 			<Rise>
-				<Text
-					style={[styles.greeting, { color: p.ink, fontFamily: t.display }]}
-				>
-					{greetingForNow()}
-					{firstName ? `, ${firstName}` : ""} 👋
-				</Text>
-				<Text
-					style={[styles.greetingSub, { color: p.inkMid, fontFamily: t.ui }]}
-				>
-					Let's take one step forward.
-				</Text>
+				<View style={styles.headerRow}>
+					<View style={styles.headerCopy}>
+						<Text
+							style={[styles.greeting, { color: p.ink, fontFamily: t.display }]}
+						>
+							{greetingForNow()}
+							{firstName ? `, ${firstName}` : ""} 👋
+						</Text>
+						<Text
+							style={[
+								styles.greetingSub,
+								{ color: p.inkMid, fontFamily: t.ui },
+							]}
+						>
+							Let's take one step forward.
+						</Text>
+					</View>
+					<View style={styles.headerActions}>
+						<Pressable
+							onPress={() => setShowCalendar(true)}
+							accessibilityRole="button"
+							accessibilityLabel="Open month calendar"
+							style={[
+								styles.iconBtn,
+								{ backgroundColor: p.surface, borderColor: p.line },
+							]}
+						>
+							<Icon name="calendar" size={17} color={p.inkMid} />
+						</Pressable>
+						<Pressable
+							onPress={() => setShowGoal(true)}
+							accessibilityRole="button"
+							accessibilityLabel={
+								isTemplate ? "Set your goal" : "Edit your goal"
+							}
+							style={[
+								styles.iconBtn,
+								{ backgroundColor: p.surface, borderColor: p.line },
+							]}
+						>
+							<Icon name="circleDot" size={17} color={p.inkMid} />
+						</Pressable>
+					</View>
+				</View>
+				<View style={{ marginTop: 10 }}>
+					<StreakChip count={rhythm} />
+				</View>
 			</Rise>
 
-			{/* ── Mission card: title + gold progress ring ──────────── */}
+			{/* ── Starter-goal nudge (quiet, dismissible, never a modal) ─ */}
+			{showNudge ? (
+				<Rise delay={staggerDelay(1)} style={{ marginTop: d.gap }}>
+					<View
+						style={[
+							styles.nudge,
+							{ backgroundColor: p.surface, borderColor: p.line },
+						]}
+					>
+						<Text
+							style={[styles.nudgeBody, { color: p.inkMid, fontFamily: t.ui }]}
+						>
+							<Text style={{ color: p.ink, fontWeight: "700" }}>
+								This is a starter goal.
+							</Text>{" "}
+							Set one that's truly yours whenever you're ready.
+						</Text>
+						<View style={styles.nudgeActions}>
+							<TouchableOpacity
+								onPress={() => setShowGoal(true)}
+								accessibilityRole="button"
+								accessibilityLabel="Set your goal"
+								style={[styles.nudgeBtn, { backgroundColor: p.gold }]}
+							>
+								<Text
+									style={[
+										styles.nudgeBtnLabel,
+										{ color: p.accentInk, fontFamily: t.ui },
+									]}
+								>
+									Set your goal
+								</Text>
+							</TouchableOpacity>
+							<TouchableOpacity
+								onPress={waveOffNudge}
+								accessibilityRole="button"
+								accessibilityLabel="Maybe later"
+								style={styles.nudgeDismiss}
+							>
+								<Text
+									style={[
+										styles.nudgeDismissLabel,
+										{ color: p.inkMid, fontFamily: t.ui },
+									]}
+								>
+									Maybe later
+								</Text>
+							</TouchableOpacity>
+						</View>
+					</View>
+				</Rise>
+			) : null}
+
+			{/* ── Goal card: title + gold progress ring ─────────────── */}
 			<Rise delay={staggerDelay(1)} style={{ marginTop: d.gapLg }}>
 				<Card p={p}>
 					<View style={styles.missionRow}>
@@ -153,35 +290,30 @@ function MissionContent({
 							<Text
 								style={[styles.eyebrow, { color: p.goldInk, fontFamily: t.ui }]}
 							>
-								Today's mission
+								This month's mission
 							</Text>
-							{title ? (
-								<Text
-									style={[
-										styles.title,
-										{ color: p.ink, fontFamily: t.display },
-									]}
-								>
-									{title}
-								</Text>
-							) : null}
-							{intent ? (
+							<Text
+								style={[styles.title, { color: p.ink, fontFamily: t.display }]}
+							>
+								{mission.goal_title}
+							</Text>
+							{mission.goal_intent ? (
 								<Text
 									style={[styles.intent, { color: p.inkMid, fontFamily: t.ui }]}
 								>
-									{intent}
+									{mission.goal_intent}
 								</Text>
 							) : null}
 						</View>
 						<ProgressRing
 							p={p}
-							value={progress}
+							value={goalPct}
 							size={72}
 							strokeWidth={7}
-							// Gold = the needle: today's mission is the next action.
+							// Gold = the needle: this month's goal is the next action.
 							color={p.gold}
 							trackColor="rgba(13,19,33,0.07)"
-							accessibilityLabel={`${completedCount} of ${tasks.length} steps done`}
+							accessibilityLabel={`${weeksDone} of ${weeksTotal} weekly milestones done`}
 						>
 							<Text
 								style={[
@@ -189,7 +321,7 @@ function MissionContent({
 									{ color: p.ink, fontFamily: t.display },
 								]}
 							>
-								{Math.round(progress * 100)}%
+								{Math.round(goalPct * 100)}%
 							</Text>
 						</ProgressRing>
 					</View>
@@ -199,13 +331,14 @@ function MissionContent({
 							{ color: p.inkDim, fontFamily: t.ui },
 						]}
 					>
-						{completedCount} of {tasks.length} steps done
+						Week {currentWeekIndex + 1} of {weeksTotal} · {weeksDone} of{" "}
+						{weeksTotal} milestones banked
 					</Text>
 				</Card>
 			</Rise>
 
-			{/* ── Today's one small step ────────────────────────────── */}
-			{nextStep ? (
+			{/* ── Today's one small step / earned celebration ───────── */}
+			{focalStep && !focalStep.done ? (
 				<Rise delay={staggerDelay(2)} style={{ marginTop: d.gap }}>
 					<View
 						style={[
@@ -233,19 +366,19 @@ function MissionContent({
 								{ color: p.ink, fontFamily: t.editorial },
 							]}
 						>
-							{nextStep.label}
+							{focalStep.title}
 						</Text>
-						{nextStep.estimate_label ? (
+						{focalStep.estimate_label ? (
 							<Text
 								style={[styles.estimate, { color: p.inkMid, fontFamily: t.ui }]}
 							>
-								{nextStep.estimate_label}
+								{focalStep.estimate_label}
 							</Text>
 						) : null}
 						<TouchableOpacity
-							onPress={() => void toggleDone(nextStep.id)}
+							onPress={() => void toggleDone(focalStep.id)}
 							accessibilityRole="button"
-							accessibilityLabel={`Complete step: ${nextStep.label}`}
+							accessibilityLabel={`Complete step: ${focalStep.title}`}
 							style={[styles.stepBtn, { backgroundColor: p.gold }]}
 						>
 							<Text
@@ -261,55 +394,67 @@ function MissionContent({
 				</Rise>
 			) : null}
 
-			{/* ── Step list ─────────────────────────────────────────── */}
+			{/* Completion — quiet, earned, no confetti. The gold slot the
+			    step callout held all day becomes the celebration. */}
+			{focalStep?.done ? (
+				<Rise delay={staggerDelay(2)} style={{ marginTop: d.gap }}>
+					<CelebrationCard stepId={focalStep.id} rhythmStreak={rhythm} />
+				</Rise>
+			) : null}
+
+			{/* ── The 4-week plan ───────────────────────────────────── */}
 			<View style={[styles.taskList, { marginTop: d.gapLg, gap: d.gap }]}>
-				{tasks.map((task, i) => (
-					<Rise key={task.id} delay={staggerDelay(i + 3)}>
-						<TaskItem task={task} onToggle={() => void toggleDone(task.id)} />
+				{weekly.map((step, i) => (
+					<Rise key={step.id} delay={staggerDelay(i + 3)}>
+						<MilestoneItem
+							step={step}
+							weekLabel={`Week ${i + 1}`}
+							current={i === currentWeekIndex}
+							onToggle={() => void toggleDone(step.id)}
+						/>
 					</Rise>
 				))}
 			</View>
 
-			{/* Completion — quiet, earned, no confetti. */}
-			{allDone ? (
-				<Rise style={{ marginTop: d.gapLg }}>
-					<View
-						style={[
-							styles.doneCard,
-							{
-								backgroundColor: p.accentSoft,
-								borderColor: `${p.gold}66`,
-							},
-						]}
-					>
-						<Icon name="arrowUp" size={18} color={p.goldInk} strokeWidth={2} />
-						<View style={{ flex: 1, gap: 2 }}>
-							<Text
-								style={[
-									styles.doneTitle,
-									{ color: p.ink, fontFamily: t.editorial },
-								]}
-							>
-								Pointed north today.
-							</Text>
-							<Text
-								style={[styles.doneSub, { color: p.inkMid, fontFamily: t.ui }]}
-							>
-								Every step done. The rest of the day is yours.
-							</Text>
-						</View>
-					</View>
+			{/* ── Check-in ──────────────────────────────────────────── */}
+			{focalStep ? (
+				<Rise delay={staggerDelay(4)} style={{ marginTop: d.gapLg }}>
+					<CheckInCard missionId={focalStep.id} />
 				</Rise>
 			) : null}
+
+			{/* ── Habits ────────────────────────────────────────────── */}
+			<Rise delay={staggerDelay(4)} style={{ marginTop: d.gap }}>
+				<HabitsSection />
+			</Rise>
+
+			{/* Sheets */}
+			<MonthCalendarSheet
+				visible={showCalendar}
+				onClose={() => setShowCalendar(false)}
+				days={streakDays}
+			/>
+			<SetGoalSheet
+				visible={showGoal}
+				onClose={() => setShowGoal(false)}
+				monthStart={mission.month_start}
+				initialGoal={isTemplate ? "" : mission.goal_title}
+				autosuggest={isTemplate}
+				onGoalSet={onRefresh}
+			/>
 		</ScrollView>
 	);
 }
 
-function TaskItem({
-	task,
+function MilestoneItem({
+	step,
+	weekLabel,
+	current,
 	onToggle,
 }: {
-	task: MissionTask;
+	step: MissionStep;
+	weekLabel: string;
+	current: boolean;
 	onToggle: () => void;
 }) {
 	const { p, t, d } = getNorthTokens();
@@ -318,14 +463,14 @@ function TaskItem({
 		<Pressable
 			onPress={onToggle}
 			accessibilityRole="checkbox"
-			accessibilityState={{ checked: task.done }}
-			accessibilityLabel={task.label}
+			accessibilityState={{ checked: step.done }}
+			accessibilityLabel={`${weekLabel}: ${step.title}`}
 			style={({ pressed }) => [
 				styles.taskRow,
 				{
-					// Teal = on-course: a completed task is progress, not the needle.
-					backgroundColor: task.done ? `${p.teal}14` : p.surface,
-					borderColor: task.done ? `${p.teal}59` : p.line,
+					// Teal = on-course: a banked milestone is progress, not the needle.
+					backgroundColor: step.done ? `${p.teal}14` : p.surface,
+					borderColor: step.done ? `${p.teal}59` : p.line,
 					borderWidth: 1,
 					borderRadius: 14,
 					paddingHorizontal: d.scrnPad,
@@ -339,38 +484,43 @@ function TaskItem({
 				style={[
 					styles.checkbox,
 					{
-						borderColor: task.done ? p.teal : p.lineHi,
-						backgroundColor: task.done ? p.teal : "transparent",
+						borderColor: step.done ? p.teal : p.lineHi,
+						backgroundColor: step.done ? p.teal : "transparent",
 					},
 				]}
 			>
-				{task.done ? (
+				{step.done ? (
 					<Icon name="check" size={14} color={p.accentInk} strokeWidth={2.5} />
 				) : null}
 			</View>
 
-			{/* Label + estimate */}
+			{/* Label + week */}
 			<View style={styles.taskText}>
 				<Text
 					style={[
 						styles.taskLabel,
 						{
-							color: task.done ? p.inkMid : p.ink,
+							color: step.done ? p.inkMid : p.ink,
 							fontFamily: t.ui,
-							textDecorationLine: task.done ? "line-through" : "none",
+							textDecorationLine: step.done ? "line-through" : "none",
 						},
 					]}
 					numberOfLines={3}
 				>
-					{task.label}
+					{step.title}
 				</Text>
-				{task.estimate_label ? (
-					<Text
-						style={[styles.estimate, { color: p.inkDim, fontFamily: t.ui }]}
-					>
-						{task.estimate_label}
-					</Text>
-				) : null}
+				<Text
+					style={[
+						styles.estimate,
+						{
+							color: current && !step.done ? p.goldInk : p.inkDim,
+							fontFamily: t.ui,
+							fontWeight: current && !step.done ? "700" : "400",
+						},
+					]}
+				>
+					{current && !step.done ? `${weekLabel} · this week` : weekLabel}
+				</Text>
 			</View>
 		</Pressable>
 	);
@@ -387,9 +537,47 @@ const styles = StyleSheet.create({
 	pole: { width: 72, height: 88, marginBottom: 18 },
 	emptyTitle: { fontSize: 24, marginBottom: 8, textAlign: "center" },
 	emptySub: { fontSize: 14, lineHeight: 21, textAlign: "center" },
+	emptyCta: {
+		marginTop: 20,
+		paddingHorizontal: 24,
+		paddingVertical: 12,
+		borderRadius: 12,
+	},
+	emptyCtaLabel: { fontSize: 14, fontWeight: "700" },
 	body: { flexGrow: 1 },
+	headerRow: {
+		flexDirection: "row",
+		alignItems: "flex-start",
+		gap: 12,
+	},
+	headerCopy: { flex: 1 },
+	headerActions: { flexDirection: "row", gap: 8, marginTop: 2 },
+	iconBtn: {
+		width: 38,
+		height: 38,
+		borderRadius: 19,
+		borderWidth: 1,
+		alignItems: "center",
+		justifyContent: "center",
+	},
 	greeting: { fontSize: 24, lineHeight: 30, letterSpacing: -0.5 },
 	greetingSub: { fontSize: 14, lineHeight: 20, marginTop: 4 },
+	nudge: {
+		borderWidth: 1,
+		borderRadius: 14,
+		padding: 14,
+		gap: 12,
+	},
+	nudgeBody: { fontSize: 13, lineHeight: 19 },
+	nudgeActions: { flexDirection: "row", alignItems: "center", gap: 10 },
+	nudgeBtn: {
+		paddingHorizontal: 14,
+		paddingVertical: 9,
+		borderRadius: 10,
+	},
+	nudgeBtnLabel: { fontSize: 13, fontWeight: "700" },
+	nudgeDismiss: { paddingHorizontal: 6, paddingVertical: 9 },
+	nudgeDismissLabel: { fontSize: 13, fontWeight: "600" },
 	eyebrow: {
 		fontSize: 10,
 		fontWeight: "700",
@@ -446,15 +634,4 @@ const styles = StyleSheet.create({
 	taskText: { flex: 1, gap: 4 },
 	taskLabel: { fontSize: 15, lineHeight: 22 },
 	estimate: { fontSize: 12 },
-	doneCard: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: 12,
-		borderWidth: 1,
-		borderRadius: 14,
-		paddingHorizontal: 16,
-		paddingVertical: 14,
-	},
-	doneTitle: { fontSize: 15 },
-	doneSub: { fontSize: 12, lineHeight: 17 },
 });

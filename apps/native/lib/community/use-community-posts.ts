@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase, useSession } from "../auth-client";
 import { useAuthBypass } from "../dev-bypass";
-import { MOCK_DISCUSSION, MOCK_FIRST_NAME, mockMission } from "../dev-mock";
-import type { CommunityPost, PostType } from "./types";
+import { MOCK_FIRST_NAME, MOCK_GOAL_TITLE } from "../dev-mock";
+import { FIXTURE_DISCUSSION } from "./fixtures";
+import type { CommunityPost, PostKind, PostType } from "./types";
 
 const SELECT =
 	"id, user_id, post_type, caption, video_url, thumbnail_url, opportunity_id, created_at";
@@ -89,14 +90,27 @@ export function useCreatePost() {
 // the table has no FK join) so the tab can show who is working toward
 // what. `authorGoal` is only available in mock mode for now; the real
 // schema has no public goal yet.
+//
+// `kind` / `parent_post_id` come from 20260803T121000_community_post_threading.sql
+// (update | question | answer | story).
 
 export type DiscussionPost = {
 	id: string;
+	userId: string | null;
 	author: string;
 	authorGoal: string | null;
 	caption: string;
 	createdAt: string;
 	isMine: boolean;
+	kind: PostKind;
+	parentId: string | null;
+	parentAuthor: string | null;
+};
+
+export type SubmitOptions = {
+	kind?: PostKind;
+	parentId?: string | null;
+	parentAuthor?: string | null;
 };
 
 export function useDiscussion() {
@@ -111,33 +125,41 @@ export function useDiscussion() {
 			const now = Date.now();
 			setPosts((prev) => {
 				const locals = prev.filter((p) => p.id.startsWith("local-"));
-				const seeded = MOCK_DISCUSSION.map((m) => ({
+				const seeded = FIXTURE_DISCUSSION.map((m) => ({
 					id: m.id,
+					userId: null,
 					author: m.author,
 					authorGoal: m.authorGoal,
 					caption: m.caption,
 					createdAt: new Date(now - m.hoursAgo * 3_600_000).toISOString(),
 					isMine: m.author === MOCK_FIRST_NAME,
+					kind: m.kind,
+					parentId: m.parentId,
+					parentAuthor: m.parentAuthor,
 				}));
-				return [...locals, ...seeded];
+				return [...locals, ...seeded].sort((a, b) =>
+					b.createdAt.localeCompare(a.createdAt),
+				);
 			});
 			setLoading(false);
 			return;
 		}
 
-		const { data } = await supabase
-			.from("community_posts")
-			.select("id, user_id, caption, created_at")
-			.not("caption", "is", null)
-			.order("created_at", { ascending: false })
-			.limit(50);
-
-		const rows = (data ?? []) as {
+		type Row = {
 			id: string;
 			user_id: string;
 			caption: string | null;
 			created_at: string;
-		}[];
+			kind: string | null;
+			parent_post_id: string | null;
+		};
+		const { data } = await supabase
+			.from("community_posts")
+			.select("id, user_id, caption, created_at, kind, parent_post_id")
+			.not("caption", "is", null)
+			.order("created_at", { ascending: false })
+			.limit(50);
+		const rows = (data ?? []) as Row[];
 
 		const userIds = [...new Set(rows.map((r) => r.user_id))];
 		let names: Record<string, string> = {};
@@ -153,16 +175,23 @@ export function useDiscussion() {
 			);
 		}
 
+		const authorById = new Map(rows.map((r) => [r.id, names[r.user_id]]));
 		setPosts(
 			rows
 				.filter((r) => r.caption)
 				.map((r) => ({
 					id: r.id,
+					userId: r.user_id,
 					author: names[r.user_id] ?? "Someone",
 					authorGoal: null,
 					caption: r.caption as string,
 					createdAt: r.created_at,
 					isMine: r.user_id === session?.user.id,
+					kind: (r.kind ?? "update") as PostKind,
+					parentId: r.parent_post_id ?? null,
+					parentAuthor: r.parent_post_id
+						? (authorById.get(r.parent_post_id) ?? null)
+						: null,
 				})),
 		);
 		setLoading(false);
@@ -173,20 +202,26 @@ export function useDiscussion() {
 	}, [refresh]);
 
 	const submit = useCallback(
-		async (caption: string): Promise<boolean> => {
+		async (caption: string, options?: SubmitOptions): Promise<boolean> => {
 			const body = caption.trim();
 			if (!body || submitting) return false;
+			const kind = options?.kind ?? "update";
+			const parentId = options?.parentId ?? null;
 			setSubmitting(true);
 			try {
 				if (bypass) {
 					setPosts((prev) => [
 						{
 							id: `local-${Date.now()}`,
+							userId: null,
 							author: MOCK_FIRST_NAME,
-							authorGoal: mockMission().title,
+							authorGoal: MOCK_GOAL_TITLE,
 							caption: body,
 							createdAt: new Date().toISOString(),
 							isMine: true,
+							kind,
+							parentId,
+							parentAuthor: options?.parentAuthor ?? null,
 						},
 						...prev,
 					]);
@@ -197,6 +232,8 @@ export function useDiscussion() {
 					user_id: session.user.id,
 					post_type: "mission_progress",
 					caption: body,
+					kind,
+					parent_post_id: parentId,
 				});
 				if (error) return false;
 				await refresh();
