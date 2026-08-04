@@ -14,6 +14,7 @@ import {
 	View,
 } from "react-native";
 
+import { arrive, tap } from "@/lib/haptics";
 import type { CheckInReply } from "@/lib/mission/use-check-in";
 import { useCheckIn } from "@/lib/mission/use-check-in";
 
@@ -94,7 +95,10 @@ export function CheckInCard({ missionId }: { missionId: string }) {
 							return (
 								<Pressable
 									key={reply.id}
-									onPress={() => setSelected(reply.id)}
+									onPress={() => {
+										tap();
+										setSelected(reply.id);
+									}}
 									accessibilityRole="button"
 									accessibilityState={{ selected: isSelected }}
 									accessibilityLabel={reply.label}
@@ -139,7 +143,11 @@ export function CheckInCard({ missionId }: { missionId: string }) {
 						]}
 					/>
 					<TouchableOpacity
-						onPress={() => selected && void submit(selected, note)}
+						onPress={() => {
+							if (!selected) return;
+							arrive();
+							void submit(selected, note);
+						}}
 						disabled={!selected || submitting}
 						accessibilityRole="button"
 						accessibilityLabel="Send check-in"

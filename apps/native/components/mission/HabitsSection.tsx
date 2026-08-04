@@ -7,6 +7,7 @@ import { getNorthTokens } from "@north/tokens";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
+import { tap } from "@/lib/haptics";
 import { useHabits } from "@/lib/mission/use-habits";
 
 const DAY_LETTERS = ["M", "T", "W", "T", "F", "S", "S"];
@@ -83,7 +84,10 @@ export function HabitsSection() {
 								return (
 									<View key={day} style={styles.dayCol}>
 										<Pressable
-											onPress={() => void toggleCheck(habit.id, day)}
+											onPress={() => {
+												tap();
+												void toggleCheck(habit.id, day);
+											}}
 											disabled={isFuture}
 											hitSlop={6}
 											accessibilityRole="checkbox"

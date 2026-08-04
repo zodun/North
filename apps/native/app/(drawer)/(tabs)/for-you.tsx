@@ -24,6 +24,7 @@ import type { FeedSlide } from "@/lib/feed/types";
 import { useForYouFeed } from "@/lib/feed/use-for-you-feed";
 import { useInteractions } from "@/lib/feed/use-interactions";
 import { shareSlide, useFeedSocial } from "@/lib/feed/use-social";
+import { tap } from "@/lib/haptics";
 
 export default function ForYou() {
 	// Mixed deck: videos interleaved with signal/opportunity/story/article/
@@ -65,24 +66,27 @@ export default function ForYou() {
 
 	const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 });
 
-	const onViewableItemsChanged = useCallback(
-		({
-			viewableItems,
-		}: {
-			viewableItems: ViewToken[];
-			changed: ViewToken[];
-		}) => {
+	// FlatList forbids swapping onViewableItemsChanged between renders, and
+	// `record` gets a new identity when the feed loads — so the handler lives
+	// in a ref (stable for the list's lifetime) and reads the latest `record`
+	// through a second ref.
+	const recordRef = useRef(record);
+	useEffect(() => {
+		recordRef.current = record;
+	}, [record]);
+
+	const onViewableItemsChanged = useRef(
+		({ viewableItems }: { viewableItems: ViewToken[] }) => {
 			const first = viewableItems[0];
 			if (first != null) {
 				const id = (first.item as FeedSlide).id;
 				setActiveId(id);
-				record(id, "view");
+				recordRef.current(id, "view");
 			} else {
 				setActiveId(null);
 			}
 		},
-		[record],
-	);
+	).current;
 
 	const onLayout = useCallback((e: LayoutChangeEvent) => {
 		const { width, height } = e.nativeEvent.layout;
@@ -91,6 +95,7 @@ export default function ForYou() {
 
 	const handleLike = useCallback(
 		(id: string) => {
+			tap();
 			// Mirror a fresh like into the behavioural log as "matters" (the heart
 			// action the signal score already reads); unlike only touches feed_likes.
 			if (!social.isLiked(id)) record(id, "matters");

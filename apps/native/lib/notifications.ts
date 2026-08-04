@@ -114,6 +114,9 @@ function routeFor(response: Notifications.NotificationResponse): Href {
  */
 export function useNotificationRouting() {
 	useEffect(() => {
+		// expo-notifications has no tap-response APIs on web (the PWA handles
+		// its own notification clicks at the service-worker layer).
+		if (Platform.OS === "web") return;
 		let cancelled = false;
 
 		void Notifications.getLastNotificationResponseAsync().then((response) => {

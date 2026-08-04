@@ -15,6 +15,7 @@ import {
 	FlatList,
 	Linking,
 	Pressable,
+	RefreshControl,
 	SafeAreaView,
 	ScrollView,
 	StyleSheet,
@@ -30,6 +31,7 @@ import { OpportunityCard } from "@/components/opportunities/OpportunityCard";
 import { TrackerView } from "@/components/opportunities/TrackerView";
 import { supabase, useSession } from "@/lib/auth-client";
 import { useAuthBypass } from "@/lib/dev-bypass";
+import { arrive, tap } from "@/lib/haptics";
 import {
 	BROWSE_CATEGORIES,
 	CATEGORY_OPTIONS,
@@ -538,17 +540,25 @@ export default function Opportunities() {
 	const [showSubmit, setShowSubmit] = useState(false);
 	const [showFilters, setShowFilters] = useState(false);
 
-	const { items, loading, error } = useOpportunities(
+	const { items, loading, error, refresh } = useOpportunities(
 		activeCategory,
 		search,
 		filters,
 	);
 	const { saved, toggleSave, markApplied } = useOpportunityInteractions();
 	const tracker = useApplicationTracker();
+	const [refreshing, setRefreshing] = useState(false);
+
+	async function pullRefresh() {
+		setRefreshing(true);
+		await refresh();
+		setRefreshing(false);
+	}
 
 	const filterCount = countActiveFilters(filters) + (activeCategory ? 1 : 0);
 
 	function handleApply(item: Opportunity) {
+		arrive();
 		void markApplied(item.id).then(() => tracker.refresh());
 		if (item.external_url) {
 			void Linking.openURL(item.external_url);
@@ -556,6 +566,7 @@ export default function Opportunities() {
 	}
 
 	function handleSave(item: Opportunity) {
+		tap();
 		void toggleSave(item.id).then(() => tracker.refresh());
 	}
 
@@ -785,6 +796,14 @@ export default function Opportunities() {
 				)}
 				showsVerticalScrollIndicator={false}
 				contentContainerStyle={{ flexGrow: 1 }}
+				refreshControl={
+					<RefreshControl
+						refreshing={refreshing}
+						onRefresh={() => void pullRefresh()}
+						tintColor={p.inkMid}
+						colors={[p.goldInk]}
+					/>
+				}
 			/>
 			{filterSheet}
 		</SafeAreaView>

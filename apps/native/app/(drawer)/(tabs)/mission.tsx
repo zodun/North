@@ -16,6 +16,7 @@ import { useMemo, useState } from "react";
 import {
 	Image,
 	Pressable,
+	RefreshControl,
 	SafeAreaView,
 	ScrollView,
 	StyleSheet,
@@ -29,6 +30,7 @@ import { HabitsSection } from "@/components/mission/HabitsSection";
 import { MonthCalendarSheet } from "@/components/mission/MonthCalendarSheet";
 import { SetGoalSheet } from "@/components/mission/SetGoalSheet";
 import { StreakChip } from "@/components/mission/StreakChip";
+import { arrive, tap } from "@/lib/haptics";
 import { useMissionStreaks } from "@/lib/mission/use-mission-streaks";
 import type {
 	MissionStep,
@@ -131,7 +133,7 @@ export default function Mission() {
 		<SafeAreaView style={[styles.safe, { backgroundColor: p.bg }]}>
 			<MissionContent
 				data={data}
-				onRefresh={() => void refresh()}
+				onRefresh={refresh}
 				onDismissPrompt={() => void dismissPrompt()}
 			/>
 		</SafeAreaView>
@@ -144,7 +146,7 @@ function MissionContent({
 	onDismissPrompt,
 }: {
 	data: MonthlyMissionData;
-	onRefresh: () => void;
+	onRefresh: () => Promise<void>;
 	onDismissPrompt: () => void;
 }) {
 	const { p, t, d } = getNorthTokens();
@@ -156,6 +158,13 @@ function MissionContent({
 	const [showCalendar, setShowCalendar] = useState(false);
 	const [showGoal, setShowGoal] = useState(false);
 	const [nudgeWaved, setNudgeWaved] = useState(false);
+	const [refreshing, setRefreshing] = useState(false);
+
+	async function pullRefresh() {
+		setRefreshing(true);
+		await onRefresh();
+		setRefreshing(false);
+	}
 
 	const today = todayInAST();
 	const view = useMemo(() => deriveMissionView(steps, today), [steps, today]);
@@ -177,6 +186,14 @@ function MissionContent({
 				styles.body,
 				{ paddingHorizontal: d.scrnPad, paddingTop: 24, paddingBottom: 40 },
 			]}
+			refreshControl={
+				<RefreshControl
+					refreshing={refreshing}
+					onRefresh={() => void pullRefresh()}
+					tintColor={p.inkMid}
+					colors={[p.goldInk]}
+				/>
+			}
 		>
 			{/* ── Greeting + rhythm chip + quiet actions ────────────── */}
 			<Rise>
@@ -247,16 +264,18 @@ function MissionContent({
 							Set one that's truly yours whenever you're ready.
 						</Text>
 						<View style={styles.nudgeActions}>
+							{/* Quiet by design: gold stays reserved for today's step —
+							    the one next action — so this is an ink outline. */}
 							<TouchableOpacity
 								onPress={() => setShowGoal(true)}
 								accessibilityRole="button"
 								accessibilityLabel="Set your goal"
-								style={[styles.nudgeBtn, { backgroundColor: p.gold }]}
+								style={[styles.nudgeBtn, { borderColor: p.lineHi }]}
 							>
 								<Text
 									style={[
 										styles.nudgeBtnLabel,
-										{ color: p.accentInk, fontFamily: t.ui },
+										{ color: p.ink, fontFamily: t.ui },
 									]}
 								>
 									Set your goal
@@ -376,7 +395,10 @@ function MissionContent({
 							</Text>
 						) : null}
 						<TouchableOpacity
-							onPress={() => void toggleDone(focalStep.id)}
+							onPress={() => {
+								arrive();
+								void toggleDone(focalStep.id);
+							}}
 							accessibilityRole="button"
 							accessibilityLabel={`Complete step: ${focalStep.title}`}
 							style={[styles.stepBtn, { backgroundColor: p.gold }]}
@@ -410,7 +432,10 @@ function MissionContent({
 							step={step}
 							weekLabel={`Week ${i + 1}`}
 							current={i === currentWeekIndex}
-							onToggle={() => void toggleDone(step.id)}
+							onToggle={() => {
+								tap();
+								void toggleDone(step.id);
+							}}
 						/>
 					</Rise>
 				))}
@@ -440,7 +465,7 @@ function MissionContent({
 				monthStart={mission.month_start}
 				initialGoal={isTemplate ? "" : mission.goal_title}
 				autosuggest={isTemplate}
-				onGoalSet={onRefresh}
+				onGoalSet={() => void onRefresh()}
 			/>
 		</ScrollView>
 	);
@@ -574,6 +599,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 14,
 		paddingVertical: 9,
 		borderRadius: 10,
+		borderWidth: 1,
 	},
 	nudgeBtnLabel: { fontSize: 13, fontWeight: "700" },
 	nudgeDismiss: { paddingHorizontal: 6, paddingVertical: 9 },

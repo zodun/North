@@ -9,6 +9,7 @@ import { router } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
+import { arrive } from "@/lib/haptics";
 import { useMissionReflection } from "@/lib/mission/use-mission-reflection";
 
 type Props = {
@@ -101,7 +102,10 @@ export function CelebrationCard({ stepId, rhythmStreak }: Props) {
 							]}
 						/>
 						<Pressable
-							onPress={() => void save(draft)}
+							onPress={() => {
+								arrive();
+								void save(draft);
+							}}
 							disabled={!draft.trim() || saving}
 							accessibilityRole="button"
 							accessibilityLabel="Save reflection"

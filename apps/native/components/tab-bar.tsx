@@ -7,6 +7,8 @@ import { Icon, type IconName, MIN_TOUCH_TARGET } from "@north/native-ui";
 import { getNorthTokens } from "@north/tokens";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
+import { tap } from "@/lib/haptics";
+
 // biome-ignore lint/suspicious/noExplicitAny: BottomTabBarProps isn't a resolvable specifier
 type TabsBarProps = any;
 
@@ -51,6 +53,7 @@ export function CustomTabBar({ state, navigation }: TabsBarProps) {
 							canPreventDefault: true,
 						});
 						if (!event.defaultPrevented && !focused) {
+							tap();
 							navigation.navigate(route.name, route.params);
 						}
 					};
